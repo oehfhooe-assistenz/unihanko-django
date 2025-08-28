@@ -1,0 +1,61 @@
+{% extends "admin/base_site.html" %}
+{% load i18n log %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <!-- LEFT: Tiles -->
+    <div class="col-lg-8">
+      <h1 class="mb-3">
+        UniHanko <small class="text-muted">Select a module to get started.</small>
+      </h1>
+
+      <style>
+        .tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+        .tile { background: #fff; border-radius: 12px; padding: 1rem 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+        .tile a { text-decoration: none; display: block; font-weight: 600; }
+        .tile small { display:block; margin-top:.25rem; opacity:.7; font-weight: 400; }
+      </style>
+
+      <div class="tile-grid">
+        {% if perms.people.view_person %}
+        <div class="tile">
+          <a href="{% url 'admin:people_person_changelist' %}">People <small>Open directory</small></a>
+        </div>
+        {% endif %}
+
+        {# Add more tiles later; keep permission guards #}
+        {% if perms.ects.view_inboxreimbursementrequest %}
+        <div class="tile">
+          <a href="{% url 'admin:ects_inboxreimbursementrequest_changelist' %}">ECTS Inbox <small>Verify & transfer</small></a>
+        </div>
+        {% endif %}
+
+        {% if perms.timewizard.view_timejournal %}
+        <div class="tile">
+          <a href="{% url 'admin:timewizard_timejournal_changelist' %}">TimeWizard <small>Monthly journals</small></a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- RIGHT: Recent actions -->
+    <div class="col-lg-4">
+      <h2 class="mt-3">{% trans "Recent actions" %}</h2>
+      {% get_admin_log 10 as admin_log for_user user %}
+      {% if not admin_log %}
+        <p class="text-muted mb-0">{% trans "None available" %}</p>
+      {% else %}
+        <ul class="list-unstyled">
+          {% for entry in admin_log %}
+            <li class="mb-2">
+              <div class="small text-muted">{{ entry.action_time|date:"Y-m-d H:i" }}</div>
+              {{ entry|capfirst }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
