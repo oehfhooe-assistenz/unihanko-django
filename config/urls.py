@@ -16,9 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from people.views_report import people_pdf_smoketest
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('reports/people-smoke.pdf', people_pdf_smoketest, name='people_pdf_smoke'),
 ]

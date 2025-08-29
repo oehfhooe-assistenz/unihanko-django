@@ -1,0 +1,16 @@
+{% extends "pdf/base.html" %}
+
+{% block pdf_title %}Person — {{ p.last_name }}, {{ p.first_name }}{% endblock %}
+{% block header_title %}Person{% endblock %}
+{% block header_subtitle %}{{ p.last_name }}, {{ p.first_name }}{% endblock %}
+
+{% block content %}
+  <h2 style="margin:0 0 8px 0;">Person details</h2>
+  <table>
+    <tbody>
+      <tr><th style="width:140px;">Last name</th><td>{{ p.last_name }}</td></tr>
+      <tr><th>First name</th><td>{{ p.first_name }}</td></tr>
+      <tr><th>Email</th><td>{{ p.email|default:"—" }}</td></tr>
+    </tbody>
+  </table>
+{% endblock %}

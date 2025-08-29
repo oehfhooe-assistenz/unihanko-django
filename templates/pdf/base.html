@@ -1,0 +1,65 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{% block pdf_title %}UniHanko PDF{% endblock %}</title>
+
+  <style>
+    /* Page setup + running header/footer + page numbers */
+    @page {
+      size: A4;
+      margin: 24mm 15mm 20mm 15mm; /* top, right, bottom, left */
+      @top-center { content: element(page-header); }
+      @bottom-left { content: element(page-footer); }
+      @bottom-right { content: "Page " counter(page) " of " counter(pages); }
+    }
+
+    /* Base styles */
+    :root { --brand: #0f766e; --muted: #6b7280; }
+    html, body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 12px; color: #111; }
+    h1, h2, h3 { margin: 0 0 8px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 6px; vertical-align: top; }
+    th { background: #f5f5f5; text-align: left; }
+
+    /* Running header/footer elements */
+    header.pdf-header { position: running(page-header); }
+    footer.pdf-footer { position: running(page-footer); }
+
+    /* Simple header/footer layout */
+    .header-wrap { display: block; border-bottom: 2px solid var(--brand); padding-bottom: 6px; }
+    .header-title { font-size: 16px; font-weight: 700; }
+    .header-sub { font-size: 11px; color: var(--muted); }
+
+    .footer-wrap { display: block; border-top: 1px solid #ddd; margin-top: 4px; padding-top: 4px; font-size: 10px; color: var(--muted); }
+
+    /* Space under header before content starts */
+    main { margin-top: 10px; }
+
+    /* Allow children to add extra CSS */
+    {% block extra_styles %}{% endblock %}
+  </style>
+</head>
+<body>
+  <!-- Running header (repeats on every page) -->
+  <header class="pdf-header">
+    <div class="header-wrap">
+      <div class="header-title">{% block header_title %}Header area test{% endblock %}</div>
+      <div class="header-sub">{% block header_subtitle %}Optional subtitle{% endblock %}</div>
+    </div>
+  </header>
+
+  <!-- Running footer (repeats on every page) -->
+  <footer class="pdf-footer">
+    <div class="footer-wrap">
+      {% block footer_left %}Footer area test{% endblock %}
+    </div>
+  </footer>
+
+  <!-- Page content (varies per report) -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

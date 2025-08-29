@@ -1,0 +1,26 @@
+{% extends "pdf/base.html" %}
+
+{% block pdf_title %}People – UniHanko{% endblock %}
+{% block header_title %}People{% endblock %}
+{% block header_subtitle %}Current directory export{% endblock %}
+{% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %}
+
+{% block extra_styles %}
+  /* Any report-specific CSS can go here */
+{% endblock %}
+
+{% block content %}
+  <h2 style="margin: 0 0 6px 0;">All entries</h2>
+  <table>
+    <thead>
+      <tr><th>Last name</th><th>First name</th><th>Email</th></tr>
+    </thead>
+    <tbody>
+      {% for p in rows %}
+        <tr><td>{{ p.last_name }}</td><td>{{ p.first_name }}</td><td>{{ p.email }}</td></tr>
+      {% empty %}
+        <tr><td colspan="3">No entries.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
