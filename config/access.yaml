@@ -1,0 +1,20 @@
+# Declarative group & permission config for UniHanko
+
+groups:
+  "module:personnel:editor":
+    inherits: []
+    models:
+      people.Person:             [view, add, change]
+      people.PersonRole:         [view, add, change]
+      people.Role:               [view]          # view-only so autocomplete works
+      people.RoleTransitionReason: [view]        # view-only (dictionary lookups)
+    custom_perms: {}                            # add model-specific permissions here if needed later
+
+  "module:personnel:manager":
+    inherits:
+      - "module:personnel:editor"
+    models:
+      people.Role:               [view, add, change]
+      people.RoleTransitionReason: [view, add, change]
+    custom_perms: {}
+

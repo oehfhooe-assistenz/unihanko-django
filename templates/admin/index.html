@@ -23,20 +23,6 @@
           <a href="{% url 'admin:people_person_changelist' %}">People <small>Open directory</small></a>
         </div>
         {% endif %}
-
-        {# Add more tiles later; keep permission guards #}
-        {% if perms.ects.view_inboxreimbursementrequest %}
-        <div class="tile">
-          <a href="{% url 'admin:ects_inboxreimbursementrequest_changelist' %}">ECTS Inbox <small>Verify & transfer</small></a>
-        </div>
-        {% endif %}
-
-        {% if perms.timewizard.view_timejournal %}
-        <div class="tile">
-          <a href="{% url 'admin:timewizard_timejournal_changelist' %}">TimeWizard <small>Monthly journals</small></a>
-        </div>
-        {% endif %}
-      </div>
     </div>
 
     <!-- RIGHT: Recent actions -->

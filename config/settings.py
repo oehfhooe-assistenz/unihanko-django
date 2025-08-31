@@ -47,11 +47,13 @@ INSTALLED_APPS = [
     'django_renderpdf',
 
     'people',
+    'core',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -113,7 +115,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'en-gb'
 
 TIME_ZONE = 'UTC'
 
@@ -121,13 +123,108 @@ USE_I18N = True
 
 USE_TZ = True
 
+LANGUAGES = [
+    ("en", "English"),
+    ("de", "Deutsch"),
+]
+
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent.parent
+LOCALE_PATHS = [BASE_DIR / "locale"]
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent.parent
+STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+JAZZMIN_SETTINGS = {
+    # Branding
+    "site_title": "UniHanko Back Office",
+    "site_header": "UniHanko Administration",
+    "site_brand": "UniHanko",
+    "welcome_sign": "Welcome to UniHanko Back Office",
+    "site_logo": "img/unihanko-logo.svg",            # put these under STATIC
+    "login_logo": "img/unihanko-mark.svg",           # optional second logo for login
+    "site_logo_classes": "img-fluid",
+
+    # Quick nav
+    "topmenu_links": [
+        {"name": "Onboarding",  "url": "/admin/people/personrole/add/",       "permissions": ["people.add_personrole"]},
+        {"name": "Offboarding", "url": "/admin/people/personrole/?active=1",  "permissions": ["people.change_personrole"]},
+        # examples you can add later:
+        # {"app": "people"},                               # jump to the Personnel section
+        # {"name": "Public site", "url": "/", "new_window": True},
+    ],
+    "usermenu_links": [
+        # {"model": "auth.user"},                         # profile
+        # {"name": "Help", "url": "https://…", "new_window": True},
+    ],
+
+    # Icons (Font Awesome 5/6)
+    "icons": {
+        "people": "fa-solid fa-users-gear",                 # app icon (Personnel)
+        "people.Person": "fa-solid fa-user",
+        "people.PersonRole": "fa-solid fa-user-check",
+        "people.Role": "fa-solid fa-id-badge",
+        "people.RoleTransitionReason": "fa-solid fa-flag",
+    },
+
+    # Sidebar ordering within the app
+    "order_with_respect_to": {
+        "people": ["PersonRole", "Person", "RoleTransitionReason", "Role"],
+    },
+
+    # Hide historical models from menu
+    "hide_models": [
+        "people.HistoricalPerson",
+        "people.HistoricalRole",
+        "people.HistoricalPersonRole",
+        "people.HistoricalRoleTransitionReason",
+    ],
+
+    # Quality of life
+    "related_modal_active": True,                    # add related objects in a modal
+    "changeform_format": "vertical_tabs",            # or "horizontal_tabs" / "collapsible"
+    "changeform_format_overrides": {
+        "people.person": "collapsible",              # example: person edit as collapsible
+    },
+    "language_chooser": True,                       # header language switcher
+
+    # Custom assets
+    "custom_css": "admin/unihanko.css",
+    "custom_js":  None,
+
+    # Optional: show Jazzmin UI builder (handy for experimenting)
+    # "show_ui_builder": True,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    # Bootswatch theme names: flatly, simplex, cosmo, lumen, slate, darkly, etc.
+    "theme": "flatly",
+    "dark_mode_theme": "darkly",
+
+    # Navbar / sidebar styling
+    "navbar": "navbar-dark bg-primary",
+    "no_navbar_border": True,
+    "brand_small_text": False,
+    "navbar_small_text": False,
+
+    "sidebar": "sidebar-dark-primary",              # or "sidebar-light-primary"
+    "sidebar_nav_small_text": False,
+    "sidebar_nav_child_indent": True,
+    "sidebar_nav_compact_style": True,
+    "sidebar_disable_expand": False,
+
+    # Typography
+    "body_small_text": False,
+    "footer_small_text": False,
+}
+

@@ -1,0 +1,25 @@
+/* tighter cards */
+.card {
+  border-radius: 14px;
+}
+
+/* headings with subtle rule */
+.content-header h1 {
+  letter-spacing: .2px;
+}
+.content-header .breadcrumb li+li::before { content: "›"; }
+
+/* table zebra + hover */
+.table-striped tbody tr:nth-of-type(odd) { background-color: rgba(0,0,0,.02); }
+.table tbody tr:hover { background: rgba(0,0,0,.04); }
+
+/* small pill “Archived” style match */
+.badge-archived {
+  background:#6b7280; color:#fff; border-radius:999px; padding:2px 8px; font-size:11px;
+}
+
+/* topmenu spacing tweak */
+.navbar-nav .nav-link { font-weight: 500; }
+
+/* optional: make side icons a tad larger */
+.nav-sidebar .nav-link .nav-icon { font-size: 1.05rem; }
