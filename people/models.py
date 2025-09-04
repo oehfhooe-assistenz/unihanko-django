@@ -1,15 +1,70 @@
 # people/models.py
+import uuid
+from django.conf import settings
 from django.db import models
+from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
-
+from django.core.exceptions import ValidationError
 
 class Person(models.Model):
-    first_name = models.CharField(_("First name"), max_length=80)
-    last_name  = models.CharField(_("Last name"), max_length=80)
-    email      = models.EmailField(_("Email"), blank=True)
+    class Gender(models.TextChoices):
+        M = "M", _("Male")
+        F = "F", _("Female")
+        D = "D", _("Diverse")
+        X = "X", _("Not specified")
 
-    # Soft archive (no hard deletes policy)
+    # --- Identity ------------------------------------------------------------
+    uuid = models.UUIDField(
+        _("UUID"),
+        default=uuid.uuid4,
+        editable=False,
+        unique=True,
+        help_text=_("Stable system identifier."),
+    )
+    first_name = models.CharField(_("First name"), max_length=80)
+    last_name  = models.CharField(_("Last name"),  max_length=80)
+
+    email         = models.EmailField(_("Email"), blank=True)
+    student_email = models.EmailField(_("Student email"), blank=True)
+
+    # FH-style ("s" + 10 digits) OR federal up to 10 digits
+    matric_no = models.CharField(
+        _("Matriculation number"),
+        max_length=12,  # covers 's' + 10 digits safely
+        blank=True,
+        null=True,
+        validators=[
+            RegexValidator(
+                regex=r"^([sS]\d{9,10}|\d{1,10})$",
+                message=_("Use 's' + 10 digits (FH) or up to 10 digits (federal)."),
+            )
+        ],
+        help_text=_("Example FH: s2210562023 — federal: 52103904"),
+    )
+
+    gender = models.CharField(
+        _("Gender"),
+        max_length=1,
+        choices=Gender.choices,
+        default=Gender.X,
+    )
+
+    notes = models.TextField(_("Notes"), blank=True)
+
+    # Link to Django account (optional)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="person",
+        verbose_name=_("Account"),
+        help_text=_("Link to a Django user account (optional)."),
+    )
+
+    # --- Lifecycle / flags ---------------------------------------------------
+    is_active   = models.BooleanField(_("Active"), default=True)
     archived_at = models.DateTimeField(_("Archived at"), null=True, blank=True)
 
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
@@ -21,6 +76,18 @@ class Person(models.Model):
         ordering = ["last_name", "first_name"]
         verbose_name = _("Person")
         verbose_name_plural = _("People")
+        indexes = [
+            models.Index(fields=["last_name", "first_name"]),
+            models.Index(fields=["matric_no"]),
+        ]
+        # Only enforce uniqueness when a value is present
+        constraints = [
+            models.UniqueConstraint(
+                fields=["matric_no"],
+                name="uq_person_matric_no",
+                condition=models.Q(matric_no__isnull=False),
+            ),
+        ]
 
     def __str__(self):
         return f"{self.last_name}, {self.first_name}"
@@ -28,6 +95,11 @@ class Person(models.Model):
     @property
     def is_archived(self) -> bool:
         return self.archived_at is not None
+
+    @property
+    def is_effectively_active(self) -> bool:
+        """Useful flag for filters: active and not archived."""
+        return self.is_active and not self.is_archived
 
 
 class Role(models.Model):
@@ -46,37 +118,93 @@ class Role(models.Model):
     def __str__(self):
         return self.name
 
-
 class RoleTransitionReason(models.Model):
     """
     Dictionary of reasons for starting/ending/changing an assignment.
-    Store stable codes (e.g., R_00, R_01) and editable human labels.
+    Codes are R_00 ... R_99.
     """
-    code = models.CharField(_("Code"), max_length=30, unique=True)   # e.g. "R_00"
-    name = models.CharField(_("Name"), max_length=120)               # e.g. "Eintritt"
+    code = models.CharField(
+        _("Code"),
+        max_length=4,                 # e.g. R_00
+        unique=True,
+        blank=True,                   # allow blank on create → we auto-generate
+        validators=[RegexValidator(
+            regex=r"^R_\d{2}$",
+            message=_("Code must look like R_00 … R_99."),
+        )],
+        help_text=_("Leave empty to auto-generate the next free code (R_00…R_99)."),
+    )
+    name = models.CharField(_("Name"), max_length=120)   # e.g. "Eintritt"
     active = models.BooleanField(_("Active"), default=True)
 
     class Meta:
-        ordering = ["code"]
+        ordering = ["code"]  # zero-padded → lexicographic == numeric
         verbose_name = _("Reason")
         verbose_name_plural = _("Reasons")
 
     def __str__(self):
-        return f"{self.code} — {self.name}"
+        return f"{self.code or '—'} — {self.name}"
+
+    # ---------- helpers ----------
+    @staticmethod
+    def _existing_codes_set():
+        return set(RoleTransitionReason.objects.values_list("code", flat=True))
+
+    @staticmethod
+    def _format_code(n: int) -> str:
+        return f"R_{n:02d}"
+
+    @classmethod
+    def next_free_code(cls) -> str:
+        used = cls._existing_codes_set()
+        for n in range(100):                  # R_00 … R_99
+            c = cls._format_code(n)
+            if c not in used:
+                return c
+        raise ValidationError(_("You have reached the maximum of 100 reasons (R_00…R_99)."))
+
+    # ---------- validations ----------
+    def clean(self):
+        super().clean()
+        # If user typed a code on CREATE (no pk yet), check contiguity
+        if not self.pk and self.code:
+            # normalize uppercase
+            self.code = self.code.upper()
+            if not RegexValidator.regex.pattern if False else None:  # (no-op, keeps IDE quiet)
+                pass
+            # we already have RegexValidator on the field, but guard parse:
+            try:
+                n = int(self.code.split("_")[1])
+            except Exception as exc:
+                raise ValidationError({"code": _("Invalid code format.")}) from exc
+
+            # contiguity: all lower numbers must exist
+            existing = self._existing_codes_set()
+            missing = [self._format_code(i) for i in range(n) if self._format_code(i) not in existing]
+            if missing:
+                raise ValidationError({
+                    "code": _("Cannot create %(code)s because missing previous codes: %(missing)s") % {
+                        "code": self.code,
+                        "missing": ", ".join(missing),
+                    }
+                })
+
+    def save(self, *args, **kwargs):
+        # Auto-generate code if blank
+        if not self.code:
+            self.code = self.next_free_code()
+        else:
+            self.code = self.code.upper()
+        super().save(*args, **kwargs)
+
 
 
 class PersonRole(models.Model):
     person = models.ForeignKey(
-        Person,
-        on_delete=models.PROTECT,
-        related_name="role_assignments",
-        verbose_name=_("Person"),
+        Person, on_delete=models.PROTECT, related_name="role_assignments", verbose_name=_("Person")
     )
     role = models.ForeignKey(
-        Role,
-        on_delete=models.PROTECT,
-        related_name="assignments",
-        verbose_name=_("Role"),
+        Role,   on_delete=models.PROTECT, related_name="assignments",       verbose_name=_("Role")
     )
 
     # Core dates
@@ -89,11 +217,8 @@ class PersonRole(models.Model):
 
     # Why did this (start/end/change) happen?
     reason = models.ForeignKey(
-        RoleTransitionReason,
-        null=True, blank=True,
-        on_delete=models.SET_NULL,
-        related_name="assignments",
-        verbose_name=_("Reason"),
+        RoleTransitionReason, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="assignments", verbose_name=_("Reason"),
     )
 
     # Per-assignment free-text note
@@ -104,22 +229,15 @@ class PersonRole(models.Model):
     class Meta:
         ordering = ["-start_date", "-id"]
         constraints = [
-            # Prevent duplicate starts for same person+role on same day
-            models.UniqueConstraint(
-                fields=["person", "role", "start_date"],
-                name="uq_person_role_start",
-            ),
-            # End date must be after start date (or be empty)
+            models.UniqueConstraint(fields=["person", "role", "start_date"], name="uq_person_role_start"),
             models.CheckConstraint(
                 check=models.Q(end_date__gte=models.F("start_date")) | models.Q(end_date__isnull=True),
                 name="ck_assignment_dates",
             ),
-            # (Optional) Effective start should be on/after start
             models.CheckConstraint(
                 check=models.Q(effective_start__gte=models.F("start_date")) | models.Q(effective_start__isnull=True),
                 name="ck_effective_after_start",
             ),
-            # (Optional) Effective end should be after effective start
             models.CheckConstraint(
                 check=(
                     models.Q(effective_end__gte=models.F("effective_start")) |
@@ -138,5 +256,4 @@ class PersonRole(models.Model):
 
     @property
     def is_active(self) -> bool:
-        # Active = no end_date
         return self.end_date is None

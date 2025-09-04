@@ -1,25 +1,215 @@
-/* tighter cards */
+/* UniHanko — Admin dark theme + orange accent */
+
+:root{
+  --uh-bg: #0f1216;          /* page background */
+  --uh-panel: #12161b;       /* cards / surfaces */
+  --uh-border: #232a32;      /* hairlines */
+  --uh-text: #e5e7eb;        /* main text */
+  --uh-muted: #9aa3af;       /* secondary text */
+
+  --uh-accent: #ff8a3d;      /* UniHanko orange */
+  --uh-accent-600: #ff9d5d;
+  --uh-accent-700: #e07931;
+}
+
+/* ---- Global surfaces ---- */
+.wrapper,
+.content-wrapper,
+.main-footer { background: var(--uh-bg); color: var(--uh-text); }
+
+a { color: var(--uh-accent); text-decoration-color: var(--uh-accent); }
+a:hover { color: var(--uh-accent-600); text-decoration-color: var(--uh-accent-600); }
+
+/* ---- Navbar ---- */
+.navbar, .navbar-dark {
+  background: var(--uh-panel) !important;
+  border-bottom: 1px solid var(--uh-border);
+}
+.navbar .nav-link { color: var(--uh-text); font-weight: 500; }
+.navbar .nav-link:hover { opacity: .92; }
+
+/* ---- Sidebar ---- */
+.main-sidebar { background: var(--uh-panel); }
+.brand-link { background: var(--uh-panel); border-bottom: 1px solid var(--uh-border); }
+.nav-sidebar .nav-link { color: var(--uh-muted); }
+.nav-sidebar .nav-link:hover { color: var(--uh-text); background: rgba(255,255,255,.03); }
+
+/* Active item = orange pill */
+.sidebar-dark-primary .nav-sidebar>.nav-item>.nav-link.active{
+  background: var(--uh-accent) !important;
+  color:#101010 !important;
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.12);
+}
+
+/* ---- Cards ---- */
 .card {
+  background: var(--uh-panel);
+  color: var(--uh-text);
+  border: 1px solid var(--uh-border);
   border-radius: 14px;
+  box-shadow: none;
+}
+.card .card-header { border-bottom: 1px solid var(--uh-border); }
+.content-header h1 { letter-spacing:.2px; }
+
+/* ---- Tables ---- */
+.table { color: var(--uh-text); }
+.table thead th { border-bottom: 1px solid var(--uh-border); }
+.table td, .table th { border-top: 1px solid var(--uh-border); }
+.table-striped tbody tr:nth-of-type(odd){ background: rgba(255,255,255,.02); }
+.table tbody tr:hover { background: rgba(255,255,255,.04); }
+
+/* ---- Forms ---- */
+.form-control, .custom-select, .select2-container--bootstrap4 .select2-selection {
+  background: #0f1317; color: var(--uh-text);
+  border: 1px solid var(--uh-border);
+}
+.form-control:focus, .custom-select:focus,
+.select2-container--bootstrap4.select2-container--open .select2-selection {
+  border-color: var(--uh-accent);
+  box-shadow: 0 0 0 .2rem rgba(255,138,61,.25);
+}
+input::placeholder, textarea::placeholder { color: #8a919a; }
+
+/* ---- Buttons (accent as “primary”) ---- */
+.btn-primary, .bg-primary {
+  background-color: var(--uh-accent) !important;
+  border-color: var(--uh-accent) !important;
+  color:#101010 !important;
+}
+.btn-primary:hover {
+  background-color: var(--uh-accent-600) !important;
+  border-color: var(--uh-accent-600) !important;
+}
+.btn-outline-primary{
+  border-color: var(--uh-accent); color: var(--uh-accent);
+}
+.btn-outline-primary:hover{
+  background: var(--uh-accent); color:#101010; border-color: var(--uh-accent);
 }
 
-/* headings with subtle rule */
-.content-header h1 {
-  letter-spacing: .2px;
-}
-.content-header .breadcrumb li+li::before { content: "›"; }
-
-/* table zebra + hover */
-.table-striped tbody tr:nth-of-type(odd) { background-color: rgba(0,0,0,.02); }
-.table tbody tr:hover { background: rgba(0,0,0,.04); }
-
-/* small pill “Archived” style match */
+/* ---- Badges, pills ---- */
+.badge-primary { background: var(--uh-accent); color:#101010; }
 .badge-archived {
   background:#6b7280; color:#fff; border-radius:999px; padding:2px 8px; font-size:11px;
 }
 
-/* topmenu spacing tweak */
-.navbar-nav .nav-link { font-weight: 500; }
+/* ---- Pagination ---- */
+.page-item.active .page-link {
+  background: var(--uh-accent); border-color: var(--uh-accent); color:#101010;
+}
+.page-link { background: transparent; border-color: var(--uh-border); color: var(--uh-text); }
+.page-link:hover { background: rgba(255,255,255,.05); color: var(--uh-text); }
 
-/* optional: make side icons a tad larger */
-.nav-sidebar .nav-link .nav-icon { font-size: 1.05rem; }
+/* ---- Login screen ---- */
+.login-page, .register-page { background: var(--uh-bg); }
+.login-card-body, .register-card-body {
+  background: var(--uh-panel); color: var(--uh-text);
+  border: 1px solid var(--uh-border);
+}
+.login-logo a { color: var(--uh-text); }
+
+/* ---- Misc polish ---- */
+.small-box { background: var(--uh-panel); color: var(--uh-text); border: 1px solid var(--uh-border); }
+.nav-sidebar .nav-link .nav-icon { font-size:1.05rem; }
+
+/* 1) Map Bootstrap/Jazzmin "primary" to UniHanko orange (kills Darkly blue) */
+.text-primary { color: var(--uh-accent) !important; }
+a.text-primary:hover, a.text-primary:focus { color: var(--uh-accent-600) !important; }
+
+/* Also update nav pills (if you ever use them) */
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+  background-color: var(--uh-accent) !important;
+  border-color: var(--uh-accent) !important;
+  color: #101010 !important;
+}
+
+/* 2) Tile view: force tile titles to use the accent, even if .text-primary is present */
+.tile a,
+.tile a:visited,
+.tile a.text-primary,
+.tile a.text-primary:visited {
+  color: var(--uh-accent) !important;
+  text-decoration-color: var(--uh-accent) !important;
+}
+.tile a:hover { color: var(--uh-accent-600) !important; text-decoration-color: var(--uh-accent-600) !important; }
+
+/* === UniHanko link palette — kill Darkly blue everywhere === */
+
+/* Generic links */
+a:not(.btn),
+.content a:not(.btn),
+.card a:not(.btn),
+.module a:not(.btn),
+.results a:not(.btn),
+.table a:not(.btn),
+.paginator a,
+.breadcrumb a,
+.alert a,
+.alert .alert-link,
+.link-primary,
+.text-primary {
+  color: var(--uh-accent) !important;
+  text-decoration-color: var(--uh-accent) !important;
+}
+a:not(.btn):hover,
+.content a:not(.btn):hover,
+.card a:not(.btn):hover,
+.table a:not(.btn):hover,
+.paginator a:hover,
+.breadcrumb a:hover,
+.alert a:hover {
+  color: var(--uh-accent-600) !important;
+  text-decoration-color: var(--uh-accent-600) !important;
+}
+a:focus-visible { outline: 2px solid var(--uh-accent); outline-offset: 2px; }
+
+/* Keep destructive links red */
+a.text-danger, .text-danger a { color: #ef4444 !important; }
+
+/* Table headers that use "primary" */
+th a, .nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+  color: var(--uh-accent) !important;
+  text-decoration-color: var(--uh-accent) !important;
+}
+.nav-pills .nav-link.active {
+  background-color: var(--uh-accent) !important;
+  border-color: var(--uh-accent) !important;
+  color: #101010 !important;
+}
+
+/* “Add another”, related widget links */
+.related-widget-wrapper-link a,
+.addlink a { color: var(--uh-accent) !important; }
+
+.help-block { color: white !important; }
+
+/* Force success-banner links to be white (override global orange) */
+.alert.alert-success a:not(.btn),
+.alert.alert-success .alert-link,
+div.alert-success a:not(.btn),
+.messages .alert-success a:not(.btn) {
+  color: #ffffff !important;
+  text-decoration-color: rgba(255,255,255,.9) !important;
+}
+.alert.alert-success a:not(.btn):hover,
+div.alert-success a:not(.btn):hover,
+.messages .alert-success a:not(.btn):hover {
+  color: #f3f4f6 !important;
+  text-decoration-color: #f3f4f6 !important;
+}
+
+/* Optional: make the close “×” in success alerts lighter */
+.alert.alert-success .close,
+div.alert-success .close { color: #e8fff0; opacity: .9; }
+
+/* Add ÖH logo under the login card */
+.login-page .login-logo::after{
+  content:"";
+  display:block;
+  width: 30px; height: 30px;
+  max-width: 30px; max-height: 30px;
+  margin: .5rem auto 0;
+  background: url("../img/unihanko-mark.svg") center/contain no-repeat;
+  opacity:.9;
+}

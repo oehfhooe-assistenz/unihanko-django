@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+    'django.contrib.flatpages',
     'import_export',
     'simple_history',
     'django_object_actions',
@@ -53,6 +55,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -61,7 +64,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'simple_history.middleware.HistoryRequestMiddleware',
 ]
-
+SITE_ID = 1
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
@@ -72,6 +75,7 @@ TEMPLATES = [
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
+                'django.template.context_processors.i18n',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
@@ -124,8 +128,8 @@ USE_I18N = True
 USE_TZ = True
 
 LANGUAGES = [
-    ("en", "English"),
-    ("de", "Deutsch"),
+    ("en-gb", "English (UK)"),
+    ("de-at", "Deutsch (Österreich)"),
 ]
 
 LOCALE_PATHS = [BASE_DIR / "locale"]
@@ -205,11 +209,11 @@ JAZZMIN_SETTINGS = {
 
 JAZZMIN_UI_TWEAKS = {
     # Bootswatch theme names: flatly, simplex, cosmo, lumen, slate, darkly, etc.
-    "theme": "flatly",
+    "theme": "darkly",
     "dark_mode_theme": "darkly",
 
     # Navbar / sidebar styling
-    "navbar": "navbar-dark bg-primary",
+    "navbar": "navbar-dark",
     "no_navbar_border": True,
     "brand_small_text": False,
     "navbar_small_text": False,

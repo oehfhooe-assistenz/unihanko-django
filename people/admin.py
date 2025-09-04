@@ -20,8 +20,34 @@ from core.pdf import render_pdf_response
 class PersonResource(resources.ModelResource):
     class Meta:
         model = Person
-        fields = ("id", "last_name", "first_name", "email", "archived_at", "created_at", "updated_at")
-        export_order = ("id", "last_name", "first_name", "email", "archived_at", "created_at", "updated_at")
+        fields = (
+            "id",
+            "uuid",
+            "last_name",
+            "first_name",
+            "email",
+            "student_email",
+            "matric_no",
+            "gender",
+            "is_active",
+            "archived_at",
+            "created_at",
+            "updated_at",
+        )
+        export_order = (
+            "id",
+            "uuid",
+            "last_name",
+            "first_name",
+            "email",
+            "student_email",
+            "matric_no",
+            "gender",
+            "is_active",
+            "archived_at",
+            "created_at",
+            "updated_at",
+        )
 
 
 class RoleResource(resources.ModelResource):
@@ -135,11 +161,46 @@ class PersonRoleInline(admin.TabularInline):
 @admin.register(Person)
 class PersonAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [PersonResource]
-    list_display = ("last_name", "first_name", "email", "archived_badge", "active_roles")
-    search_fields = ("first_name", "last_name", "email")
-    list_filter = (ActiveAssignmentFilter,)
+
+    list_display = (
+        "last_name",
+        "first_name",
+        "email",
+        "student_email",
+        "matric_no",
+        "gender",
+        "is_active",
+        "user",
+        "archived_badge",
+        "active_roles",
+    )
+    list_filter = (ActiveAssignmentFilter, "gender", "is_active")
+    search_fields = ("first_name", "last_name", "email", "student_email", "matric_no")
+    autocomplete_fields = ("user",)
+    readonly_fields = ("uuid", "created_at", "updated_at")
     inlines = [PersonRoleInline]
     actions = ("archive_selected", "unarchive_selected", "export_selected_pdf")
+
+    fieldsets = (
+        (_("Identity"), {
+            "fields": (("first_name", "last_name"), "uuid", "gender", "notes"),
+        }),
+        (_("Contacts"), {
+            "fields": (("email", "student_email"),),
+        }),
+        (_("University"), {
+            "fields": ("matric_no",),
+        }),
+        (_("Account link"), {
+            "fields": ("user",),
+        }),
+        (_("Status"), {
+            "fields": (("is_active", "archived_at"),),
+        }),
+        (_("Timestamps"), {
+            "fields": (("created_at", "updated_at"),),
+        }),
+    )
 
     # Keep the list clean: hide archived by default
     def get_queryset(self, request):
@@ -230,15 +291,22 @@ class ReasonAdmin(ImportExportModelAdmin):
     list_filter = ("active",)
     search_fields = ("code", "name")
 
+    def get_readonly_fields(self, request, obj=None):
+        # Once created, keep code immutable (prevents renumbering chaos)
+        if obj:
+            return ("code",)
+        return ()
+
     def get_model_perms(self, request):
         if request.user.groups.filter(name="module:personnel:manager").exists():
             return super().get_model_perms(request)
-        # Editors can still have 'view' permission (for autocomplete), but we hide the sidebar entry
+        # Editors may still have 'view' permission for autocomplete, but hide menu entry
         return {}
 
     def has_delete_permission(self, request, obj=None):
         # Safer to disable hard deletes for dictionary rows, too
         return False
+
 
 
 # =========================

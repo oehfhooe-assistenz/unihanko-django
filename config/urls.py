@@ -16,11 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from core import views as core_views
 
 admin.site.index_title = "Dashboard"
 
 urlpatterns = [
-    path("i18n/", include("django.conf.urls.i18n")),
-    path("", include("core.urls")),
+    path('i18n/', include('django.conf.urls.i18n')),
+    path('', core_views.home, name='home'),
     path('admin/', admin.site.urls),
 ]
