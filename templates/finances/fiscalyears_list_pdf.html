@@ -1,0 +1,30 @@
+{% extends "pdf/base.html" %}
+
+{% block pdf_title %}Fiscal Years – UniHanko{% endblock %}
+{% block header_title %}Fiscal Years{% endblock %}
+{% block header_subtitle %}Current list{% endblock %}
+{% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %}
+
+{% block content %}
+  <h2 style="margin: 0 0 6px 0;">All entries</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Code</th><th>Start</th><th>End</th><th>Active</th><th>Label</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for fy in rows %}
+        <tr>
+          <td>{{ fy.display_code }}</td>
+          <td>{{ fy.start }}</td>
+          <td>{{ fy.end }}</td>
+          <td>{{ fy.is_active|yesno:"Yes,No" }}</td>
+          <td>{{ fy.label|default:"—" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">No entries.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

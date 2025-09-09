@@ -215,11 +215,18 @@ class PersonRole(models.Model):
     effective_start = models.DateField(_("Effective start"), null=True, blank=True)
     effective_end   = models.DateField(_("Effective end"),   null=True, blank=True)
 
-    # Why did this (start/end/change) happen?
-    reason = models.ForeignKey(
+    # NEW: reasons per boundary
+    start_reason = models.ForeignKey(
         RoleTransitionReason, null=True, blank=True, on_delete=models.SET_NULL,
-        related_name="assignments", verbose_name=_("Reason"),
+        related_name="assignments_started", verbose_name=_("Start reason"),
+        help_text=_("Why this assignment started (e.g. Eintritt)."),
     )
+    end_reason = models.ForeignKey(
+        RoleTransitionReason, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="assignments_ended", verbose_name=_("End reason"),
+        help_text=_("Why this assignment ended (e.g. Austritt). Required when an end date is set."),
+    )
+    
 
     # Per-assignment free-text note
     notes = models.TextField(_("Notes"), blank=True)
@@ -230,21 +237,38 @@ class PersonRole(models.Model):
         ordering = ["-start_date", "-id"]
         constraints = [
             models.UniqueConstraint(fields=["person", "role", "start_date"], name="uq_person_role_start"),
+
+            # end_date must be after start_date (if present)
             models.CheckConstraint(
                 check=models.Q(end_date__gte=models.F("start_date")) | models.Q(end_date__isnull=True),
                 name="ck_assignment_dates",
             ),
+
+            # effective dates sanity
             models.CheckConstraint(
                 check=models.Q(effective_start__gte=models.F("start_date")) | models.Q(effective_start__isnull=True),
                 name="ck_effective_after_start",
             ),
             models.CheckConstraint(
-                check=(
-                    models.Q(effective_end__gte=models.F("effective_start")) |
-                    models.Q(effective_end__isnull=True) |
-                    models.Q(effective_start__isnull=True)
-                ),
+                check=(models.Q(effective_end__gte=models.F("effective_start")) |
+                       models.Q(effective_end__isnull=True) |
+                       models.Q(effective_start__isnull=True)),
                 name="ck_effective_order",
+            ),
+
+            # NEW: (end_date is NULL) <=> (end_reason is NULL)
+            models.CheckConstraint(
+                check=(models.Q(end_date__isnull=True, end_reason__isnull=True) |
+                       models.Q(end_date__isnull=False, end_reason__isnull=False)),
+                name="ck_end_reason_iff_end_date",
+            ),
+
+            # NEW: start_reason != end_reason when both set
+            models.CheckConstraint(
+                check=(models.Q(start_reason__isnull=True) |
+                       models.Q(end_reason__isnull=True) |
+                       ~models.Q(start_reason_id=models.F("end_reason_id"))),
+                name="ck_reasons_not_equal",
             ),
         ]
         verbose_name = _("Assignment")
@@ -257,3 +281,18 @@ class PersonRole(models.Model):
     @property
     def is_active(self) -> bool:
         return self.end_date is None
+
+    # Optional server-side form validation niceties (admin will show nicer errors)
+    def clean(self):
+        super().clean()
+        errors = {}
+
+        if self.end_date and not self.end_reason:
+            errors["end_reason"] = _("End reason is required when an end date is set.")
+        if not self.end_date and self.end_reason:
+            errors["end_reason"] = _("Remove end reason unless you set an end date.")
+        if self.start_reason_id and self.end_reason_id and self.start_reason_id == self.end_reason_id:
+            errors["end_reason"] = _("Start and end reason cannot be the same.")
+        if errors:
+            from django.core.exceptions import ValidationError
+            raise ValidationError(errors)

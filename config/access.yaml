@@ -17,4 +17,17 @@ groups:
       people.Role:               [view, add, change]
       people.RoleTransitionReason: [view, add, change]
     custom_perms: {}
+  
+  "module:finances:editor":
+    inherits: []
+    models:
+      finances.FiscalYear:       [view, add, change]
+    custom_perms: {}
+
+  "module:finances:manager":
+    inherits:
+      - "module:finances:editor"
+    models: {}
+    custom_perms: {} 
+
 

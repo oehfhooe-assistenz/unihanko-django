@@ -65,10 +65,10 @@ class RoleTransitionReasonResource(resources.ModelResource):
 
 
 class PersonRoleResource(resources.ModelResource):
-    # Export/import by raw FK ids (simple & reliable), plus a friendly reason_code column
     person_id = fields.Field(attribute="person_id", column_name="person_id")
     role_id = fields.Field(attribute="role_id", column_name="role_id")
-    reason_code = fields.Field(column_name="reason_code")
+    start_reason_code = fields.Field(column_name="start_reason_code")
+    end_reason_code   = fields.Field(column_name="end_reason_code")
 
     class Meta:
         model = PersonRole
@@ -80,24 +80,34 @@ class PersonRoleResource(resources.ModelResource):
             "end_date",
             "effective_start",
             "effective_end",
-            "reason_code",
+            "start_reason_code",
+            "end_reason_code",
             "notes",
         )
         export_order = fields
 
-    # show reason code when exporting
-    def dehydrate_reason_code(self, obj):
-        return obj.reason.code if obj.reason_id else ""
+    # export codes
+    def dehydrate_start_reason_code(self, obj):
+        return obj.start_reason.code if obj.start_reason_id else ""
 
-    # allow import by reason_code (optional convenience)
+    def dehydrate_end_reason_code(self, obj):
+        return obj.end_reason.code if obj.end_reason_id else ""
+
+    # allow import by codes (optional convenience)
     def before_import_row(self, row, **kwargs):
-        code = (row.get("reason_code") or "").strip()
-        if code:
+        from .models import RoleTransitionReason
+        code_s = (row.get("start_reason_code") or "").strip()
+        code_e = (row.get("end_reason_code") or "").strip()
+        if code_s:
             try:
-                row["reason_id"] = RoleTransitionReason.objects.only("id").get(code=code).id
+                row["start_reason_id"] = RoleTransitionReason.objects.only("id").get(code=code_s).id
             except RoleTransitionReason.DoesNotExist:
-                # leave reason blank if unknown code
-                row["reason_id"] = ""
+                row["start_reason_id"] = ""
+        if code_e:
+            try:
+                row["end_reason_id"] = RoleTransitionReason.objects.only("id").get(code=code_e).id
+            except RoleTransitionReason.DoesNotExist:
+                row["end_reason_id"] = ""
 
 
 # =========================
@@ -147,10 +157,11 @@ class PersonRoleInline(admin.TabularInline):
         "end_date",
         "effective_start",
         "effective_end",
-        "reason",
+        "start_reason",
+        "end_reason",
         "notes",
     )
-    autocomplete_fields = ("role", "reason")
+    autocomplete_fields = ("role", "start_reason", "end_reason")
     can_delete = False
     show_change_link = True
 
@@ -322,12 +333,13 @@ class PersonRoleAdmin(ImportExportModelAdmin, SimpleHistoryAdmin):
         "end_date",
         "effective_start",
         "effective_end",
-        "reason",
+        "start_reason",
+        "end_reason",
         "short_notes",
     )
-    list_filter = (ActiveFilter, "role", "reason", "start_date", "end_date")
+    list_filter = (ActiveFilter, "role", "start_reason", "end_reason", "start_date", "end_date")
     search_fields = ("person__last_name", "person__first_name", "role__name", "notes")
-    autocomplete_fields = ("person", "role", "reason")
+    autocomplete_fields = ("person", "role", "start_reason", "end_reason")
     actions = ["offboard_today"]
 
     def has_delete_permission(self, request, obj=None):
@@ -339,16 +351,16 @@ class PersonRoleAdmin(ImportExportModelAdmin, SimpleHistoryAdmin):
 
     @admin.action(description=_("Offboard selected (end today, set default reason if empty)"))
     def offboard_today(self, request, queryset):
-        # If you seed R_01 = "Austritt", this will be used as a default when reason is missing
-        default_reason = RoleTransitionReason.objects.filter(code="R_01", active=True).first()
+        # If you seed R_01 = "Austritt", this will be used as a default when end_reason is missing
+        default_end = RoleTransitionReason.objects.filter(code="R_01", active=True).first()
         q = queryset.filter(end_date__isnull=True)
         updated = 0
         today = timezone.localdate()
         for pr in q:
             pr.end_date = today
-            if default_reason and not pr.reason_id:
-                pr.reason = default_reason
-            pr.save(update_fields=["end_date", "reason"])
+            if default_end and not pr.end_reason_id:
+                pr.end_reason = default_end
+            pr.save(update_fields=["end_date", "end_reason"])
             updated += 1
         self.message_user(
             request,

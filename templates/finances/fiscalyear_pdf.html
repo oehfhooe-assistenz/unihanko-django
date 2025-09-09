@@ -1,0 +1,21 @@
+{% extends "pdf/base.html" %}
+
+{% block pdf_title %}Fiscal Year — {{ fy.display_code }}{% endblock %}
+{% block header_title %}Fiscal Year{% endblock %}
+{% block header_subtitle %}{{ fy.display_code }}{% endblock %}
+{% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %}
+
+{% block content %}
+  <h2 style="margin:0 0 8px 0;">Details</h2>
+  <table>
+    <tbody>
+      <tr><th style="width:140px;">Code</th><td>{{ fy.display_code }} <span style="color:#666;">(stored: {{ fy.code }})</span></td></tr>
+      <tr><th>Start</th><td>{{ fy.start }}</td></tr>
+      <tr><th>End</th><td>{{ fy.end }}</td></tr>
+      <tr><th>Active</th><td>{{ fy.is_active|yesno:"Yes,No" }}</td></tr>
+      <tr><th>Label</th><td>{{ fy.label|default:"—" }}</td></tr>
+      <tr><th>Created</th><td>{{ fy.created_at|date:"Y-m-d H:i" }}</td></tr>
+      <tr><th>Updated</th><td>{{ fy.updated_at|date:"Y-m-d H:i" }}</td></tr>
+    </tbody>
+  </table>
+{% endblock %}

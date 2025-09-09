@@ -48,8 +48,9 @@ INSTALLED_APPS = [
     'django_object_actions',
     'django_renderpdf',
 
-    'people',
     'core',
+    'people',
+    'finances',
 ]
 
 MIDDLEWARE = [
@@ -158,8 +159,10 @@ JAZZMIN_SETTINGS = {
 
     # Quick nav
     "topmenu_links": [
-        {"name": "Onboarding",  "url": "/admin/people/personrole/add/",       "permissions": ["people.add_personrole"]},
-        {"name": "Offboarding", "url": "/admin/people/personrole/?active=1",  "permissions": ["people.change_personrole"]},
+        {"name": "Onboarding",  "url": "/admin/people/personrole/add/", "permissions": ["people.add_personrole"]},
+        {"name": "Offboarding", "url": "/admin/people/personrole/?active=1", "permissions": ["people.change_personrole"]},
+        {"name": "Fiscal Years", "url": "/admin/finances/fiscalyear/", "permissions": ["finances.view_fiscalyear"]},
+        {"name": "Add Fiscal Year", "url": "/admin/finances/fiscalyear/add/", "permissions": ["finances.add_fiscalyear"]},
         # examples you can add later:
         # {"app": "people"},                               # jump to the Personnel section
         # {"name": "Public site", "url": "/", "new_window": True},
@@ -176,11 +179,14 @@ JAZZMIN_SETTINGS = {
         "people.PersonRole": "fa-solid fa-user-check",
         "people.Role": "fa-solid fa-id-badge",
         "people.RoleTransitionReason": "fa-solid fa-flag",
+        "finances": "fa-solid fa-calculator",
+        "finances.FiscalYear": "fa-solid fa-calendar-check",
     },
 
     # Sidebar ordering within the app
     "order_with_respect_to": {
         "people": ["PersonRole", "Person", "RoleTransitionReason", "Role"],
+        "finances": ["FiscalYear"],
     },
 
     # Hide historical models from menu
@@ -189,6 +195,7 @@ JAZZMIN_SETTINGS = {
         "people.HistoricalRole",
         "people.HistoricalPersonRole",
         "people.HistoricalRoleTransitionReason",
+        "finances.HistoricalFiscalYear",
     ],
 
     # Quality of life
@@ -201,7 +208,7 @@ JAZZMIN_SETTINGS = {
 
     # Custom assets
     "custom_css": "admin/unihanko.css",
-    "custom_js":  None,
+    "custom_js":  "admin/help-button.js",
 
     # Optional: show Jazzmin UI builder (handy for experimenting)
     # "show_ui_builder": True,

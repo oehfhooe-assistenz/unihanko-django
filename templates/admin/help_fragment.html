@@ -1,0 +1,7 @@
+{% load i18n md %}
+<div class="uh-help-head">
+  <strong>{{ page.title|default:_("Help") }}</strong>
+</div>
+<div class="uh-help-body">
+  {{ page.content|markdown }}
+</div>

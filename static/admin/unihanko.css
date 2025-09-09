@@ -123,6 +123,9 @@ a.text-primary:hover, a.text-primary:focus { color: var(--uh-accent-600) !import
   border-color: var(--uh-accent) !important;
   color: #101010 !important;
 }
+.dark-mode select {
+  color: #101010 !important;
+}
 
 /* 2) Tile view: force tile titles to use the accent, even if .text-primary is present */
 .tile a,
@@ -212,4 +215,95 @@ div.alert-success .close { color: #e8fff0; opacity: .9; }
   margin: .5rem auto 0;
   background: url("../img/unihanko-mark.svg") center/contain no-repeat;
   opacity:.9;
+}
+
+/* Select2 (autocomplete) — dark mode */
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple,
+.select2-container .select2-selection--single,
+.select2-container .select2-selection--multiple,
+.select2-container--admin-autocomplete .select2-selection--single,
+.select2-container--bootstrap4 .select2-selection {
+  background-color: #0f1317 !important;           /* matches --uh-form bg */
+  border: 1px solid var(--uh-border, #232a32) !important;
+  color: var(--uh-text, #e5e7eb) !important;
+  min-height: 38px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered,
+.select2-container--default .select2-selection--multiple .select2-selection__rendered,
+.select2-container .select2-selection--single .select2-selection__rendered {
+  color: var(--uh-text, #e5e7eb) !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__placeholder,
+.select2-selection__placeholder {
+  color: var(--uh-muted, #9aa3af) !important;
+}
+
+/* Dropdown panel */
+.select2-dropdown {
+  background-color: #0f1317 !important;
+  border: 1px solid var(--uh-border, #232a32) !important;
+}
+.select2-results__option { color: var(--uh-text, #e5e7eb); }
+.select2-results__option--highlighted {
+  background: var(--uh-accent, #ff8a3d) !important;
+  color: #101010 !important;
+}
+
+/* Clear/arrow icons inherit color */
+.select2-selection__clear, .select2-selection__arrow b {
+  border-color: var(--uh-text, #e5e7eb) transparent transparent transparent !important;
+}
+
+/* global nuke (optional): hide related action icons everywhere */
+.related-widget-wrapper .related-widget-wrapper-link { display:none !important; }
+
+/* Make help content (markdown) a bit more readable inside admin cards */
+.prose h1, .prose h2, .prose h3 { margin-top: .2rem; }
+.prose p { margin: .5rem 0; }
+.prose ul, .prose ol { margin-left: 1.25rem; }
+
+/* Global floating Help button in admin */
+#uh-help-fab{
+  position: fixed; right: 20px; bottom: 60px;
+  width: 44px; height: 44px; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--uh-accent, #ff8a3d);
+  color: #101010 !important; font-weight: 800; text-decoration: none ;
+  box-shadow: 0 6px 18px rgba(0,0,0,.28);
+  z-index: 5000; transition: transform .15s ease, box-shadow .15s ease;
+}
+#uh-help-fab:hover{ transform: translateY(-1px) scale(1.04); box-shadow: 0 10px 22px rgba(0,0,0,.34); }
+
+
+/* === Admin Help modal === */
+#uh-help-overlay{
+  position: fixed; inset: 0; z-index: 6000;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(2px);
+  display: none; align-items: center; justify-content: center;
+}
+#uh-help-box{
+  position: relative;
+  width: min(900px, 92vw);
+  max-height: 85vh;
+  overflow: auto;
+  background: #0f1317;
+  border: 1px solid var(--uh-border, #232a32);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+#uh-help-box .uh-help-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--uh-border, #232a32);
+  font-size: 1.05rem;
+}
+#uh-help-box .uh-help-body{
+  padding: 16px; line-height: 1.6;
+}
+#uh-help-box .uh-help-close{
+  border: 0; background: transparent; color: #e5e7eb;
+  font-size: 20px; cursor: pointer;
 }

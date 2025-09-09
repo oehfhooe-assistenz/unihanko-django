@@ -1,0 +1,29 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static md %} {# and your markdown tag library if you have one #}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans "Home" %}</a> ›
+    <span class="current">{% trans "Help" %} — {{ app_label }}.{{ model_name }}</span>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="card" style="max-width: 1000px;">
+    <div class="card-header">
+      <h3 class="card-title" style="margin:0;">
+        {% if page.title %}{{ page.title }}{% else %}{% trans "Help" %}{% endif %}
+      </h3>
+    </div>
+    <div class="card-body prose">
+      {# Prefer Markdown if available, otherwise render as safe HTML #}
+      {% if page.content %}
+        {% if page.content|default_if_none:"" %}
+          {{ page.content|markdown|default:page.content|safe }}
+        {% endif %}
+      {% else %}
+        <p class="text-muted">{% trans "No content." %}</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
