@@ -63,6 +63,7 @@ class FiscalYear(models.Model):
     )
 
     is_active = models.BooleanField(_("Active"), default=False)
+    is_locked = models.BooleanField(_("Locked"), default=False, help_text=_("Locked years are read-only."))
 
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
@@ -88,6 +89,12 @@ class FiscalYear(models.Model):
                 fields=["start", "end"],
                 name="uq_fy_span",
             ),
+            # Don't allow more than one active FY
+            models.UniqueConstraint(
+                fields=["is_active"],
+                condition=models.Q(is_active=True),
+                name="uq_fy_single_active_true",
+            )
         ]
 
     # display helpers
@@ -99,9 +106,25 @@ class FiscalYear(models.Model):
     def __str__(self) -> str:
         return self.display_code()
 
-    # validation + autofill
     def clean(self):
         errors = {}
+
+        # If this row already exists and is locked, block changes to key fields
+        if self.pk:
+            try:
+                original = FiscalYear.objects.get(pk=self.pk)
+            except FiscalYear.DoesNotExist:
+                original = None
+            if original and original.is_locked:
+                protected = ("start", "end", "label", "code", "is_active")
+                changed = [f for f in protected if getattr(self, f) != getattr(original, f)]
+                if changed:
+                    errors["is_locked"] = _("This fiscal year is locked. You cannot change: %(fields)s.") % {
+                        "fields": ", ".join(changed)
+                    }
+                # allow toggling is_locked itself; nothing else
+
+        # Normal validations / autofill
         if not self.start:
             errors["start"] = _("Start is required.")
         if not errors:
@@ -109,6 +132,7 @@ class FiscalYear(models.Model):
                 self.end = auto_end_from_start(self.start)
             if self.end <= self.start:
                 errors["end"] = _("End must be after start.")
+
         if errors:
             raise ValidationError(errors)
 

@@ -21,13 +21,14 @@ groups:
   "module:finances:editor":
     inherits: []
     models:
-      finances.FiscalYear:       [view, add, change]
+      finances.FiscalYear:       [view]
     custom_perms: {}
 
   "module:finances:manager":
     inherits:
       - "module:finances:editor"
-    models: {}
+    models:
+      finances.FiscalYear:      [view, add, change]
     custom_perms: {} 
 
 

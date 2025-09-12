@@ -1,29 +1,36 @@
 {% extends "pdf/base.html" %}
+{% load i18n %}
 
-{% block pdf_title %}Fiscal Years – UniHanko{% endblock %}
-{% block header_title %}Fiscal Years{% endblock %}
-{% block header_subtitle %}Current list{% endblock %}
+{% block pdf_title %}{% trans "Fiscal years" %} – UniHanko{% endblock %}
+{% block header_title %}{% trans "Fiscal years" %}{% endblock %}
+{% block header_subtitle %}{% trans "Current list" %}{% endblock %}
 {% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %}
 
 {% block content %}
-  <h2 style="margin: 0 0 6px 0;">All entries</h2>
+  <h2 style="margin: 0 0 6px 0;">{% trans "All entries" %}</h2>
   <table>
     <thead>
       <tr>
-        <th>Code</th><th>Start</th><th>End</th><th>Active</th><th>Label</th>
+        <th>{% trans "Identifier" %}</th>
+        <th>{% trans "Start" %}</th>
+        <th>{% trans "End" %}</th>
+        <th>{% trans "Active" %}</th>
+        <th>{% trans "Locked" %}</th>
+        <th>{% trans "Label" %}</th>
       </tr>
     </thead>
     <tbody>
       {% for fy in rows %}
         <tr>
           <td>{{ fy.display_code }}</td>
-          <td>{{ fy.start }}</td>
-          <td>{{ fy.end }}</td>
-          <td>{{ fy.is_active|yesno:"Yes,No" }}</td>
+          <td>{{ fy.start|date:"j. F Y" }}</td>
+          <td>{{ fy.end|date:"j. F Y" }}</td>
+          <td>{% if fy.is_active %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
+          <td>{% if fy.is_locked %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
           <td>{{ fy.label|default:"—" }}</td>
         </tr>
       {% empty %}
-        <tr><td colspan="5">No entries.</td></tr>
+        <tr><td colspan="6">{% trans "No entries." %}</td></tr>
       {% endfor %}
     </tbody>
   </table>

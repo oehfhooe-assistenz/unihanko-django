@@ -1,4 +1,4 @@
-{% load static %}
+{% load static i18n tz %}
 <!doctype html>
 <html>
 <head>
@@ -6,58 +6,148 @@
   <title>{% block pdf_title %}UniHanko PDF{% endblock %}</title>
 
   <style>
-    /* Page setup + running header/footer + page numbers */
+    /* -------- Paged setup -------- */
     @page {
       size: A4;
-      margin: 24mm 15mm 20mm 15mm; /* top, right, bottom, left */
-      @top-center { content: element(page-header); }
+      margin: 26mm 15mm 20mm 15mm; /* top, right, bottom, left */
+      @top-center { content: element(header-std); }
       @bottom-left { content: element(page-footer); }
-      @bottom-right { content: "Page " counter(page) " of " counter(pages); }
+      @bottom-right { content: counter(page) " / " counter(pages); }
+    }
+    /* First page gets the hero header */
+    @page:first {
+      margin-top: 42mm;
+      @top-center { content: element(header-hero); }
     }
 
-    /* Base styles */
-    :root { --brand: #0f766e; --muted: #6b7280; }
-    html, body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 12px; color: #111; }
-    h1, h2, h3 { margin: 0 0 8px 0; }
+    /* -------- Base tokens -------- */
+    :root{
+      --brand: #f97316; /* UniHanko orange */
+      --ink: #111;
+      --muted: #6b7280;
+      --rule: #e5e7eb;
+    }
+
+    html, body {
+      font-family: "DejaVu Sans", Arial, sans-serif;
+      color: var(--ink);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    h1,h2,h3 { margin: 0 0 8px 0; }
+    h1 { font-size: 20px; }
+    h2 { font-size: 16px; }
+    h3 { font-size: 13px; }
+
     table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #ddd; padding: 6px; vertical-align: top; }
-    th { background: #f5f5f5; text-align: left; }
+    th, td { border: 1px solid var(--rule); padding: 6px; vertical-align: top; }
+    th { background: #fafafa; text-align: left; }
 
-    /* Running header/footer elements */
-    header.pdf-header { position: running(page-header); }
-    footer.pdf-footer { position: running(page-footer); }
+    /* Running header containers (captured by @page) */
+    header.header-hero   { position: running(header-hero); }
+    header.header-std    { position: running(header-std);  }
+    footer.pdf-footer    { position: running(page-footer); }
 
-    /* Simple header/footer layout */
-    .header-wrap { display: block; border-bottom: 2px solid var(--brand); padding-bottom: 6px; }
-    .header-title { font-size: 16px; font-weight: 700; }
-    .header-sub { font-size: 11px; color: var(--muted); }
+    /* -------- Hero header (page 1 only) -------- */
+    .hero-wrap{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      border-bottom: 2px solid var(--brand);
+      padding: 8px 0 10px 0;
+      box-sizing: border-box;
+    }
+    .brand{
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand img{
+      width: 48px; height: 48px; display:block;
+    }
+    .brand .line1{
+      font-size: 22px; font-weight: 800; color: var(--brand); line-height: 1.1;
+    }
+    .brand .line2{
+      font-size: 16px; font-weight: 700; color: var(--brand); line-height: 1.1;
+    }
+    .printer{
+      text-align: right;        /* keeps it on the right side cleanly */
+    }
+    .printer .bot{
+      font-size: 22px; line-height: 1; display: inline-block; margin-bottom: 4px;
+    }
+    .printer .title{
+      font-size: 16px; font-weight: 800; letter-spacing: .4px; line-height: 1.15;
+    }
+    .printer .meta{
+      color: var(--muted); margin-top: 2px; font-size: 11px; line-height: 1.2;
+    }
 
-    .footer-wrap { display: block; border-top: 1px solid #ddd; margin-top: 4px; padding-top: 4px; font-size: 10px; color: var(--muted); }
+    /* -------- Standard header (page ≥ 2) -------- */
+    .std-wrap{
+      border-bottom: 2px solid var(--brand);
+      padding-bottom: 6px;
+    }
+    .std-title{ font-size:16px; font-weight:700; }
+    .std-sub{ font-size:11px; color: var(--muted); }
 
-    /* Space under header before content starts */
-    main { margin-top: 10px; }
+    /* Footer */
+    .footer-wrap{
+      border-top: 1px solid var(--rule);
+      margin-top: 6px; padding-top: 4px;
+      font-size: 10px; color: var(--muted);
+    }
 
-    /* Allow children to add extra CSS */
+    /* Space below header before content starts */
+    main { margin-top: 12px; }
+
+    /* Allow per-report extra CSS */
     {% block extra_styles %}{% endblock %}
   </style>
 </head>
 <body>
-  <!-- Running header (repeats on every page) -->
-  <header class="pdf-header">
-    <div class="header-wrap">
-      <div class="header-title">{% block header_title %}Header area test{% endblock %}</div>
-      <div class="header-sub">{% block header_subtitle %}Optional subtitle{% endblock %}</div>
+
+  <!-- Hero header (first page only) -->
+  <header class="header-hero">
+    <div class="hero-wrap">
+      <div class="brand">
+        <img src="{% static 'img/unihanko-mark.svg' %}" alt="UniHanko">
+        <div>
+          <div class="line1">UniHanko</div>
+          <div class="line2">@ ÖH FH OÖ</div>
+        </div>
+      </div>
+      <div class="printer">
+        <div class="bot">🤖</div>
+        <div class="title">MR. PRINTER Mk I</div>
+        <div class="meta">
+          {% trans "Printed for:" %}
+          {% firstof request.user.email request.user.username "—" %}
+          {% if print_ref %}; {{ print_ref }}{% endif %}
+        </div>
+      </div>
     </div>
   </header>
 
-  <!-- Running footer (repeats on every page) -->
+  <!-- Standard running header (all subsequent pages) -->
+  <header class="header-std">
+    <div class="std-wrap">
+      <div class="std-title">{% block header_title %}Report{% endblock %}</div>
+      <div class="std-sub">{% block header_subtitle %}—{% endblock %}</div>
+    </div>
+  </header>
+
+  <!-- Running footer -->
   <footer class="pdf-footer">
     <div class="footer-wrap">
-      {% block footer_left %}Footer area test{% endblock %}
+      {% block footer_left %}© UniHanko — {% now "Y-m-d H:i" %}{% endblock %}
     </div>
   </footer>
 
-  <!-- Page content (varies per report) -->
+  <!-- Actual report contents -->
   <main>
     {% block content %}{% endblock %}
   </main>

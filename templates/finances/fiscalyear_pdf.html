@@ -1,21 +1,37 @@
 {% extends "pdf/base.html" %}
+{% load i18n %}
 
-{% block pdf_title %}Fiscal Year — {{ fy.display_code }}{% endblock %}
-{% block header_title %}Fiscal Year{% endblock %}
+{% block pdf_title %}{% trans "Fiscal year" %} — {{ fy.display_code }}{% endblock %}
+{% block header_title %}{% trans "Fiscal year" %}{% endblock %}
 {% block header_subtitle %}{{ fy.display_code }}{% endblock %}
 {% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %}
 
 {% block content %}
-  <h2 style="margin:0 0 8px 0;">Details</h2>
+  <h2 style="margin:0 0 8px 0;">{% trans "Details" %}</h2>
   <table>
     <tbody>
-      <tr><th style="width:140px;">Code</th><td>{{ fy.display_code }} <span style="color:#666;">(stored: {{ fy.code }})</span></td></tr>
-      <tr><th>Start</th><td>{{ fy.start }}</td></tr>
-      <tr><th>End</th><td>{{ fy.end }}</td></tr>
-      <tr><th>Active</th><td>{{ fy.is_active|yesno:"Yes,No" }}</td></tr>
-      <tr><th>Label</th><td>{{ fy.label|default:"—" }}</td></tr>
-      <tr><th>Created</th><td>{{ fy.created_at|date:"Y-m-d H:i" }}</td></tr>
-      <tr><th>Updated</th><td>{{ fy.updated_at|date:"Y-m-d H:i" }}</td></tr>
+      <tr>
+        <th style="width:160px;">{% trans "Identifier" %}</th>
+        <td>
+          {{ fy.display_code }}
+          <span style="color:#666;">({% trans "stored" %}: {{ fy.code }})</span>
+        </td>
+      </tr>
+      <tr><th>{% trans "Start" %}</th><td>{{ fy.start|date:"j. F Y" }}</td></tr>
+      <tr><th>{% trans "End" %}</th><td>{{ fy.end|date:"j. F Y" }}</td></tr>
+      <tr>
+        <th>{% trans "Active" %}</th>
+        <td>{% if fy.is_active %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
+      </tr>
+      {% if fy.is_locked is not None %}
+      <tr>
+        <th>{% trans "Locked" %}</th>
+        <td>{% if fy.is_locked %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
+      </tr>
+      {% endif %}
+      <tr><th>{% trans "Label" %}</th><td>{{ fy.label|default:"—" }}</td></tr>
+      <tr><th>{% trans "Created at" %}</th><td>{{ fy.created_at|date:"Y-m-d H:i" }}</td></tr>
+      <tr><th>{% trans "Last updated" %}</th><td>{{ fy.updated_at|date:"Y-m-d H:i" }}</td></tr>
     </tbody>
   </table>
 {% endblock %}
