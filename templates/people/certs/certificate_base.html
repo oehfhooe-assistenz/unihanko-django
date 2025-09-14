@@ -1,0 +1,221 @@
+{% extends "pdf/base.html" %}
+{% load static i18n tz %}
+
+{% block extra_styles %}
+  /* Kill base header/footer; tight top margin for full-bleed band */
+  @page {
+    size: A4;
+    margin: 30mm 14mm 18mm 14mm;
+    @top-center   { content: none; }
+    @bottom-left  { content: none; }
+    @bottom-right { content: none; }
+  }
+  @page:first {
+    margin: 0mm 14mm 18mm 14mm;
+    @top-center { content: none; }
+  }
+  .header-hero, .header-std, .pdf-footer { display: none !important; }
+  main { margin-top: 0 !important; }
+
+  :root{
+    --brand:#f97316; --ink:#111; --muted:#6b7280; --rule:#e5e7eb;
+  }
+  html, body { font-family:"DejaVu Sans", Arial, sans-serif; color:var(--ink); }
+
+  /* ---------- Generic layout helpers ---------- */
+  .page        { display:block; }
+  .page-break  { break-before: page; page-break-before: always; }
+
+  .label{ font-size:14px; color:var(--muted); }
+  .en-em{ font-size:9px; font-style:italic; opacity:.9; color:#9ca3af; }
+  .em{ font-style:italic; color:var(--brand); }
+  .value{ font-size:16px; padding:4px 6px; border:1px solid var(--rule); border-radius:4px; }
+
+  .section{ margin-top:10mm; }
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:8mm; }
+
+  .right-stamp{ text-align:right; }
+  .date-pill{ display:inline-block; border:1px solid var(--ink); padding:2mm 4mm; border-radius:3px; font-weight:700; }
+
+  /* ---------- Masthead (full-width band) ---------- */
+  .cert-head{
+    position:relative; background:var(--brand); color:var(--ink);
+    margin-left:-14mm; margin-right:-14mm;  /* reach page margins */
+    padding:14mm 14mm 10mm 14mm;
+  }
+  .cert-title{ font-size:26px; font-weight:800; letter-spacing:.4px; }
+  .cert-sub{ font-size:20px; font-weight:800; opacity:.9; margin-top:2px; }
+  .cert-logo{ position:absolute; right:14mm; top:3mm; width:32mm; height:auto; }
+
+  /* ---------- Signature row (page 1) ---------- */
+  .sig-row{
+    margin-top:10mm;
+    display:grid; grid-template-columns:1fr auto; gap:8mm; align-items:end;
+  }
+  .sig-box{ height:40mm; width: 120mm; border:1px solid var(--ink); border-radius:2px; position:relative; }
+  .sig-box .sig-anchor{ position:absolute; bottom:4mm; left:4mm; font-size:9px; color:#9ca3af; }
+  .sig-caption{ margin-top:2mm; font-size:10px; color:#555; }
+  .sig-stamp{
+  position: absolute;
+  right: -30mm;   /* nudge outside the box edge */
+  bottom: -10mm;  /* sits just below the baseline */
+  width: 34mm;
+  height: auto;
+  opacity: .98;
+}
+
+  /* ---------- Page 2: notes + contacts in two columns ---------- */
+  .two-col{
+    display:grid; grid-template-columns: 1fr 55mm; gap:10mm;
+    align-items:start;
+  }
+  .notes{
+    border:1px dashed #9ca3af; padding:4mm;
+  }
+  .notes h3{ font-size:20px; margin:0 0 3mm 0; }
+  .notes ul{ margin:0; padding-left:5mm; font-size:12px; }
+  .notes li{ margin:1.5mm 0; }
+  .footer-line{ margin-top:6mm; font-size:10px; display:flex; gap:6mm; align-items:center; flex-wrap:wrap; }
+  .inline-field{ border:1px solid var(--ink); padding:1mm 3mm; min-width:35mm; display:inline-block; }
+
+  .contacts h4{ font-size:10px; margin:0 0 2mm 0; color:#f97316; }
+  .contacts{ font-size:10px; line-height:1.35; color:#374151; }
+
+  /* Optional faint motto under the notes title */
+  .motto{ font-size:10px; color:#6b7280; margin:4mm 0 0 0; }
+{% endblock %}
+
+{% block content %}
+  <!-- ===== Page 1: certificate ===== -->
+  <div class="page">
+    <div class="cert-head">
+      <div class="cert-title">{% block cert_title %}DEIN BESTELLUNGSDOKUMENT{% endblock %}</div>
+      <div class="cert-sub">{% block cert_subtitle %}YOUR LETTER OF APPOINTMENT{% endblock %}</div>
+      <img class="cert-logo" src="{% static 'img/unihanko-mark.svg' %}" alt="ÖH FH OÖ">
+    </div>
+
+    <section class="section">
+      <div class="label">Liebe/lieber/* <span class="en-em">Dear</span></div>
+      <div class="grid-2" style="margin-top:3mm;">
+        <div>
+          <div class="label">Vorname <span class="en-em">given name(s)</span></div>
+          <div class="value">{% block given_names %}{{ pr.person.first_name }}{% endblock %}</div>
+        </div>
+        <div>
+          <div class="label">Nachname <span class="en-em">surname(s)</span></div>
+          <div class="value">{% block family_name %}{{ pr.person.last_name }}{% endblock %}</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      {% block appoint_preamble %}  
+      <p style="font-size: 14px;">
+        Hiermit informieren wir Dich über die
+        <span class="em">{% block appoint_kind %}interimistische{% endblock %}</span>
+        Bestellung zum/zur:
+        <br><span class="en-em">We hereby inform you of your appointment</span>
+        <span class="em">{% block appoint_kind_en %}ad interim{% endblock %}</span>
+        <span class="en-em">as:</span>
+      </p>
+      {% endblock %}
+
+      <div style="margin-top:3mm;">
+        <div class="label">Funktionsbezeichnung <span class="en-em">function (german)</span></div>
+        <div class="value">{% block role_name %}{{ pr.role.name }}{% endblock %}</div>
+      </div>
+
+      <p style="margin-top:5mm; font-size: 14px;">
+        der Hochschülerinnen- & Hochschülerschaft der FH Oberösterreich.
+        <br><span class="en-em">of the University of Upper Austria’s Students’ Union (by statutory body).</span>
+      </p>
+
+      <div class="legal" style="margin-top:8mm; font-size: 14px; font-weight: bold;">
+        {% block legal_text %}
+          <p>Die Bestellung erfolgt iSe vorläufigen Betrauung nach §16 (5) »Satzung der Hochschülerinnen- und Hochschülerschaft der FH Oberösterreich« idgF.</p>
+          <p class="en-em">The appointment is made ad interim, until revocation or appointment by election pursuant to § 16 (5) of the students’ union’s statutes, in its current version.</p>
+        {% endblock %}
+      </div>
+
+        <div class="right-stamp" style="margin-top:4mm;">
+        <span style="margin-top:8mm; font-size: 14px; font-weight: bold;">— mit Wirkung zum <span class="en-em">— effective</span></span>
+        <span class="date-pill">{% block effective_date %}{{ pr.effective_start|default:pr.start_date|date:"d.m.Y" }}{% endblock %}</span>
+      </div>
+    </section>
+
+    <section class="sig-row">
+      <div>
+        <div class="sig-box">
+          <span class="sig-anchor">electronic signature</span>
+          <img class="sig-stamp" src="{% static 'img/oeh_document_seal.png' %}" alt="Siegel">
+          <!-- Invisible anchor for external signer, if you need one -->
+          <!-- <span style="position:absolute;left:-9999px;top:-9999px;">SIGN_ANCHOR_CHAIR</span> -->
+        </div>
+        <div class="sig-caption">
+          {% block signer_caption %}
+            Der*die Vorsitzende der HV FH Oberösterreich<br>
+            <span class="en-em">The chairperson of the UAS Upper Austria’s Students’ Union</span>
+          {% endblock %}
+        </div>
+      </div>
+
+      <div class="right-stamp">
+        <div style="font-weight:700; margin-bottom:2mm;">GEZEICHNET I.V.</div>
+        <div class="en-em">undersigned per pro</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== Page 2: notes + contacts ===== -->
+  <div class="page page-break">
+    <div class="two-col">
+      <section class="notes">
+        <h3>{% block notes_title %} Wichtige Hinweise zu Deiner Bestellung als Funktionär:in {% endblock %}<br><span class="en-em">{% block notes_title_en %} Important notice regarding your appointment {% endblock %}</span></h3>
+        <ul>
+          {% block notes_list %}
+            <li>Du unterstützt die ÖH FH OÖ als Ehrenamt bis auf Widerruf durch Dich oder Uns.</li>
+            <span class="en-em">You support the students’ union as a volunteer until revocation of your appointment by either yourself or the chair.</span>
+            <li>Bei der ÖH FH OÖ begegnen Wir einander mit gegenseitigem Respekt und Fair Play.</li>
+            <span class="en-em">At the students’ union, we meet one another with mutual respect and fair play.</span>
+            <li>Wir sind unterstützend für Dich da – bei der ÖH FH OÖ helfen Wir alle nach bestem Wissen und Gewissen mit.</li>
+            <span class="en-em">We’re here to support you – at the students’ union we all help out to the best of our abilities.</span>
+            <li>Bei Deiner Tätigkeit beachtest Du vor allem die Satzung, die Gebarungsordnung und andere Weisungen des/der Vorsitzenden.</li>
+            <span class="en-em">While working for the students‘ union, you observe the statutes, the financial codes of conduct and all other instructions by the chair.</span>
+            <li>Für Dein Ehrenamt bei der ÖH FH OÖ erhältst Du nach Beantragung eine monatliche Aufwandsentschädigung (die Funktionsgebühr), außerdem hast Du Anspruch auf eine Ersetzung von ECTS gemäß aktueller Vereinbarungen.</li>
+            <span class="en-em">For your work at the students’ union you’re allowed a monthly stipend (after having applied for it); additionally you’re eligible for reimbursement of your allotted ECTS as per the current covenants.</span>
+            <li>Solltest Du von Deinem Amt (aus welchen Gründen auch immer) zurücktreten wollen, gib Uns bitte 2 Wochen vorher Bescheid.</li>
+            <span class="en-em">Should you decide to revoke your appointment (no matter the reason), we ask to be given two weeks’ notice.</span>
+          {% endblock %}
+        </ul>
+
+        {% block extra_notes %}{% endblock %}
+
+        <div class="motto">FÜR EIN GUTES MITEINANDER IN DER ÖH</div>
+
+        <div class="footer-line">
+          <div>Linz, am <span class="inline-field">{% block issue_date %}{% now "d.m.Y" %}{% endblock %}</span></div>
+          {% block notes_footer_right %}{% endblock %}
+        </div>
+      </section>
+
+      <aside class="contacts">
+        {% block sidebar_contact %}
+          <h4>Zentralstelle im Büro Linz</h4>
+          <div>+43 (0) 50804-55401<br>office@oeh.fh-ooe.at</div>
+
+          <h4 style="margin-top:4mm;">Büro Hagenberg</h4>
+          <div>Softwarepark 11<br>4232 Hagenberg</div>
+
+          <h4 style="margin-top:4mm;">Büro Linz</h4>
+          <div>Garnisonstraße 21<br>4020 Linz</div>
+
+          <h4 style="margin-top:4mm;">Büro Steyr</h4>
+          <div>Wehrgrabengasse 1–3<br>4400 Steyr</div>
+
+          <h4 style="margin-top:4mm;">Büro Wels</h4>
+          <div>Stelzhamerstraße 23<br>4600 Wels</div>
+        {% endblock %}
+      </aside>
+    </div>
+  </div>
+{% endblock %}

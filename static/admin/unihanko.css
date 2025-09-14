@@ -28,6 +28,20 @@ a:hover { color: var(--uh-accent-600); text-decoration-color: var(--uh-accent-60
 .navbar .nav-link { color: var(--uh-text); font-weight: 500; }
 .navbar .nav-link:hover { opacity: .92; }
 
+/* Add a subtle chevron to app headers in the sidebar */
+.nav-sidebar .nav-header {
+  position: relative;
+  padding-left: 0.25rem;          /* keep spacing nice */
+}
+
+.nav-sidebar .nav-header::before {
+  content: "\f054";               /* chevron-right */
+  font-family: "Font Awesome 6 Free","Font Awesome 5 Free";
+  font-weight: 900;               /* solid */
+  margin-right: .25rem;
+  opacity: .6;
+}
+
 /* ---- Sidebar ---- */
 .main-sidebar { background: var(--uh-panel); }
 .brand-link { background: var(--uh-panel); border-bottom: 1px solid var(--uh-border); }

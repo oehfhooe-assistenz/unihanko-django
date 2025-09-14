@@ -1,0 +1,15 @@
+{# templates/people/certs/appointment_confirmation.html #}
+{% extends "people/certs/certificate_base.html" %}
+{% load i18n %}
+
+{% block cert_title %}DEIN BESTELLUNGSDOKUMENT{% endblock %}
+{% block appoint_kind %}{% endblock %}
+{% block appoint_kind_en %}{% endblock %}
+{% block legal_text %}
+  <p>laut Beschluss der Sitzung </span><span class="em">{{ pr.confirm_ref|default:"N/A" }}</span> vom <span class="em">{{ pr.confirm_date|default:"N/A"|date:"d.m.Y" }}</span>.</p>
+  <p class="en-em">following resolution of the union assembly <span class="em">{{ pr.confirm_ref|default:"N/A"|date:"d.m.Y" }}</span><span class="en-em">, date </span><span class="em">{{ pr.role.confirm_date|default:"N/A" }}</span>.</p>
+{% endblock %}
+
+{% block effective_date %}
+  {{ pr.confirm_date|default:pr.effective_start|default:pr.start_date|date:"d.m.Y" }}
+{% endblock %}

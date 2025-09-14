@@ -1,0 +1,40 @@
+{% extends "people/certs/certificate_base.html" %}
+{% load i18n %}
+
+{% block cert_title %}DEIN RÜCKTRITTSDOKUMENT{% endblock %}
+{% block cert_subtitle %}ACKNOWLEDGEMENT OF YOUR RESIGNATION{% endblock %}
+
+{# Name fields use the base blocks; no change needed #}
+
+{% block appoint_kind %}{% endblock %}
+{% block appoint_kind_2 %}{% endblock %}
+
+{# Main body text #}
+{% block appoint_preamble %}{% endblock %}
+{% block legal_text %}
+  <p style="margin-top:8mm; font-size: 14px; font-weight: bold;">
+    Im Namen der Hochschülerinnen- &amp; Hochschülerschaft der FH Oberösterreich
+    nehmen wir Deinen Rücktritt in o.g. Funktion zur Kenntnis.
+  </p>
+  <p class="en-em">
+    On behalf of the University of Upper Austria’s Students’ Union (by statutory body) we hereby
+    acknowledge your resignation from the function mentioned above.
+  </p>
+{% endblock %}
+
+{% block effective_date %}{{ pr.effective_end|default:pr.end_date|date:"d.m.Y" }}{% endblock %}
+
+{% block notes_title %} Wichtige Hinweise zu Deinem Rücktritt {% endblock %}
+{% block notes_title_en %} Important Notice regarding your Resignation {% endblock %}
+{% block notes_list %}
+<li>Als Körperschaft des öffentlichen Rechts sind Wir jährlich dazu verpflichtet, alle unsere ausbezahlten Funktionsgebühren an die Finanzverwaltung zu melden. Es kann daher sein, dass Wir Uns im Nachhinein noch einmal bei Dir melden, damit Du Uns bei dieser Mitteilungspflicht unterstützt.</li>
+<span class="en-em">As statutory body (by public law) we have a yearly duty to report all our paid stipends to the federal revenue service. To that effect, we may get in touch with you after your revocation with respect to you assisting us with this duty to report.</span>
+<li>Sollten sich Deine persönlichen (Kontakt-)Daten geändert haben, bitten Wir Dich um kurze Information an officez@oeh.fh-ooe.at.</li>
+<span class="en-em">Should your personal information (e.g. your address or name) have changed in the meanwhile, we'd appreciate you sending us an e-mail at office@oeh.fh-ooe.at with your up-to-date information.</span>
+<li>Deine Daten werden in jedem Falle vertraulich behandelt und nach Ende der Mitteilung gelöscht.</li>
+<span class="en-em">Your personal information will be treated with the utmost confidentiality. It will only be used to fulfil our duty to report with the authorities, and deleted upon completion.</span>
+{% endblock %}
+{# Page 2 notes — a short thank-you line first, keep the standard bullets after #}
+{% block extra_notes %}
+  <p style="margin:4mm 0 2mm 0;">Bei dieser Gelegenheit bedanken Wir Uns herzlich für Dein Engagement!</p>
+{% endblock %}

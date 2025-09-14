@@ -26,5 +26,6 @@ urlpatterns = [
          name="admin_help"),
     path('i18n/', include('django.conf.urls.i18n')),
     path('', core_views.home, name='home'),
+    path('admin/cockpit/', core_views.admin_cockpit, name='admin_cockpit'),
     path('admin/', admin.site.urls),
 ]

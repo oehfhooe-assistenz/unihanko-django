@@ -103,10 +103,17 @@ class Person(models.Model):
 
 
 class Role(models.Model):
+    class Kind(models.TextChoices):
+        DEPT_HEAD = "DEPT. HEAD", _("Department head (Referent:in)")
+        DEPT_CLERK = "DEPT. CLERK", _("Department clerk (Sachbearbeiter:in)")
+        OTHER = "OTHER", _("Other / miscellaneous")
+
     name = models.CharField(_("Name"), max_length=100, unique=True)
-    ects_cap = models.DecimalField(_("ECTS cap"), max_digits=4, decimal_places=1, default=0)
-    is_elected = models.BooleanField(_("Elected position"), default=False)
+    ects_cap = models.DecimalField(_("ECTS cap"), max_digits=4, decimal_places=1, default=0, help_text=_("The nominal reimbursible ECTS amount assigned to the role re: MOU with the academic board"))
+    is_elected = models.BooleanField(_("Elected position"), default=False, help_text=_("Whether this role is elected via an election authority re: HSG 2014"))
+    kind = models.CharField(_("Role type"), max_length=16, choices=Kind.choices, default=Kind.OTHER, db_index=True, help_text=_("Type of role within the (legal) personnel structure."))
     notes = models.TextField(_("Notes"), blank=True)
+    is_stipend_reimbursed = models.BooleanField(_("Reimbursed via stipend"), default=False, help_text=_("Whether this role is ordinarily reimbursed via stipend [FuGeb]"),)
 
     history = HistoricalRecords()
 
@@ -215,7 +222,7 @@ class PersonRole(models.Model):
     effective_start = models.DateField(_("Effective start"), null=True, blank=True)
     effective_end   = models.DateField(_("Effective end"),   null=True, blank=True)
 
-    # NEW: reasons per boundary
+    # reasons per boundary
     start_reason = models.ForeignKey(
         RoleTransitionReason, null=True, blank=True, on_delete=models.SET_NULL,
         related_name="assignments_started", verbose_name=_("Start reason"),
@@ -227,6 +234,8 @@ class PersonRole(models.Model):
         help_text=_("Why this assignment ended (e.g. Austritt). Required when an end date is set."),
     )
     
+    confirm_date = models.DateField(_("Confirmation date"), null=True, blank=True, help_text=_("Date of assembly confirmation (if applicable)"))
+    confirm_ref = models.CharField(_("Confirmation reference"), max_length=120, null=True, blank=True, help_text=_("Assembly reference or note (if applicable)"))
 
     # Per-assignment free-text note
     notes = models.TextField(_("Notes"), blank=True)
@@ -262,7 +271,6 @@ class PersonRole(models.Model):
                        models.Q(end_date__isnull=False, end_reason__isnull=False)),
                 name="ck_end_reason_iff_end_date",
             ),
-
             # NEW: start_reason != end_reason when both set
             models.CheckConstraint(
                 check=(models.Q(start_reason__isnull=True) |
@@ -270,6 +278,10 @@ class PersonRole(models.Model):
                        ~models.Q(start_reason_id=models.F("end_reason_id"))),
                 name="ck_reasons_not_equal",
             ),
+            models.CheckConstraint(
+                check=models.Q(confirm_date__isnull=True) | models.Q(confirm_date__gte=models.F("start_date")),
+                name="ck_confirm_after_start",
+            )
         ]
         verbose_name = _("Assignment")
         verbose_name_plural = _("Assignments")
@@ -293,6 +305,8 @@ class PersonRole(models.Model):
             errors["end_reason"] = _("Remove end reason unless you set an end date.")
         if self.start_reason_id and self.end_reason_id and self.start_reason_id == self.end_reason_id:
             errors["end_reason"] = _("Start and end reason cannot be the same.")
+        if self.confirm_ref and not self.confirm_date:
+            errors["confirm_date"] = _("Provide a confirmation date when adding a reference.")
         if errors:
             from django.core.exceptions import ValidationError
             raise ValidationError(errors)

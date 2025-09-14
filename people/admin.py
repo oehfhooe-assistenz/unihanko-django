@@ -53,8 +53,8 @@ class PersonResource(resources.ModelResource):
 class RoleResource(resources.ModelResource):
     class Meta:
         model = Role
-        fields = ("id", "name", "ects_cap", "is_elected", "notes")
-        export_order = ("id", "name", "ects_cap", "is_elected", "notes")
+        fields = ("id", "name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind", "notes")
+        export_order = ("id", "name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind", "notes")
 
 
 class RoleTransitionReasonResource(resources.ModelResource):
@@ -153,10 +153,9 @@ class PersonRoleInline(admin.TabularInline):
     extra = 1
     fields = (
         "role",
-        "start_date",
-        "end_date",
-        "effective_start",
-        "effective_end",
+        "start_date", "end_date",
+        "effective_start", "effective_end",
+        "confirm_date", "confirm_ref",
         "start_reason",
         "end_reason",
         "notes",
@@ -264,10 +263,10 @@ class PersonAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmi
     def print_pdf(self, request, obj):
         return render_pdf_response("people/person_pdf.html", {"p": obj}, request, f"person_{obj.id}.pdf")
 
-    print_pdf.label = _("Print PDF")
+    print_pdf.label = _("Print Full Personnel Record (PDF)")
     print_pdf.attrs = {"class": "btn btn-block btn-outline-secondary btn-sm"}
 
-    @admin.action(description=_("Export selected to PDF"))
+    @admin.action(description=_("Print selection roster (PDF)"))
     def export_selected_pdf(self, request, queryset):
         rows = queryset.order_by("last_name", "first_name")
         return render_pdf_response("people/people_list_pdf.html", {"rows": rows}, request, "people_selected.pdf")
@@ -279,9 +278,9 @@ class PersonAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmi
 @admin.register(Role)
 class RoleAdmin(ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [RoleResource]
-    list_display = ("name", "ects_cap", "is_elected")
+    list_display = ("name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind")
     search_fields = ("name",)
-    list_filter = ("is_elected",)
+    list_filter = ("is_elected","is_stipend_reimbursed", "kind")
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -324,23 +323,24 @@ class ReasonAdmin(ImportExportModelAdmin):
 # PersonRole Admin
 # =========================
 @admin.register(PersonRole)
-class PersonRoleAdmin(ImportExportModelAdmin, SimpleHistoryAdmin):
+class PersonRoleAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [PersonRoleResource]
     list_display = (
         "person",
         "role",
-        "start_date",
-        "end_date",
-        "effective_start",
-        "effective_end",
+        "start_date", "end_date",
+        "effective_start", "effective_end",
+        "confirm_date",
         "start_reason",
         "end_reason",
         "short_notes",
     )
-    list_filter = (ActiveFilter, "role", "start_reason", "end_reason", "start_date", "end_date")
-    search_fields = ("person__last_name", "person__first_name", "role__name", "notes")
+    list_filter = (ActiveFilter, "role", "start_reason", "end_reason", "start_date", "end_date", "confirm_date")
+    search_fields = ("person__last_name", "person__first_name", "role__name", "confirm_ref", "notes")
     autocomplete_fields = ("person", "role", "start_reason", "end_reason")
     actions = ["offboard_today"]
+
+    change_actions = ("print_appointment_regular", "print_appointment_ad_interim", "print_confirmation", "print_resignation",)
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -367,3 +367,43 @@ class PersonRoleAdmin(ImportExportModelAdmin, SimpleHistoryAdmin):
             _("Ended %(n)d active assignment(s).") % {"n": updated},
             messages.SUCCESS,
         )
+
+    def _render_cert(self, request, obj, template, filename):
+        ctx = {"pr": obj}
+        return render_pdf_response(template, ctx, request, filename)
+
+    def print_appointment_regular(self, request, obj):
+        return self._render_cert(
+            request, obj,
+            "people/certs/appointment_regular.html",
+            f"bestellung_{obj.person.last_name}_{obj.role.name}.pdf"
+        )
+    print_appointment_regular.label = "🧾 " + _("Print appointment (non-confirmation)")
+    print_appointment_regular.attrs = {"class": "btn btn-block btn-outline-warning btn-sm"}
+
+    def print_appointment_ad_interim(self, request, obj):
+        return self._render_cert(
+            request, obj,
+            "people/certs/appointment_ad_interim.html",
+            f"bestellung_ad_interim_{obj.person.last_name}_{obj.role.name}.pdf"
+        )
+    print_appointment_ad_interim.label = "⚡ " + _("Print appointment (ad interim)")
+    print_appointment_ad_interim.attrs = {"class": "btn btn-block btn-outline-warning btn-sm"}
+
+    def print_confirmation(self, request, obj):
+        return self._render_cert(
+            request, obj,
+            "people/certs/appointment_confirmation.html",
+            f"bestaetigung_{obj.person.last_name}_{obj.role.name}.pdf"
+        )
+    print_confirmation.label = "☑️ " + _("Print confirmation (post-confirmation)")
+    print_confirmation.attrs = {"class": "btn btn-block btn-outline-warning btn-sm"}
+
+    def print_resignation(self, request, obj):
+        return self._render_cert(
+            request, obj,
+            "people/certs/resignation.html",
+            f"ruecktritt_{obj.person.last_name}_{obj.role.name}.pdf"
+        )
+    print_resignation.label = "🏁 " + _("Print resignation")
+    print_resignation.attrs = {"class": "btn btn-block btn-outline-warning btn-sm"}

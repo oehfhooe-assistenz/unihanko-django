@@ -159,6 +159,7 @@ JAZZMIN_SETTINGS = {
 
     # Quick nav
     "topmenu_links": [
+        {"name": "Cockpit (Beta)", "url": "/admin/cockpit/", "permissions": ["is_staff"]},
         {"name": "Onboarding",  "url": "/admin/people/personrole/add/", "permissions": ["people.add_personrole"]},
         {"name": "Offboarding", "url": "/admin/people/personrole/?active=1", "permissions": ["people.change_personrole"]},
         {"name": "Fiscal Years", "url": "/admin/finances/fiscalyear/", "permissions": ["finances.view_fiscalyear"]},
@@ -184,10 +185,8 @@ JAZZMIN_SETTINGS = {
     },
 
     # Sidebar ordering within the app
-    "order_with_respect_to": {
-        "people": ["PersonRole", "Person", "RoleTransitionReason", "Role"],
-        "finances": ["FiscalYear"],
-    },
+    "order_with_respect_to": ["people", "people.person", "people.personrole", "people.roletransitionreason", "people.role", "finances", "finances.fiscalyear" ],
+
 
     # Hide historical models from menu
     "hide_models": [
@@ -228,7 +227,7 @@ JAZZMIN_UI_TWEAKS = {
     "sidebar": "sidebar-dark-primary",              # or "sidebar-light-primary"
     "sidebar_nav_small_text": False,
     "sidebar_nav_child_indent": True,
-    "sidebar_nav_compact_style": True,
+    "sidebar_nav_compact_style": False,
     "sidebar_disable_expand": False,
 
     # Typography
