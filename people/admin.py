@@ -9,6 +9,8 @@ from django_object_actions import DjangoObjectActions
 from import_export import resources, fields
 from import_export.admin import ImportExportModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 
 from .models import Person, Role, PersonRole, RoleTransitionReason
 from core.pdf import render_pdf_response
@@ -53,8 +55,8 @@ class PersonResource(resources.ModelResource):
 class RoleResource(resources.ModelResource):
     class Meta:
         model = Role
-        fields = ("id", "name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind", "notes")
-        export_order = ("id", "name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind", "notes")
+        fields = ("id", "name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind", "default_monthly_amount", "notes")
+        export_order = ("id", "name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind", "default_monthly_amount", "notes")
 
 
 class RoleTransitionReasonResource(resources.ModelResource):
@@ -80,6 +82,8 @@ class PersonRoleResource(resources.ModelResource):
             "end_date",
             "effective_start",
             "effective_end",
+            "confirm_date",
+            "confirm_ref",
             "start_reason_code",
             "end_reason_code",
             "notes",
@@ -148,17 +152,20 @@ class ActiveFilter(admin.SimpleListFilter):
 # =========================
 # Inlines
 # =========================
-class PersonRoleInline(admin.TabularInline):
+class PersonRoleInline(admin.StackedInline):
     model = PersonRole
-    extra = 1
-    fields = (
-        "role",
-        "start_date", "end_date",
-        "effective_start", "effective_end",
-        "confirm_date", "confirm_ref",
-        "start_reason",
-        "end_reason",
-        "notes",
+    extra = 0
+    fieldsets = (
+        (_("Assignment Details"), {
+            "classes": ("collapse",),
+            "fields": (
+                "role",
+                ("start_date"), ("effective_start"), ("start_reason"),
+                ("end_date"), ("effective_end"), ("end_reason"),
+                ("confirm_date"), ("confirm_ref"),
+                "notes",
+            ),
+        }),
     )
     autocomplete_fields = ("role", "start_reason", "end_reason")
     can_delete = False
@@ -193,10 +200,10 @@ class PersonAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmi
 
     fieldsets = (
         (_("Identity"), {
-            "fields": (("first_name", "last_name"), "uuid", "gender", "notes"),
+            "fields": (("first_name"), ("last_name"), "uuid", "gender", "notes"),
         }),
         (_("Contacts"), {
-            "fields": (("email", "student_email"),),
+            "fields": (("email"), ("student_email"),),
         }),
         (_("University"), {
             "fields": ("matric_no",),
@@ -205,10 +212,10 @@ class PersonAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmi
             "fields": ("user",),
         }),
         (_("Status"), {
-            "fields": (("is_active", "archived_at"),),
+            "fields": (("is_active"), ("archived_at"),),
         }),
         (_("Timestamps"), {
-            "fields": (("created_at", "updated_at"),),
+            "fields": (("created_at"), ("updated_at"),),
         }),
     )
 
@@ -391,11 +398,34 @@ class PersonRoleAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistory
     print_appointment_ad_interim.attrs = {"class": "btn btn-block btn-outline-warning btn-sm"}
 
     def print_confirmation(self, request, obj):
+        # role-kind guard
+        if getattr(obj.role, "kind", None) != obj.role.Kind.DEPT_HEAD:
+            self.message_user(
+                request,
+                _("Only department-head assignments can have a confirmation certificate."),
+                level=messages.WARNING,
+            )
+            return HttpResponseRedirect(
+                reverse("admin:people_personrole_change", args=[obj.pk])
+            )
+
+        # data readiness guard
+        if not obj.confirm_date:
+            self.message_user(
+                request,
+                _("Set a confirmation date (and reference, if applicable) before printing the confirmation certificate."),
+                level=messages.WARNING,
+            )
+            return HttpResponseRedirect(
+                reverse("admin:people_personrole_change", args=[obj.pk])
+            )
+
         return self._render_cert(
             request, obj,
             "people/certs/appointment_confirmation.html",
             f"bestaetigung_{obj.person.last_name}_{obj.role.name}.pdf"
         )
+
     print_confirmation.label = "☑️ " + _("Print confirmation (post-confirmation)")
     print_confirmation.attrs = {"class": "btn btn-block btn-outline-warning btn-sm"}
 
@@ -407,3 +437,28 @@ class PersonRoleAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistory
         )
     print_resignation.label = "🏁 " + _("Print resignation")
     print_resignation.attrs = {"class": "btn btn-block btn-outline-warning btn-sm"}
+
+    # --- Visibility gates (buttons appear only when True) ---
+    def get_change_actions(self, request, object_id, form_url):
+        actions = list(super().get_change_actions(request, object_id, form_url))
+        obj = self.get_object(request, object_id)
+
+        def drop(name):
+            if name in actions:
+                actions.remove(name)
+
+        # regular: clerks & other roles
+        if not (obj and getattr(obj.role, "kind", None) in {obj.role.Kind.DEPT_CLERK, obj.role.Kind.OTHER}):
+            drop("print_appointment_regular")
+
+        # ad interim + confirmation: heads only
+        if not (obj and getattr(obj.role, "kind", None) == obj.role.Kind.DEPT_HEAD):
+            drop("print_appointment_ad_interim")
+            drop("print_confirmation")
+
+        # resignation only if ended
+        if not (obj and obj.end_date):
+            drop("print_resignation")
+
+        return actions
+

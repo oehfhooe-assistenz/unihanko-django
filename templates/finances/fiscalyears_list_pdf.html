@@ -7,31 +7,33 @@
 {% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %}
 
 {% block content %}
-  <h2 style="margin: 0 0 6px 0;">{% trans "All entries" %}</h2>
-  <table>
+<h2 style="margin: 0 0 6px 0;">{% trans "All entries" %}</h2>
+<table>
     <thead>
-      <tr>
-        <th>{% trans "Identifier" %}</th>
-        <th>{% trans "Start" %}</th>
-        <th>{% trans "End" %}</th>
-        <th>{% trans "Active" %}</th>
-        <th>{% trans "Locked" %}</th>
-        <th>{% trans "Label" %}</th>
-      </tr>
+        <tr>
+            <th>{% trans "Identifier" %}</th>
+            <th>{% trans "Start" %}</th>
+            <th>{% trans "End" %}</th>
+            <th>{% trans "Active" %}</th>
+            <th>{% trans "Locked" %}</th>
+            <th>{% trans "Label" %}</th>
+        </tr>
     </thead>
     <tbody>
-      {% for fy in rows %}
+        {% for fy in rows %}
         <tr>
-          <td>{{ fy.display_code }}</td>
-          <td>{{ fy.start|date:"j. F Y" }}</td>
-          <td>{{ fy.end|date:"j. F Y" }}</td>
-          <td>{% if fy.is_active %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
-          <td>{% if fy.is_locked %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
-          <td>{{ fy.label|default:"—" }}</td>
+            <td>{{ fy.display_code }}</td>
+            <td>{{ fy.start|date:"j. F Y" }}</td>
+            <td>{{ fy.end|date:"j. F Y" }}</td>
+            <td>{% if fy.is_active %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
+            <td>{% if fy.is_locked %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
+            <td>{{ fy.label|default:"—" }}</td>
         </tr>
-      {% empty %}
-        <tr><td colspan="6">{% trans "No entries." %}</td></tr>
-      {% endfor %}
+        {% empty %}
+        <tr>
+            <td colspan="6">{% trans "No entries." %}</td>
+        </tr>
+        {% endfor %}
     </tbody>
-  </table>
+</table>
 {% endblock %}

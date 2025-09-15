@@ -113,7 +113,9 @@ class Role(models.Model):
     is_elected = models.BooleanField(_("Elected position"), default=False, help_text=_("Whether this role is elected via an election authority re: HSG 2014"))
     kind = models.CharField(_("Role type"), max_length=16, choices=Kind.choices, default=Kind.OTHER, db_index=True, help_text=_("Type of role within the (legal) personnel structure."))
     notes = models.TextField(_("Notes"), blank=True)
-    is_stipend_reimbursed = models.BooleanField(_("Reimbursed via stipend"), default=False, help_text=_("Whether this role is ordinarily reimbursed via stipend [FuGeb]"),)
+    is_stipend_reimbursed = models.BooleanField(_("Reimbursed via stipend"), default=False, help_text=_("Whether this role is ordinarily reimbursed via stipend [FuGeb]"))
+
+    default_monthly_amount = models.DecimalField(_("Default monthly stipend"), max_digits=10, decimal_places=2, blank=True, null=True, help_text=_("default monthly pay (if eligible) per Statutes"))
 
     history = HistoricalRecords()
 

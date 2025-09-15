@@ -1,3 +1,4 @@
+from __future__ import annotations
 from datetime import date, timedelta
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -143,3 +144,283 @@ class FiscalYear(models.Model):
         if self.start and self.end and (not self.code or not self.code.startswith("WJ")):
             self.code = stored_code_from_dates(self.start, self.end)
         super().save(*args, **kwargs)
+
+import calendar
+from decimal import Decimal, ROUND_HALF_UP
+from django.core.validators import RegexValidator
+from people.models import PersonRole
+
+class PaymentPlan(models.Model):
+    class Status(models.TextChoices):
+        DRAFT     = "DRAFT", _("Draft")
+        ACTIVE    = "ACTIVE", _("Active")
+        SUSPENDED = "SUSPENDED", _("Suspended")
+        FINISHED  = "FINISHED", _("Finished")
+        CANCELLED = "CANCELLED", _("Cancelled")
+
+    IBAN_SHAPE = r"^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$"
+    BIC_SHAPE  = r"^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$"
+
+    # Ownership / scope
+    person_role  = models.ForeignKey(PersonRole, on_delete=models.PROTECT, related_name="payment_plans", verbose_name=_("Assignment"))
+    fiscal_year  = models.ForeignKey(FiscalYear, on_delete=models.PROTECT, related_name="payment_plans", verbose_name=_("Fiscal year"))
+
+    # Banking + payee
+    payee_name   = models.CharField(_("Payee name (optional override)"), max_length=200, blank=True)
+    iban         = models.CharField(_("IBAN"), max_length=34, blank=True, validators=[RegexValidator(IBAN_SHAPE, _("Enter a valid IBAN (e.g. AT.., DE..)."))],)
+    bic          = models.CharField(_("BIC"), max_length=11, blank=True, validators=[RegexValidator(BIC_SHAPE, _("Enter a valid BIC (8 or 11 chars)."))],)
+    reference    = models.CharField(_("Payment reference"), max_length=140, blank=True)
+
+    # Window (optional overrides; otherwise we derive defaults from PR ∩ FY)
+    pay_start    = models.DateField(_("Pay start (optional)"), blank=True, null=True)
+    pay_end      = models.DateField(_("Pay end (optional)"), blank=True, null=True)
+
+    # Money
+    monthly_amount = models.DecimalField(_("Monthly amount"), max_digits=10, decimal_places=2)
+    total_override = models.DecimalField(_("Total override (optional)"), max_digits=10, decimal_places=2, blank=True, null=True)
+
+    # Status + lightweight audit
+    status       = models.CharField(_("Status"), max_length=10, choices=Status.choices, default=Status.DRAFT)
+    status_note  = models.CharField(_("Status note (short)"), max_length=200, blank=True)
+    notes        = models.TextField(_("Notes (internal)"), blank=True)
+
+    # Signatures (dates are enough for now)
+    signed_person_at = models.DateField(_("Signed by payee on"), blank=True, null=True)
+    signed_wiref_at  = models.DateField(_("Signed by WiRef on"), blank=True, null=True)
+    signed_chair_at  = models.DateField(_("Signed by chair on"), blank=True, null=True)
+
+    # Future media hook (nullable until the media container lands)
+    pdf_file     = models.FileField(_("Signed PDF (optional)"), upload_to="payment_plans/%Y/%m/", blank=True, null=True)
+
+    # Timestamps
+    created_at   = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
+
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = _("Payment plan")
+        verbose_name_plural = _("Payment plans")
+        ordering = ("-created_at",)
+        constraints = [
+            # Unique pair regardless of status (you can relax later if you want multiples)
+            models.UniqueConstraint(
+                fields=["person_role", "fiscal_year"],
+                name="uq_payment_plan_unique_per_assignment_fy",
+            ),
+            # Only one ACTIVE per (person_role, fiscal_year)
+            models.UniqueConstraint(
+                fields=["person_role", "fiscal_year"],
+                condition=models.Q(status="ACTIVE"),
+                name="uq_payment_plan_single_active_per_pair",
+            ),
+            # Coherent dates when both overrides are present
+            models.CheckConstraint(
+                check=models.Q(pay_end__isnull=True) | models.Q(pay_start__isnull=True) | models.Q(pay_end__gte=models.F("pay_start")),
+                name="ck_payment_plan_start_before_end",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["fiscal_year"]),
+            models.Index(fields=["person_role"]),
+            models.Index(fields=["status"]),
+        ]
+
+    # ---------- Display ----------
+    def __str__(self) -> str:
+        return f"{self.person_role} — {self.fiscal_year.display_code()}"
+
+    # ---------- Resolvers & helpers ----------
+
+    @staticmethod
+    def _normalize_end_inclusive(end: date | None) -> date | None:
+        """
+        Treat an end date on the 1st as 'previous day' so month spans are natural:
+        e.g. Apr 1 → May 1  == Apr 1 → Apr 30.
+        """
+        if end and end.day == 1:
+            return end - timedelta(days=1)
+        return end
+
+    @property
+    def resolved_payee_name(self) -> str:
+        name = (self.payee_name or "").strip()
+        if name:
+            return name
+        p = self.person_role.person
+        return f"{p.first_name} {p.last_name}".strip()
+
+    def _default_window_from_pr_and_fy(self) -> tuple[date, date]:
+        """
+        Default pay window = (PR.effective_start|start) .. (PR.effective_end|end) ∩ FY bounds.
+        We clamp hard to FY here.
+        """
+        pr = self.person_role
+        start = pr.effective_start or pr.start_date
+        end   = pr.effective_end or pr.end_date or self.fiscal_year.end  # if open-ended, assume FY end
+        # Fall back defensively if PR dates are missing
+        if not start:
+            start = self.fiscal_year.start
+        if not end:
+            end = self.fiscal_year.end
+        # Clamp to FY
+        start = max(start, self.fiscal_year.start)
+        end   = min(end,   self.fiscal_year.end)
+        return (start, end)
+
+    def resolved_window(self) -> tuple[date, date]:
+        """
+        Final window the plan intends to cover (clamped to FY).
+        If overrides are provided, use them; otherwise use PR∩FY defaults.
+        """
+        d_start, d_end = self._default_window_from_pr_and_fy()
+        start = self.pay_start or d_start
+        end   = self.pay_end   or d_end
+        end = self._normalize_end_inclusive(end)
+        # Clamp to FY bounds as a hard business rule
+        start = max(start, self.fiscal_year.start)
+        end   = min(end,   self.fiscal_year.end)
+        return (start, end)
+
+    # --- “richtwert” computation (simple daily proration with 30-day months) ---
+    @staticmethod
+    def _month_span_days(year: int, month: int) -> int:
+        return calendar.monthrange(year, month)[1]
+
+    @staticmethod
+    def _month_start(d: date) -> date:
+        return d.replace(day=1)
+
+    @staticmethod
+    def _month_end(d: date) -> date:
+        return d.replace(day=calendar.monthrange(d.year, d.month)[1])
+
+    def months_breakdown(self) -> list[dict]:
+        """
+        Returns a breakdown per month with simple daily proration against 30-day months.
+        [
+          {"year": 2026, "month": 1, "days": 16, "month_days": 31, "fraction": Decimal("0.53")},
+          ...
+        ]
+        """
+        start, end = self.resolved_window()
+        if start > end:
+            return []
+
+        out = []
+        cursor = date(start.year, start.month, 1)
+        end_anchor = date(end.year, end.month, 1)
+
+        while True:
+            month_days_real = self._month_span_days(cursor.year, cursor.month)
+            m_start = self._month_start(cursor)
+            m_end   = self._month_end(cursor)
+
+            # overlap within this month
+            seg_start = max(start, m_start)
+            seg_end   = min(end,   m_end)
+            if seg_start <= seg_end:
+                covered_days = (seg_end - seg_start).days + 1  # inclusive
+                # proration against 30-day “accounting” month
+                fraction = Decimal(covered_days) / Decimal(30)
+                out.append({
+                    "year": cursor.year,
+                    "month": cursor.month,
+                    "days": covered_days,
+                    "month_days": month_days_real,
+                    "fraction": fraction.quantize(Decimal("0.0001")),
+                })
+
+            # stop after processing the end month
+            if cursor.year == end_anchor.year and cursor.month == end_anchor.month:
+                break
+
+            # next month
+            if cursor.month == 12:
+                cursor = date(cursor.year + 1, 1, 1)
+            else:
+                cursor = date(cursor.year, cursor.month + 1, 1)
+
+        return out
+
+    def recommended_total(self) -> Decimal:
+        """
+        “Richtwert”: monthly_amount * sum(proration fractions).
+        Rounded half-up to cents.
+        """
+        if self.monthly_amount is None:
+            return Decimal("0.00")
+        total = sum((row["fraction"] * self.monthly_amount for row in self.months_breakdown()), Decimal("0"))
+        return total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    @property
+    def effective_total(self) -> Decimal:
+        """What we will actually present/export as total."""
+        return (self.total_override if self.total_override is not None else self.recommended_total())
+
+
+    # ---------- Validation ----------
+
+    def clean(self):
+        errors = {}
+
+        # Ensure FY present (protect against weird admin states)
+        if not self.fiscal_year_id:
+            errors["fiscal_year"] = _("Fiscal year is required.")
+
+        # Ensure window intersects FY and is coherent
+        if self.fiscal_year_id:
+            fy = self.fiscal_year
+            # If overrides are provided, ensure they at least overlap FY
+            if self.pay_start and (self.pay_start > fy.end):
+                errors["pay_start"] = _("Pay start must be within or before the fiscal year end.")
+            if self.pay_end and (self.pay_end < fy.start):
+                errors["pay_end"] = _("Pay end must be within or after the fiscal year start.")
+
+            start, end = self.resolved_window()
+            if start > end:
+                errors["pay_start"] = _("Computed pay window is empty or inverted. Adjust start/end.")
+
+        # Basic money sanity
+        if self.monthly_amount is None or self.monthly_amount < Decimal("0.00"):
+            errors["monthly_amount"] = _("Monthly amount must be a non-negative number.")
+
+        if self.iban:
+            if not _iban_checksum_ok(self.iban.replace(" ", "").upper()):
+                errors["iban"] = _("IBAN checksum failed.")
+
+        if errors:
+            raise ValidationError(errors)
+
+    # ---------- State helpers ----------
+    def mark_suspended(self, note: str | None = None, when: date | None = None):
+        self.status = self.Status.SUSPENDED
+        if note:
+            self.status_note = note
+        # you can add a suspended_at field later if you want exact dates
+        self.save(update_fields=["status", "status_note", "updated_at"])
+
+    def mark_active(self, note: str | None = None):
+        self.status = self.Status.ACTIVE
+        if note:
+            self.status_note = note
+        self.save(update_fields=["status", "status_note", "updated_at"])
+
+    def mark_finished(self, note: str | None = None):
+        self.status = self.Status.FINISHED
+        if note:
+            self.status_note = note
+        self.save(update_fields=["status", "status_note", "updated_at"])
+
+def _iban_checksum_ok(iban: str) -> bool:
+    """Mod-97 per ISO 13616."""
+    if not iban or len(iban) < 4:
+        return False
+    s = (iban[4:] + iban[:4]).upper()
+    # convert letters to numbers (A=10 ... Z=35)
+    digits = "".join(str(ord(c) - 55) if "A" <= c <= "Z" else c for c in s)
+    # mod 97 in chunks to avoid huge ints
+    rem = 0
+    for ch in digits:
+        rem = (rem * 10 + int(ch)) % 97
+    return rem == 1

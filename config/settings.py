@@ -176,16 +176,17 @@ JAZZMIN_SETTINGS = {
     # Icons (Font Awesome 5/6)
     "icons": {
         "people": "fa-solid fa-users-gear",                 # app icon (Personnel)
-        "people.Person": "fa-solid fa-user",
-        "people.PersonRole": "fa-solid fa-user-check",
-        "people.Role": "fa-solid fa-id-badge",
-        "people.RoleTransitionReason": "fa-solid fa-flag",
+        "people.person": "fa-solid fa-user",
+        "people.personrole": "fa-solid fa-user-check",
+        "people.role": "fa-solid fa-id-badge",
+        "people.roletransitionreason": "fa-solid fa-flag",
         "finances": "fa-solid fa-calculator",
-        "finances.FiscalYear": "fa-solid fa-calendar-check",
+        "finances.fiscalYear": "fa-solid fa-calendar-check",
+        "finances.paymentplan": "fa-solid fa-money-check-dollar",
     },
 
     # Sidebar ordering within the app
-    "order_with_respect_to": ["people", "people.person", "people.personrole", "people.roletransitionreason", "people.role", "finances", "finances.fiscalyear" ],
+    "order_with_respect_to": ["people", "people.person", "people.personrole", "people.roletransitionreason", "people.role", "finances", "finances.fiscalyear", "finances.paymentplan" ],
 
 
     # Hide historical models from menu
@@ -195,13 +196,14 @@ JAZZMIN_SETTINGS = {
         "people.HistoricalPersonRole",
         "people.HistoricalRoleTransitionReason",
         "finances.HistoricalFiscalYear",
+        "finances.HistoricalPaymentPlan",
     ],
 
     # Quality of life
     "related_modal_active": True,                    # add related objects in a modal
-    "changeform_format": "vertical_tabs",            # or "horizontal_tabs" / "collapsible"
+    "changeform_format": "collapsible",            # or "horizontal_tabs" / "collapsible"
     "changeform_format_overrides": {
-        "people.person": "collapsible",              # example: person edit as collapsible
+        "finances.paymentplan": "single",              # example: person edit as collapsible
     },
     "language_chooser": True,                       # header language switcher
 

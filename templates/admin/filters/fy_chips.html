@@ -1,0 +1,12 @@
+{% load i18n %}
+    <div class="col-12 pb-4" id="change-list-date-hierarchy">
+        <div class="btn-group date-hierarchy text-sm">
+        {% for choice in choices %}
+            {% if choice.selected %}
+            <a class="btn btn-primary" href="{{ choice.query_string|iriencode }}">{{ choice.display }}</a>
+            {% else %}
+            <a class="btn btn-primary" href="{{ choice.query_string|iriencode }}">{{ choice.display }}</a>
+            {% endif %}
+        {% endfor %}
+        </div>
+    </div>

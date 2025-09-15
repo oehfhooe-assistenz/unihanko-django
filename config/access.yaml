@@ -22,6 +22,7 @@ groups:
     inherits: []
     models:
       finances.FiscalYear:       [view]
+      finances.PaymentPlan:      [view]
     custom_perms: {}
 
   "module:finances:manager":
@@ -29,6 +30,7 @@ groups:
       - "module:finances:editor"
     models:
       finances.FiscalYear:      [view, add, change]
+      finances.PaymentPlan:    [view, add, change]
     custom_perms: {} 
 
 
