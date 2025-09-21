@@ -1,0 +1,6 @@
+{% block object-tools %}
+  {% if has_add_permission %}
+    {# force the per-model include #}
+    {% include "admin/finances/paymentplan/change_list_object_tools.html" %}
+  {% endif %}
+{% endblock %}

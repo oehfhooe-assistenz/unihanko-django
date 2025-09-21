@@ -1,0 +1,13 @@
+{% load i18n admin_urls %}
+{% url opts|admin_urlname:'add' as add_url %}
+<ul class="object-tools">
+  <li>
+    <a href="{{ add_url }}{% if selected_fy_id %}?fy={{ selected_fy_id }}{% endif %}" class="btn btn-success float-right">
+      {% if selected_fy_label %}
+        {% translate "Add payment plan to" %} {{ selected_fy_label }}
+      {% else %}
+        {% translate "Add" %} {{ opts.verbose_name|capfirst }}
+      {% endif %}
+    </a>
+  </li>
+</ul>

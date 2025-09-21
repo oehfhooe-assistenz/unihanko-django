@@ -1,6 +1,6 @@
 from django.contrib import admin, messages
 from django import forms
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, pgettext
 from django.utils.html import format_html, format_html_join
 from django_object_actions import DjangoObjectActions
 from import_export import resources
@@ -8,6 +8,7 @@ from import_export.admin import ImportExportModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
 from django.db import transaction, IntegrityError
 from django.utils.safestring import mark_safe
+from core.admin_mixins import ImportExportGuardMixin
 
 from .models import FiscalYear, PaymentPlan, default_start, auto_end_from_start, stored_code_from_dates
 from core.pdf import render_pdf_response
@@ -25,6 +26,7 @@ class PaymentPlanResource(resources.ModelResource):
         model = PaymentPlan
         fields = (
             "id",
+            "plan_code",
             "person_role",
             "fiscal_year",
             "payee_name",
@@ -105,7 +107,7 @@ class PaymentPlanForm(forms.ModelForm):
 
 # =============== Admin ===============
 @admin.register(FiscalYear)
-class FiscalYearAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [FiscalYearResource]
     form = FiscalYearForm
 
@@ -295,7 +297,7 @@ class FYChipsFilter(admin.SimpleListFilter):
         # show most recent 6 years (tweak as you like)
         fys = FiscalYear.objects.order_by("-start")[:4]
         # label: 2023, 2024… (or use fy.display_code() for FY23_24)
-        return [(fy.pk, str(fy.start.year)) for fy in fys]
+        return [(fy.pk, fy.display_code()) for fy in fys]
 
     def queryset(self, request, qs):
         val = self.value()
@@ -304,7 +306,7 @@ class FYChipsFilter(admin.SimpleListFilter):
         return qs
 
 @admin.register(PaymentPlan)
-class PaymentPlanAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [PaymentPlanResource]
     form = PaymentPlanForm
 
@@ -314,6 +316,7 @@ class PaymentPlanAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistor
 
     # --- list / filters / search -------------------------------------------
     list_display = (
+        "plan_code",
         "person_role",
         "fiscal_year",
         "window_display",
@@ -324,6 +327,7 @@ class PaymentPlanAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistor
     )
     list_filter = (FYChipsFilter, "status", "pay_start", "pay_end")
     search_fields = (
+        "plan_code",
         "person_role__person__last_name",
         "person_role__person__first_name",
         "person_role__role__name",
@@ -332,16 +336,17 @@ class PaymentPlanAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistor
     )
     autocomplete_fields = ("person_role", "fiscal_year")
     readonly_fields = (
+        "plan_code_or_hint",
         "created_at", "updated_at",
         "window_preview", "breakdown_preview", "recommended_total_display", "role_monthly_hint",
     )
-    date_hierarchy = None
+    #date_hierarchy = None
     list_per_page = 50
     ordering = ("-created_at",)
 
     fieldsets = (
         (_("Scope"), {
-            "fields": ("person_role", "fiscal_year"),
+            "fields": ("plan_code_or_hint", "person_role", "fiscal_year"),
         }),
         (_("Payee & banking"), {
             "fields": (("payee_name",), ("iban"), ("bic"), "reference"),
@@ -405,6 +410,19 @@ class PaymentPlanAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistor
             fy.start.strftime("%Y-%m-%d"), fy.end.strftime("%Y-%m-%d"),
         )
 
+    @admin.display(description=_("Plan code"))
+    def plan_code_or_hint(self, obj):
+        muted_style = "color:#e74c3c;"
+        if not obj or not getattr(obj, "pk", None):
+            # translators: shown on the PaymentPlan add form before the object is saved
+            msg = pgettext("PaymentPlan admin hint", "will be generated after saving")
+            # keep punctuation outside the translatable string
+            return format_html('<span style="{}">— {} —</span>', muted_style, msg)
+
+        # If somehow still empty after save, show a localized fallback
+        empty = pgettext("PaymentPlan admin hint", "not available")
+        return obj.plan_code or format_html('<span style="{}">{}</span>', muted_style, empty)
+
     @admin.display(description=_("Bank line preview"))
     def bank_preview(self, obj):
         if not obj.pk:
@@ -442,7 +460,6 @@ class PaymentPlanAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistor
             text,
         )
 
-
     @admin.display(description=_("Recommended total"))
     def recommended_total_display(self, obj):
         if not obj.pk:
@@ -450,11 +467,15 @@ class PaymentPlanAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistor
         val = format(obj.recommended_total(), ".2f")
         return format_html('<code style="color: yellow;">{} €</code>', val)
 
-    # --- read-only when FY locked ------------------------------------------
+    # --- read-only ------------------------------------------
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
+
+        # NEW: once the object exists, never allow changing the FY in the UI
+        if obj:                      # i.e., editing an existing plan
+             ro += ["fiscal_year", "person_role"]
         if obj and obj.fiscal_year and obj.fiscal_year.is_locked:
-            # lock everything except status display (but status itself becomes immutable via actions hiding)
+            # existing lock behavior
             ro += [
                 "person_role", "fiscal_year",
                 "payee_name", "iban", "bic", "reference",
@@ -464,7 +485,9 @@ class PaymentPlanAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistor
                 "signed_person_at", "signed_wiref_at", "signed_chair_at",
                 "pdf_file",
             ]
-        return ro
+
+        # avoid duplicates
+        return list(dict.fromkeys(ro))
 
     # --- queryset perf ------------------------------------------------------
     def get_queryset(self, request):
@@ -472,28 +495,23 @@ class PaymentPlanAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistor
         return qs.select_related("person_role__person", "person_role__role", "fiscal_year")
 
     # --- object actions (status transitions) --------------------------------
-    change_actions = ("activate_plan", "suspend_plan", "finish_plan")
+    change_actions = ("activate_plan", "suspend_plan", "finish_plan", "cancel_plan")
 
     def get_change_actions(self, request, object_id, form_url):
         actions = list(super().get_change_actions(request, object_id, form_url))
         obj = self.get_object(request, object_id)
         if not obj:
             return actions
-
-        # If FY locked: hide all transitions
         if obj.fiscal_year and obj.fiscal_year.is_locked:
             return []
-
-        # Show/hide based on status
         if obj.status == obj.Status.DRAFT:
-            actions = [a for a in actions if a in ("activate_plan",)]
+            actions = [a for a in actions if a in ("activate_plan", "cancel_plan")]
         elif obj.status == obj.Status.ACTIVE:
-            actions = [a for a in actions if a in ("suspend_plan", "finish_plan")]
+            actions = [a for a in actions if a in ("suspend_plan", "finish_plan", "cancel_plan")]
         elif obj.status == obj.Status.SUSPENDED:
-            actions = [a for a in actions if a in ("activate_plan", "finish_plan")]
+            actions = [a for a in actions if a in ("activate_plan", "finish_plan", "cancel_plan")]
         else:
-            # FINISHED / CANCELLED: no transitions
-            actions = []
+            actions = []  # FINISHED/CANCELLED -> no transitions
         return actions
 
     def activate_plan(self, request, obj):
@@ -522,6 +540,12 @@ class PaymentPlanAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistor
     finish_plan.label = _("Finish")
     finish_plan.attrs = {"class": "btn btn-block btn-outline-secondary btn-sm"}
 
+    def cancel_plan(self, request, obj):
+        obj.mark_cancelled(note=_("Cancelled from admin"))
+        self.message_user(request, _("Plan cancelled."), level=messages.SUCCESS)
+    cancel_plan.label = _("Cancel")
+    cancel_plan.attrs = {"class": "btn btn-block btn-outline-danger btn-sm"}
+
     def get_changeform_initial_data(self, request):
         initial = super().get_changeform_initial_data(request)
         pr_id = request.GET.get("person_role") or request.GET.get("person_role__id__exact")
@@ -541,3 +565,69 @@ class PaymentPlanAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistor
     def has_delete_permission(self, request, obj=None):
         return False
 
+    # ---------------- FY-aware Add behaviour ----------------
+    def has_add_permission(self, request):
+        """
+        Show the green 'Add' button on the changelist only if a FY chip is selected (?fy=<id>).
+        Always allow the actual add view itself.
+        """
+        allowed = super().has_add_permission(request)
+        if not allowed:
+            return False
+        # Always allow on the 'add' view
+        if request.path.endswith("/add/"):
+            return True
+        # On the changelist, require an FY chip
+        return bool(request.GET.get("fy"))
+    
+    def changelist_view(self, request, extra_context=None):
+        """
+        Remember the selected FY so we can prefill/hide the field on the add form.
+        Also pass a label for the custom Add button template.
+        """
+        fy_id = request.GET.get("fy")
+        if fy_id:
+            request.session["paymentplans_selected_fy"] = fy_id
+            try:
+                fy_obj = FiscalYear.objects.only("start", "end", "code").get(pk=fy_id)
+                selected_label = fy_obj.display_code()  # e.g. FY23_24 or WJ23_24
+            except FiscalYear.DoesNotExist:
+                selected_label = None
+        else:
+            request.session.pop("paymentplans_selected_fy", None)
+            selected_label = None
+
+        extra_context = extra_context or {}
+        extra_context["selected_fy_label"] = selected_label  # used by template to label the Add button
+        extra_context["selected_fy_id"] = fy_id
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def get_form(self, request, obj=None, **kwargs):
+        """
+        On the add view, prefill and hide fiscal_year using ?fy= or the stored session value.
+        """
+        form = super().get_form(request, obj, **kwargs)
+        if not obj and "fiscal_year" in form.base_fields:
+            fy_id = (
+                request.GET.get("fiscal_year")
+                or request.GET.get("fy")
+                or request.session.get("paymentplans_selected_fy")
+            )
+            if fy_id:
+                form.base_fields["fiscal_year"].initial = fy_id
+                form.base_fields["fiscal_year"].widget = forms.HiddenInput()
+
+        #forward the FY to the person_role autocomplete endpoint
+        fy_forward = (obj.fiscal_year_id if obj else
+                    request.GET.get("fy") or request.session.get("paymentplans_selected_fy"))
+        if "person_role" in form.base_fields and fy_forward:
+            w = form.base_fields["person_role"].widget
+            # Django’s AutocompleteSelect exposes url_parameters; fall back to patching the URL.
+            if hasattr(w, "url_parameters"):
+                w.url_parameters["fy"] = fy_forward
+            elif hasattr(w, "get_url"):
+                url = w.get_url()
+                sep = "&" if "?" in url else "?"
+                w.attrs["data-autocomplete-url"] = f"{url}{sep}fy={fy_forward}"
+
+        return form

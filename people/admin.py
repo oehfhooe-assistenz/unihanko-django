@@ -14,6 +14,7 @@ from django.urls import reverse
 
 from .models import Person, Role, PersonRole, RoleTransitionReason
 from core.pdf import render_pdf_response
+from core.admin_mixins import ImportExportGuardMixin
 
 
 # =========================
@@ -176,7 +177,7 @@ class PersonRoleInline(admin.StackedInline):
 # Person Admin
 # =========================
 @admin.register(Person)
-class PersonAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class PersonAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [PersonResource]
 
     list_display = (
@@ -283,7 +284,7 @@ class PersonAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmi
 # Role Admin
 # =========================
 @admin.register(Role)
-class RoleAdmin(ImportExportModelAdmin, SimpleHistoryAdmin):
+class RoleAdmin(ImportExportGuardMixin, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [RoleResource]
     list_display = ("name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind")
     search_fields = ("name",)
@@ -302,7 +303,7 @@ class RoleAdmin(ImportExportModelAdmin, SimpleHistoryAdmin):
 # Reason Admin (dictionary)
 # =========================
 @admin.register(RoleTransitionReason)
-class ReasonAdmin(ImportExportModelAdmin):
+class ReasonAdmin(ImportExportGuardMixin, ImportExportModelAdmin):
     resource_classes = [RoleTransitionReasonResource]
     list_display = ("code", "name", "active")
     list_filter = ("active",)
@@ -324,13 +325,14 @@ class ReasonAdmin(ImportExportModelAdmin):
         # Safer to disable hard deletes for dictionary rows, too
         return False
 
-
+from django.db.models import Q
+from finances.models import FiscalYear
 
 # =========================
 # PersonRole Admin
 # =========================
 @admin.register(PersonRole)
-class PersonRoleAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [PersonRoleResource]
     list_display = (
         "person",
@@ -348,6 +350,22 @@ class PersonRoleAdmin(DjangoObjectActions, ImportExportModelAdmin, SimpleHistory
     actions = ["offboard_today"]
 
     change_actions = ("print_appointment_regular", "print_appointment_ad_interim", "print_confirmation", "print_resignation",)
+
+    def get_search_results(self, request, queryset, search_term):
+        qs, distinct = super().get_search_results(request, queryset, search_term)
+        fy_id = request.GET.get("fy")
+        if fy_id:
+            try:
+                fy = FiscalYear.objects.only("start", "end").get(pk=fy_id)
+                # overlap with FY: (start ≤ fy.end) AND (end ≥ fy.start), nulls = open
+                qs = qs.filter(
+                    Q(effective_start__isnull=True) | Q(effective_start__lte=fy.end),
+                    Q(effective_end__isnull=True)   | Q(effective_end__gte=fy.start),
+                )
+            except FiscalYear.DoesNotExist:
+                pass
+        return qs, distinct
+
 
     def has_delete_permission(self, request, obj=None):
         return False

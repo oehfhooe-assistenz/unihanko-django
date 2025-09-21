@@ -1,6 +1,16 @@
 # Declarative group & permission config for UniHanko
 
 groups:
+  "feature:import":
+    inherits: []
+    models: {}
+    custom_perms: {}
+  
+  "feature:export":
+    inherits: []
+    models: {}
+    custom_perms: {}
+
   "module:personnel:editor":
     inherits: []
     models:

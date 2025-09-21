@@ -1,10 +1,11 @@
 from __future__ import annotations
 from datetime import date, timedelta
-from django.db import models
+from django.db import models, transaction
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
+import re
 
 # --- helpers ---------------------------------------------------------------
 
@@ -165,6 +166,9 @@ class PaymentPlan(models.Model):
     person_role  = models.ForeignKey(PersonRole, on_delete=models.PROTECT, related_name="payment_plans", verbose_name=_("Assignment"))
     fiscal_year  = models.ForeignKey(FiscalYear, on_delete=models.PROTECT, related_name="payment_plans", verbose_name=_("Fiscal year"))
 
+    # per-FY human reference code (auto)
+    plan_code = models.CharField(_("Plan code"), max_length=24, unique=True, blank=True, help_text=_("Auto-generated reference (e.g. WJ24_25-00001)."))
+
     # Banking + payee
     payee_name   = models.CharField(_("Payee name (optional override)"), max_length=200, blank=True)
     iban         = models.CharField(_("IBAN"), max_length=34, blank=True, validators=[RegexValidator(IBAN_SHAPE, _("Enter a valid IBAN (e.g. AT.., DE..)."))],)
@@ -203,10 +207,11 @@ class PaymentPlan(models.Model):
         verbose_name_plural = _("Payment plans")
         ordering = ("-created_at",)
         constraints = [
-            # Unique pair regardless of status (you can relax later if you want multiples)
+            # ONE non-final plan per (assignment, FY). 'Final' = CANCELLED or FINISHED.
             models.UniqueConstraint(
                 fields=["person_role", "fiscal_year"],
-                name="uq_payment_plan_unique_per_assignment_fy",
+                condition=~models.Q(status__in=["CANCELLED", "FINISHED"]),
+                name="uq_payment_plan_unique_per_pair_open",
             ),
             # Only one ACTIVE per (person_role, fiscal_year)
             models.UniqueConstraint(
@@ -219,16 +224,22 @@ class PaymentPlan(models.Model):
                 check=models.Q(pay_end__isnull=True) | models.Q(pay_start__isnull=True) | models.Q(pay_end__gte=models.F("pay_start")),
                 name="ck_payment_plan_start_before_end",
             ),
+            models.CheckConstraint(
+            check=~models.Q(plan_code=""),
+            name="ck_paymentplan_plan_code_nonempty",
+            ),
         ]
         indexes = [
             models.Index(fields=["fiscal_year"]),
             models.Index(fields=["person_role"]),
             models.Index(fields=["status"]),
+            models.Index(fields=["plan_code"]),
         ]
 
     # ---------- Display ----------
     def __str__(self) -> str:
-        return f"{self.person_role} — {self.fiscal_year.display_code()}"
+        code = self.plan_code or "—"
+        return f"[{code}] {self.person_role} — {self.fiscal_year.display_code()}"
 
     # ---------- Resolvers & helpers ----------
 
@@ -364,6 +375,12 @@ class PaymentPlan(models.Model):
     def clean(self):
         errors = {}
 
+        # Prevent FY changes after creation (keeps plan_code stable)
+        if self.pk:
+            orig = PaymentPlan.objects.only("fiscal_year_id").get(pk=self.pk)
+            if orig.fiscal_year_id != self.fiscal_year_id:
+                errors["fiscal_year"] = _("You cannot change the fiscal year after creation.")
+
         # Ensure FY present (protect against weird admin states)
         if not self.fiscal_year_id:
             errors["fiscal_year"] = _("Fiscal year is required.")
@@ -389,6 +406,15 @@ class PaymentPlan(models.Model):
             if not _iban_checksum_ok(self.iban.replace(" ", "").upper()):
                 errors["iban"] = _("IBAN checksum failed.")
 
+        if self.fiscal_year_id and self.person_role_id:
+            pr = self.person_role
+            fy = self.fiscal_year
+            pr_start = pr.effective_start or pr.start_date
+            pr_end   = pr.effective_end   or pr.end_date
+            # treat missing dates as open
+            if pr_start and pr_start > fy.end or pr_end and pr_end < fy.start:
+                errors["person_role"] = _("Selected assignment does not overlap the fiscal year.")
+
         if errors:
             raise ValidationError(errors)
 
@@ -411,6 +437,44 @@ class PaymentPlan(models.Model):
         if note:
             self.status_note = note
         self.save(update_fields=["status", "status_note", "updated_at"])
+
+    def mark_cancelled(self, note: str | None = None):
+        self.status = self.Status.CANCELLED
+        if note:
+            self.status_note = note
+        self.save(update_fields=["status", "status_note", "updated_at"])
+
+    # ---------- Code generation ----------
+    def _generate_plan_code(self) -> str:
+        """
+        Next per-FY serial: WJyy_yy-00001, WJyy_yy-00002, ...
+        Row-lock the FY to serialize concurrent creates for the same year.
+        """
+        if not self.fiscal_year_id:
+            raise ValidationError({"fiscal_year": _("Fiscal year is required before code generation.")})
+        prefix = f"{self.fiscal_year.code}-"  # e.g. 'WJ24_25-'
+        with transaction.atomic():
+            FiscalYear.objects.select_for_update().get(pk=self.fiscal_year_id)
+            existing = PaymentPlan.objects.filter(
+                fiscal_year_id=self.fiscal_year_id,
+                plan_code__startswith=prefix
+            ).values_list("plan_code", flat=True)
+            max_num = 0
+            for c in existing:
+                m = re.match(rf"^{re.escape(prefix)}(\d+)$", c or "")
+                if m:
+                    max_num = max(max_num, int(m.group(1)))
+            return f"{prefix}{max_num + 1:05d}"
+        
+    # ---------- Save hook ----------
+    def save(self, *args, **kwargs):
+        # Assign plan_code once, on create
+        if not self.pk and not self.plan_code:
+            if not self.fiscal_year_id:
+                raise ValidationError({"fiscal_year": _("Fiscal year is required.")})
+            self.plan_code = self._generate_plan_code()
+        super().save(*args, **kwargs)
+
 
 def _iban_checksum_ok(iban: str) -> bool:
     """Mod-97 per ISO 13616."""
