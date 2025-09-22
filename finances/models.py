@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 import re
+from core.utils.privacy import mask_iban
 
 # --- helpers ---------------------------------------------------------------
 
@@ -174,6 +175,7 @@ class PaymentPlan(models.Model):
     iban         = models.CharField(_("IBAN"), max_length=34, blank=True, validators=[RegexValidator(IBAN_SHAPE, _("Enter a valid IBAN (e.g. AT.., DE..)."))],)
     bic          = models.CharField(_("BIC"), max_length=11, blank=True, validators=[RegexValidator(BIC_SHAPE, _("Enter a valid BIC (8 or 11 chars)."))],)
     reference    = models.CharField(_("Payment reference"), max_length=140, blank=True)
+    address      = models.CharField(_("Payee address"), max_length=225, blank=True, help_text=_("Street, No., Post code, City"))
 
     # Window (optional overrides; otherwise we derive defaults from PR ∩ FY)
     pay_start    = models.DateField(_("Pay start (optional)"), blank=True, null=True)
@@ -252,6 +254,10 @@ class PaymentPlan(models.Model):
         if end and end.day == 1:
             return end - timedelta(days=1)
         return end
+
+    @property
+    def iban_masked(self):
+        return mask_iban(self.iban, head=6, tail=4)
 
     @property
     def resolved_payee_name(self) -> str:

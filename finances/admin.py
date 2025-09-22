@@ -183,10 +183,10 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
     def print_pdf(self, request, obj):
         ctx = {"fy": obj}
         return render_pdf_response("finances/fiscalyear_pdf.html", ctx, request, f"{obj.display_code()}.pdf")
-    print_pdf.label = _("Print PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-outline-secondary btn-sm"}
+    print_pdf.label = "🖨️ " + _("Print receipt PDF")
+    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
 
-    @admin.action(description=_("Export selected to PDF"))
+    @admin.action(description=_("Print selected as overview PDF"))
     def export_selected_pdf(self, request, queryset):
         rows = queryset.order_by("-start")
         return render_pdf_response("finances/fiscalyears_list_pdf.html", {"rows": rows}, request, "fiscal_years.pdf")
@@ -271,7 +271,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         obj.save(update_fields=["is_locked"])
         self.message_user(request, _("Fiscal year locked."), level=messages.SUCCESS)
     lock_year.label = _("Lock year")
-    lock_year.attrs = {"class": "btn btn-block btn-outline-warning btn-sm"}
+    lock_year.attrs = {"class": "btn btn-block btn-warning btn-sm"}
 
     def unlock_year(self, request, obj):
         if not self._is_manager(request):
@@ -284,7 +284,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         obj.save(update_fields=["is_locked"])
         self.message_user(request, _("Fiscal year unlocked."), level=messages.SUCCESS)
     unlock_year.label = _("Unlock year")
-    unlock_year.attrs = {"class": "btn btn-block btn-outline-success btn-sm"}
+    unlock_year.attrs = {"class": "btn btn-block btn-success btn-sm"}
 
 from .models import FiscalYear, PaymentPlan
 
@@ -306,10 +306,10 @@ class FYChipsFilter(admin.SimpleListFilter):
         return qs
 
 @admin.register(PaymentPlan)
-class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class PaymentPlanAdmin(DjangoObjectActions, ImportExportGuardMixin, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [PaymentPlanResource]
     form = PaymentPlanForm
-
+    actions = ("export_selected_pdf",)
     # --- helpers ------------------------------------------------------------
     def _is_manager(self, request) -> bool:
         return request.user.groups.filter(name="module:finances:manager").exists()
@@ -349,7 +349,7 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
             "fields": ("plan_code_or_hint", "person_role", "fiscal_year"),
         }),
         (_("Payee & banking"), {
-            "fields": (("payee_name",), ("iban"), ("bic"), "reference"),
+            "fields": (("payee_name",), ("iban"), ("bic"), ("address"), "reference"),
         }),
         (_("Standing invoice window"), {
             "fields": (("pay_start"), ("pay_end"), "window_preview"),
@@ -478,7 +478,7 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
             # existing lock behavior
             ro += [
                 "person_role", "fiscal_year",
-                "payee_name", "iban", "bic", "reference",
+                "payee_name", "iban", "bic", "address", "reference",
                 "pay_start", "pay_end",
                 "monthly_amount", "total_override",
                 "status", "status_note",
@@ -495,7 +495,7 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
         return qs.select_related("person_role__person", "person_role__role", "fiscal_year")
 
     # --- object actions (status transitions) --------------------------------
-    change_actions = ("activate_plan", "suspend_plan", "finish_plan", "cancel_plan")
+    change_actions = ("activate_plan", "suspend_plan", "finish_plan", "cancel_plan", "print_pdf")
 
     def get_change_actions(self, request, object_id, form_url):
         actions = list(super().get_change_actions(request, object_id, form_url))
@@ -503,15 +503,15 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
         if not obj:
             return actions
         if obj.fiscal_year and obj.fiscal_year.is_locked:
-            return []
+             actions = [a for a in actions if a in ("print_pdf")]
         if obj.status == obj.Status.DRAFT:
-            actions = [a for a in actions if a in ("activate_plan", "cancel_plan")]
+            actions = [a for a in actions if a in ("activate_plan", "cancel_plan", "print_pdf")]
         elif obj.status == obj.Status.ACTIVE:
-            actions = [a for a in actions if a in ("suspend_plan", "finish_plan", "cancel_plan")]
+            actions = [a for a in actions if a in ("suspend_plan", "finish_plan", "cancel_plan", "print_pdf")]
         elif obj.status == obj.Status.SUSPENDED:
-            actions = [a for a in actions if a in ("activate_plan", "finish_plan", "cancel_plan")]
+            actions = [a for a in actions if a in ("activate_plan", "finish_plan", "cancel_plan", "print_pdf")]
         else:
-            actions = []  # FINISHED/CANCELLED -> no transitions
+            actions = [a for a in actions if a in ("print_pdf")]  # FINISHED/CANCELLED -> no transitions
         return actions
 
     def activate_plan(self, request, obj):
@@ -526,25 +526,37 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
             return
         self.message_user(request, _("Plan activated."), level=messages.SUCCESS)
     activate_plan.label = _("Activate")
-    activate_plan.attrs = {"class": "btn btn-block btn-outline-success btn-sm"}
+    activate_plan.attrs = {"class": "btn btn-block btn-success btn-sm"}
 
     def suspend_plan(self, request, obj):
         obj.mark_suspended(note=_("Suspended from admin"))
         self.message_user(request, _("Plan suspended."), level=messages.SUCCESS)
     suspend_plan.label = _("Suspend")
-    suspend_plan.attrs = {"class": "btn btn-block btn-outline-warning btn-sm"}
+    suspend_plan.attrs = {"class": "btn btn-block btn-warning btn-sm"}
 
     def finish_plan(self, request, obj):
         obj.mark_finished(note=_("Finished from admin"))
         self.message_user(request, _("Plan finished."), level=messages.SUCCESS)
     finish_plan.label = _("Finish")
-    finish_plan.attrs = {"class": "btn btn-block btn-outline-secondary btn-sm"}
+    finish_plan.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
 
     def cancel_plan(self, request, obj):
         obj.mark_cancelled(note=_("Cancelled from admin"))
         self.message_user(request, _("Plan cancelled."), level=messages.SUCCESS)
     cancel_plan.label = _("Cancel")
-    cancel_plan.attrs = {"class": "btn btn-block btn-outline-danger btn-sm"}
+    cancel_plan.attrs = {"class": "btn btn-block btn-danger btn-sm"}
+
+    # === PDF actions (single + bulk) ===
+    def print_pdf(self, request, obj):
+        ctx = {"pp": obj}
+        return render_pdf_response("finances/paymentplan_pdf.html", ctx, request, f"{obj.plan_code}.pdf")
+    print_pdf.label = "🖨️ " + _("Print Receipt PDF")
+    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
+
+    @admin.action(description=_("Export selected to PDF"))
+    def export_selected_pdf(self, request, queryset):
+        rows = queryset.select_related("person_role__person", "person_role__role", "fiscal_year").order_by("fiscal_year__start", "plan_code")
+        return render_pdf_response("finances/paymentplans_list_pdf.html", {"rows": rows}, request, "payment_plans.pdf")
 
     def get_changeform_initial_data(self, request):
         initial = super().get_changeform_initial_data(request)

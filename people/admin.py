@@ -271,10 +271,10 @@ class PersonAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModel
     def print_pdf(self, request, obj):
         return render_pdf_response("people/person_pdf.html", {"p": obj}, request, f"person_{obj.id}.pdf")
 
-    print_pdf.label = _("Print Full Personnel Record (PDF)")
-    print_pdf.attrs = {"class": "btn btn-block btn-outline-secondary btn-sm"}
+    print_pdf.label = _("Print Personnel Record PDF")
+    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
 
-    @admin.action(description=_("Print selection roster (PDF)"))
+    @admin.action(description=_("Print selected as roster PDF"))
     def export_selected_pdf(self, request, queryset):
         rows = queryset.order_by("last_name", "first_name")
         return render_pdf_response("people/people_list_pdf.html", {"rows": rows}, request, "people_selected.pdf")
@@ -403,8 +403,8 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
             "people/certs/appointment_regular.html",
             f"bestellung_{obj.person.last_name}_{obj.role.name}.pdf"
         )
-    print_appointment_regular.label = "🧾 " + _("Print appointment (non-confirmation)")
-    print_appointment_regular.attrs = {"class": "btn btn-block btn-outline-warning btn-sm"}
+    print_appointment_regular.label = "🧾 " + _("Print appointment (non-confirmation) PDF")
+    print_appointment_regular.attrs = {"class": "btn btn-block btn-warning btn-sm"}
 
     def print_appointment_ad_interim(self, request, obj):
         return self._render_cert(
@@ -412,8 +412,8 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
             "people/certs/appointment_ad_interim.html",
             f"bestellung_ad_interim_{obj.person.last_name}_{obj.role.name}.pdf"
         )
-    print_appointment_ad_interim.label = "⚡ " + _("Print appointment (ad interim)")
-    print_appointment_ad_interim.attrs = {"class": "btn btn-block btn-outline-warning btn-sm"}
+    print_appointment_ad_interim.label = "💥 " + _("Print appointment (ad interim) PDF")
+    print_appointment_ad_interim.attrs = {"class": "btn btn-block btn-warning btn-sm"}
 
     def print_confirmation(self, request, obj):
         # role-kind guard
@@ -444,8 +444,8 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
             f"bestaetigung_{obj.person.last_name}_{obj.role.name}.pdf"
         )
 
-    print_confirmation.label = "☑️ " + _("Print confirmation (post-confirmation)")
-    print_confirmation.attrs = {"class": "btn btn-block btn-outline-warning btn-sm"}
+    print_confirmation.label = "☑️ " + _("Print confirmation (post-confirmation) PDF")
+    print_confirmation.attrs = {"class": "btn btn-block btn-warning btn-sm"}
 
     def print_resignation(self, request, obj):
         return self._render_cert(
@@ -453,8 +453,8 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
             "people/certs/resignation.html",
             f"ruecktritt_{obj.person.last_name}_{obj.role.name}.pdf"
         )
-    print_resignation.label = "🏁 " + _("Print resignation")
-    print_resignation.attrs = {"class": "btn btn-block btn-outline-warning btn-sm"}
+    print_resignation.label = "🏁 " + _("Print resignation PDF")
+    print_resignation.attrs = {"class": "btn btn-block btn-warning btn-sm"}
 
     # --- Visibility gates (buttons appear only when True) ---
     def get_change_actions(self, request, object_id, form_url):

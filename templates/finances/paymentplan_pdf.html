@@ -1,0 +1,154 @@
+{% extends "pdf/base.html" %}
+{% load i18n %}
+
+{% block pdf_title %}{% trans "Standing invoice (Payment plan) No. " %} {{ pp.plan_code }} — {% trans "STAGE: " %} {{ pp.get_status_display }}{% endblock %}
+{% block header_title %}{% trans "Fiscal year" %}{% endblock %}
+{% block header_subtitle %}{{ pp.fiscal_year }}{% endblock %}
+{% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %}
+
+{% block content %}
+<h2 style="margin:0 0 8px 0;">{% trans "Internal receipt for standing invoice no. " %} <span style="color: var(--brand);">{{ pp.plan_code }}</span></h2>
+<h3 style="margin:10px 0 6px 0;">{% trans "Standing invoice status" %}</h3>
+<table>
+    <tbody>
+        <tr>
+            <th style="width:160px;">{% trans "Status" %}</th>
+            <td>
+                <span style="font-variant-caps: small-caps; font-weight: bold;">{{ pp.get_status_display }}</span>
+            </td>
+        </tr>
+        <tr>
+            <th>{% trans "Status notes" %}</th>
+            <td>{{ pp.status_note }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Signed by Functionary (Person)" %}</th>
+            <td>
+                {% if pp.signed_person_at %}
+                    <span style="color:green; font-variant-caps: small-caps;">{% trans "Complete" %}</span>
+                    <span>{{ pp.signed_person_at|date:"Y-m-d H:i" }}</span>
+                {% else %}
+                    <span style="color:red; font-variant-caps: small-caps;">{% trans "Pending" %}</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>{% trans "Signed by Finance Dept. Head (WiRef)" %}</th>
+            <td>
+                {% if pp.signed_wiref_at %}
+                    <span style="color:green; font-variant-caps: small-caps;">{% trans "Complete" %}</span>
+                    <span>{{ pp.signed_wiref_at|date:"Y-m-d H:i" }}</span>
+                {% else %}
+                    <span style="color:red; font-variant-caps: small-caps;">{% trans "Pending" %}</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>{% trans "Signed by Chair (Vorsitz)" %}</th>
+            <td>
+                {% if pp.signed_chair_at %}
+                    <span style="color:green; font-variant-caps: small-caps;">{% trans "Complete" %}</span>
+                    <span>{{ pp.signed_chair_at|date:"Y-m-d H:i" }}</span>
+                {% else %}
+                    <span style="color:red; font-variant-caps: small-caps;">{% trans "Pending" %}</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>{% trans "Created at" %}</th>
+            <td>{{ pp.created_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Last updated" %}</th>
+            <td>{{ pp.updated_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 style="margin:10px 0 6px 0;">{% trans "Standing invoice scope" %}</h3>
+<table>
+    <tbody>
+        <tr>
+            <th style="width:160px;">{% trans "Function (role assignment)" %}</th>
+            <td>
+                {{ pp.person_role }}
+            </td>
+        </tr>
+        <tr>
+            <th>{% trans "Start date" %}</th>
+            <td>{{ pp.person_role.start_date|date:"j. F Y"|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Effective start date" %}</th>
+            <td>{{ pp.person_role.effective_start|date:"j. F Y"|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "End date (if applicable)" %}</th>
+            <td>{{ pp.person_role.end_date|date:"j. F Y"|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Effective end date (if applicable)" %}</th>
+            <td>{{ pp.person_role.effective_end|date:"j. F Y"|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Confirmation date (if applicable)" %}</th>
+            <td>{{ pp.person_role.confirm_date|date:"j. F Y"|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Confirmation reference (if applicable)" %}</th>
+            <td>{{ pp.person_role.confirm_ref|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Assignment notes" %}</th>
+            <td>{{ pp.person_role.notes|default:"No notes." }}</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 style="margin:10px 0 6px 0;">{% trans "Standing invoice banking information" %}</h3>
+<table>
+    <tbody>
+        <tr>
+            <th style="width:160px;">{% trans "Payee name" %}</th>
+            <td>{{ pp.payee_name }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Address" %}</th>
+            <td>{{ pp.address }}</td>
+        </tr>
+        <tr>
+            <th>IBAN</th>
+            <td>{{ pp.iban_masked }}</td>
+        </tr>
+        <tr>
+            <th>BIC/SWIFT</th>
+            <td>{{ pp.bic }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Banking reference" %}</th>
+            <td>{{ pp.reference }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Payment start date" %}</th>
+            <td>{{ pp.pay_start|date:"j. F Y"|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Payment end date" %}</th>
+            <td>{{ pp.pay_end|date:"j. F Y"|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Total amount" %}</th>
+            <td>{{ pp.total_override }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Monthly amount" %}</th>
+            <td>{{ pp.monthly_amount }}</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 style="margin:14px 0 6px 0;">{% trans "Important notice" %}</h3>
+<p style="font-size:11px;">
+    {% trans "This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited." %}
+</p>
+{% endblock %}

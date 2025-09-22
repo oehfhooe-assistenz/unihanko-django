@@ -1,0 +1,53 @@
+{% extends "pdf/base.html" %} {% load i18n %} {% block pdf_title %}{% trans "Payment plans overview" %} – UniHanko{% endblock %} 
+{% block header_title %}{% trans "Payment plans" %}{% endblock %} {% block header_subtitle %}{% trans "Overview of selected standing invoices (selection)" %}
+{% endblock %} {% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %} {% block content %}
+
+<p style="margin:0 0 10px 0; font-size:11px; color:#6b7280;">
+    {% trans "This is an overview. For a detailed receipt, open a payment plan in the admin and use 'Print Receipt PDF'." %}
+</p>
+<h2 style="margin:0 0 8px 0;">{% trans "(Partial) payment plans [standing invoices] overview" %}</h2>
+<table>
+    <thead>
+        <tr>
+            <th style="width:28px;">#</th>
+            <th>{% trans "Identifier" %}</th>
+            <th>{% trans "Status" %}</th>
+            <th>{% trans "Last updated at" %}</th>
+            <th>{% trans "for Assignment" %}<br><span style="color:var(--muted); font-size: smaller;">{% trans "(nominal monthly amount)" %}</span></th>
+            <th>{% trans "Signed (Person)" %}</th>
+            <th>{% trans "Signed (WiRef)" %}</th>
+            <th>{% trans "Signed (Chair)" %}</th>
+            <th>{% trans "Plan start" %}</th>
+            <th>{% trans "Plan end" %}</th>
+            <th style="text-align: right;">{% trans "Total amount" %}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for pp in rows %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ pp.plan_code }}</td>
+            <td style="font-weight: bold;">{{ pp.get_status_display }}</td>
+            <td>{{ pp.updated_at|date:"Y-m-d H:i" }}</td>
+            <td>{{ pp.person_role}} <br><span style="color:var(--muted); font-size: smaller;">({{ pp.person_role.role.default_monthly_amount|default:"—" }} €)</span></td>
+            <td>{{ pp.signed_person_at|default:"—" }}</td>
+            <td>{{ pp.signed_wiref_at|default:"—" }}</td>
+            <td>{{ pp.signed_chair_at|default:"—" }}</td>
+            <td>{{ pp.pay_start|date:"j. F Y"|default:"—" }}</td>
+            <td>{{ pp.pay_end|date:"j. F Y"|default:"—" }}</td>
+            <td style="text-align: right;">{{ pp.total_override|default:0.00 }} €</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="11">{% trans "No entries." %}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3 style="margin:14px 0 6px 0;">{% trans "Important notice" %}</h3>
+<p style="font-size:11px;">
+    {% trans "This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited." %}
+</p>
+
+{% endblock %}
