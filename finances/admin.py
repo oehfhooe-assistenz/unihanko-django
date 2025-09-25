@@ -1,25 +1,29 @@
 from django.contrib import admin, messages
 from django import forms
 from django.utils.translation import gettext_lazy as _, pgettext
-from django.utils.html import format_html, format_html_join
+from django.utils.html import format_html
 from django_object_actions import DjangoObjectActions
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
 from django.db import transaction, IntegrityError
 from django.utils.safestring import mark_safe
-from core.admin_mixins import ImportExportGuardMixin
 
 from .models import FiscalYear, PaymentPlan, default_start, auto_end_from_start, stored_code_from_dates
 from core.pdf import render_pdf_response
+from core.admin_mixins import ImportExportGuardMixin
 
 
 # =============== Import–Export ===============
 class FiscalYearResource(resources.ModelResource):
     class Meta:
         model = FiscalYear
-        fields = ("id", "code", "label", "start", "end", "is_active", "is_locked", "created_at", "updated_at")
-        export_order = ("id", "code", "label", "start", "end", "is_active", "is_locked", "created_at", "updated_at")
+        fields = (
+            "id", "code", "label", "start", "end",
+            "is_active", "is_locked", "created_at", "updated_at"
+        )
+        export_order = fields
+
 
 class PaymentPlanResource(resources.ModelResource):
     class Meta:
@@ -29,7 +33,9 @@ class PaymentPlanResource(resources.ModelResource):
             "plan_code",
             "person_role",
             "fiscal_year",
+            "cost_center",
             "payee_name",
+            "address",
             "iban", "bic", "reference",
             "pay_start", "pay_end",
             "monthly_amount", "total_override",
@@ -39,7 +45,8 @@ class PaymentPlanResource(resources.ModelResource):
         )
         export_order = fields
 
-# =============== Admin form ===============
+
+# =============== Admin forms ===============
 class FiscalYearForm(forms.ModelForm):
     class Meta:
         model = FiscalYear
@@ -52,6 +59,7 @@ class FiscalYearForm(forms.ModelForm):
         if "code" in self.fields:
             self.fields["code"].help_text = _("Leave blank to auto-generate (WJyy_yy).")
 
+
 class PaymentPlanForm(forms.ModelForm):
     class Meta:
         model = PaymentPlan
@@ -60,37 +68,58 @@ class PaymentPlanForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         F = self.fields
+        obj = self.instance
 
+        # Help texts (keep your original window/richtwert notes)
         if "pay_start" in F:
             F["pay_start"].help_text = _(
-                "Optional. Leave empty to default to the assignment/FY window. "
+                "Optional. Leave empty on first save to default to the assignment/FY window. "
                 "We hard-clamp to the fiscal year."
             )
         if "pay_end" in F:
             F["pay_end"].help_text = _(
-                "Optional. Leave empty to default to the assignment/FY window. "
+                "Optional. Leave empty on first save to default to the assignment/FY window. "
                 "Must not be before start."
             )
-        if "total_override" in F:
-            F["total_override"].help_text = _(
-                "Optional. If set, this replaces the computed total (“richtwert”)."
+
+        # (2) No silent autofill of name/amount. Only default the reference on *add*.
+        if not obj.pk and "reference" in F and not self.initial.get("reference"):
+            self.initial["reference"] = "Funktionsgebühr"
+
+        # (3) Suggestion chips (visible/nudgy, but won’t change data unless clicked)
+        suggested_name = ""
+        try:
+            if getattr(obj, "person_role_id", None):
+                p = obj.person_role.person
+                suggested_name = f"{(p.first_name or '').strip()} {(p.last_name or '').strip()}".strip()
+        except Exception:
+            pass
+
+        def _chip(label: str, field_id: str, value: str) -> str:
+            if not value:
+                return ""
+            # inline JS to set the input value
+            return (
+                f'<a class="uh-chip" '
+                f'style="margin-left:.5rem; padding:2px 8px; border-radius:999px; background:#eef2ff; '
+                f'border:1px solid #c7d2fe; cursor:pointer; font-weight:600;" '
+                f'onclick="(function(){{var el=document.getElementById(\'{field_id}\'); if(el){{el.value={value!r}; el.dispatchEvent(new Event(\'change\'));}}}})()">'
+                f'{label}</a>'
             )
+
         if "payee_name" in F:
-            F["payee_name"].help_text = _(
-                "Optional. Leave blank to use the person’s name from the assignment."
+            F["payee_name"].help_text = mark_safe(
+                _("<strong>Tip:</strong> Use the assignment holder’s name")
+                + _chip(_("Use name"), "id_payee_name", suggested_name)
             )
 
-        # Prefill monthly on Add using the assignment's role
-        if not self.instance.pk and "monthly_amount" in F:
-            pr = self.initial.get("person_role") or getattr(self.instance, "person_role", None)
-            role_amt = None
-            try:
-                role_amt = getattr(getattr(pr, "role", None), "default_monthly_amount", None)
-            except Exception:
-                pass
-            if role_amt is not None and not self.initial.get("monthly_amount"):
-                self.initial["monthly_amount"] = role_amt
+        if "reference" in F:
+            F["reference"].help_text = mark_safe(
+                _("<strong>Tip:</strong> Default reference")
+                + _chip(_("Use “Funktionsgebühr”"), "id_reference", "Funktionsgebühr")
+            )
 
+    # Normalize banking inputs
     def clean_iban(self):
         iban = (self.cleaned_data.get("iban") or "").replace(" ", "").upper()
         return iban
@@ -100,12 +129,409 @@ class PaymentPlanForm(forms.ModelForm):
         return bic
 
     def clean_reference(self):
+        # keep explicit; do NOT append name automatically
         ref = (self.cleaned_data.get("reference") or "").strip()
-        return ref or ("Funktionsgebühr " + self.cleaned_data.get("payee_name"))
+        return ref or "Funktionsgebühr"
+
+    # (5) Stricter validation when leaving DRAFT (form-level)
+    def clean(self):
+        cleaned = super().clean()
+        status = cleaned.get("status")
+        if status and status != PaymentPlan.Status.DRAFT:
+            required_fields = ["payee_name", "address", "reference", "cost_center", "iban", "bic"]
+            for f in required_fields:
+                v = cleaned.get(f)
+                if not (str(v).strip() if v is not None else ""):
+                    self.add_error(f, _("Required when leaving Draft."))
+            if cleaned.get("monthly_amount") is None:
+                self.add_error("monthly_amount", _("Required when leaving Draft."))
+        return cleaned
 
 
+# =============== Filters ===============
+class FYChipsFilter(admin.SimpleListFilter):
+    title = _("Year")
+    parameter_name = "fy"
+    template = "admin/filters/fy_chips.html"
 
-# =============== Admin ===============
+    def lookups(self, request, model_admin):
+        fys = FiscalYear.objects.order_by("-start")[:4]
+        return [(fy.pk, fy.display_code()) for fy in fys]
+
+    def queryset(self, request, qs):
+        val = self.value()
+        if val:
+            return qs.filter(fiscal_year_id=val)
+        return qs
+
+
+# =============== PaymentPlan Admin ===============
+@admin.register(PaymentPlan)
+class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+    resource_classes = [PaymentPlanResource]
+    form = PaymentPlanForm
+    actions = ("export_selected_pdf",)
+
+    # --- helpers ------------------------------------------------------------
+    def _is_manager(self, request) -> bool:
+        return request.user.groups.filter(name="module:finances:manager").exists()
+
+    # --- list / filters / search -------------------------------------------
+    list_display = (
+        "plan_code",
+        "person_role",
+        "fiscal_year",
+        "window_display",
+        "cost_center",
+        "monthly_amount",
+        "effective_total_display",
+        "status_badge",
+        "updated_at",
+    )
+    list_filter = (FYChipsFilter, "status", "pay_start", "pay_end")
+    search_fields = (
+        "plan_code",
+        "person_role__person__last_name",
+        "person_role__person__first_name",
+        "person_role__role__name",
+        "payee_name",
+        "reference",
+        "cost_center",
+        "address",
+    )
+    autocomplete_fields = ("person_role", "fiscal_year")
+
+    # (3/4) include bank-reference previews as read-only
+    readonly_fields = (
+        "plan_code_or_hint",
+        "created_at", "updated_at",
+        "window_preview", "breakdown_preview", "recommended_total_display", "role_monthly_hint",
+        "bank_reference_preview_full", "bank_reference_preview_short", "pdf_file",
+    )
+
+    list_per_page = 50
+    ordering = ("-created_at",)
+
+    fieldsets = (
+        (_("Scope"), {
+            "fields": ("plan_code_or_hint", "person_role", "fiscal_year"),
+        }),
+        (_("Budget"), {
+            "fields": ("cost_center",),
+        }),
+        (_("Payee & banking"), {
+            "fields": (
+                ("payee_name",), ("iban"), ("bic"),
+                ("address"), "reference",
+                "bank_reference_preview_full", "bank_reference_preview_short",
+            ),
+        }),
+        (_("Standing invoice window"), {
+            "fields": (("pay_start"), ("pay_end"), "window_preview"),
+        }),
+        (_("Monetary amounts"), {
+            "fields": (("monthly_amount"), "role_monthly_hint", ("total_override"), "recommended_total_display", "breakdown_preview"),
+        }),
+        (_("Payment Plan PDF Center [TBA]"), {
+            "fields": (("pdf_file"),),
+        }),
+        (_("Status & signatures"), {
+            "fields": (("status"), ("status_note"),
+                       ("signed_person_at"), ("signed_wiref_at"), ("signed_chair_at")),
+        }),
+        (_("Miscellaneous"), {
+            "fields": (("notes"),),
+        }),
+        (_("Timestamps"), {
+            "fields": (("created_at"), ("updated_at"),),
+        }),
+    )
+
+    # --- computed displays --------------------------------------------------
+    @admin.display(description=_("Window"))
+    def window_display(self, obj):
+        s, e = obj.resolved_window()
+        return f"{s:%Y-%m-%d} → {e:%Y-%m-%d}"
+
+    @admin.display(description=_("Total"))
+    def effective_total_display(self, obj):
+        val = format(obj.effective_total, ".2f")
+        return format_html("<strong>{} €</strong>", val)
+
+    @admin.display(description=_("Status"))
+    def status_badge(self, obj):
+        colors = {
+            obj.Status.DRAFT: "#6b7280",
+            obj.Status.ACTIVE: "#2563eb",
+            obj.Status.SUSPENDED: "#f59e0b",
+            obj.Status.FINISHED: "#10b981",
+            obj.Status.CANCELLED: "#ef4444",
+        }
+        label = obj.get_status_display()
+        color = colors.get(obj.status, "#6b7280")
+        return format_html('<span class="badge" style="background:{};color:#fff;">{}</span>', color, label)
+
+    @admin.display(description=_("Resolved window (clamped to FY)"))
+    def window_preview(self, obj):
+        if not obj.pk:
+            return _("— will be shown after saving —")
+        s, e = obj.resolved_window()
+        if s > e:
+            return format_html('<div style="color:#ef4444;">{}</div>', _("No overlap with fiscal year."))
+        fy = obj.fiscal_year
+        return format_html(
+            '<div style="font-size:12px;">'
+            '<div><strong>{}</strong><span style="color:var(--uh-accent);font-weight:bold;"> {} → {}</span></div>'
+            '<div>{}:<span style="color:var(--uh-accent-700);"> {} → {} </span></div>'
+            "</div>",
+            _("Effective invoice (plan) window:"),
+            s.strftime("%Y-%m-%d"), e.strftime("%Y-%m-%d"),
+            _("FY bounds"),
+            fy.start.strftime("%Y-%m-%d"), fy.end.strftime("%Y-%m-%d"),
+        )
+
+    @admin.display(description=_("Plan code"))
+    def plan_code_or_hint(self, obj):
+        muted_style = "color:#e74c3c;"
+        if not obj or not getattr(obj, "pk", None):
+            msg = pgettext("PaymentPlan admin hint", "will be generated after saving")
+            return format_html('<span style="{}">— {} —</span>', muted_style, msg)
+        empty = pgettext("PaymentPlan admin hint", "not available")
+        return obj.plan_code or format_html('<span style="{}">{}</span>', muted_style, empty)
+
+    @admin.display(description=_("Role’s default monthly amount (per Statutes)"))
+    def role_monthly_hint(self, obj):
+        if not obj or not obj.person_role_id:
+            return "—"
+        amt = getattr(obj.person_role.role, "default_monthly_amount", None)
+        return f"{amt:.2f} €" if amt is not None else "—"
+
+    @admin.display(description=_("Monthly breakdown (30-day proration)"))
+    def breakdown_preview(self, obj):
+        if not obj or not obj.pk:
+            return _("— will be shown after saving —")
+        rows = obj.months_breakdown()
+        if not rows:
+            return _("No coverage in this fiscal year.")
+        lines = [
+            f"{r['year']}-{r['month']:02d}: {r['days']}d × {format(r['fraction'], '.4f')}"
+            for r in rows
+        ]
+        text = "\n".join(lines)
+        return format_html(
+            "<pre style='margin:.5rem 0 .25rem 0; font-size:12px; white-space:pre-wrap;'>{}</pre>",
+            text,
+        )
+
+    @admin.display(description=_("Recommended total ['richtwert']"))
+    def recommended_total_display(self, obj):
+        if not obj.pk:
+            return _("— will be shown after saving —")
+        val = format(obj.recommended_total(), ".2f")
+        return format_html('<code style="color: yellow;">{} €</code>', val)
+
+    # (3/4) Bank reference previews (read-only)
+    @admin.display(description=_("Bank reference (full)"))
+    def bank_reference_preview_full(self, obj):
+        if not obj or not getattr(obj, "pk", None):
+            return "—"
+        return format_html(
+            '<div><code>{}</code></div>'
+            '<div class="help-block" style="margin-top:.25rem; color:#6b7280;">{}</div>',
+            getattr(obj, "bank_reference_long", ""),
+            _("Format: {reference} – {payee name} – {cost center}. Updated after saving. Used for exports."),
+        )
+
+    @admin.display(description=_("Bank reference (≤140)"))
+    def bank_reference_preview_short(self, obj):
+        if not obj or not getattr(obj, "pk", None):
+            return "—"
+        short_val = ""
+        if hasattr(obj, "bank_reference_short"):
+            try:
+                short_val = obj.bank_reference_short(140)
+            except TypeError:
+                short_val = getattr(obj, "bank_reference_short", "")
+        return format_html(
+            '<div><code>{}</code></div>'
+            '<div class="help-block" style="margin-top:.25rem; color:#6b7280;">{}</div>',
+            short_val,
+            _("Max 140 chars. Falls back to initials if needed; truncates the left part. Updated after saving."),
+        )
+    
+    # --- read-only rules ----------------------------------------------------
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        if obj:  # editing existing plan
+            ro += ["fiscal_year", "person_role"]
+        if obj and obj.fiscal_year and obj.fiscal_year.is_locked:
+            ro += [
+                "person_role", "fiscal_year",
+                "payee_name", "iban", "bic", "address", "reference",
+                "pay_start", "pay_end",
+                "monthly_amount", "total_override",
+                "status", "status_note",
+                "signed_person_at", "signed_wiref_at", "signed_chair_at",
+                "pdf_file",
+                "bank_reference_preview_full", "bank_reference_preview_short",
+            ]
+        return list(dict.fromkeys(ro))
+
+    # --- queryset perf ------------------------------------------------------
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("person_role__person", "person_role__role", "fiscal_year")
+
+    # --- object actions (status transitions) --------------------------------
+    change_actions = ("activate_plan", "suspend_plan", "finish_plan", "cancel_plan", "print_pdf")
+
+    def get_change_actions(self, request, object_id, form_url):
+        actions = list(super().get_change_actions(request, object_id, form_url))
+        obj = self.get_object(request, object_id)
+        if not obj:
+            return actions
+        if obj.fiscal_year and obj.fiscal_year.is_locked:
+            actions = [a for a in actions if a in ("print_pdf",)]
+        elif obj.status == obj.Status.DRAFT:
+            actions = [a for a in actions if a in ("activate_plan", "cancel_plan", "print_pdf")]
+        elif obj.status == obj.Status.ACTIVE:
+            actions = [a for a in actions if a in ("suspend_plan", "finish_plan", "cancel_plan", "print_pdf")]
+        elif obj.status == obj.Status.SUSPENDED:
+            actions = [a for a in actions if a in ("activate_plan", "finish_plan", "cancel_plan", "print_pdf")]
+        else:
+            actions = [a for a in actions if a in ("print_pdf",)]
+        return actions
+
+    def activate_plan(self, request, obj):
+        try:
+            obj.mark_active(note=_("Activated from admin"))
+        except IntegrityError:
+            self.message_user(
+                request,
+                _("Could not activate: another active plan exists for this assignment and year."),
+                level=messages.ERROR,
+            )
+            return
+        self.message_user(request, _("Plan activated."), level=messages.SUCCESS)
+    activate_plan.label = _("Activate")
+    activate_plan.attrs = {"class": "btn btn-block btn-success btn-sm"}
+
+    def suspend_plan(self, request, obj):
+        obj.mark_suspended(note=_("Suspended from admin"))
+        self.message_user(request, _("Plan suspended."), level=messages.SUCCESS)
+    suspend_plan.label = _("Suspend")
+    suspend_plan.attrs = {"class": "btn btn-block btn-warning btn-sm"}
+
+    def finish_plan(self, request, obj):
+        obj.mark_finished(note=_("Finished from admin"))
+        self.message_user(request, _("Plan finished."), level=messages.SUCCESS)
+    finish_plan.label = _("Finish")
+    finish_plan.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
+
+    def cancel_plan(self, request, obj):
+        obj.mark_cancelled(note=_("Cancelled from admin"))
+        self.message_user(request, _("Plan cancelled."), level=messages.SUCCESS)
+    cancel_plan.label = _("Cancel")
+    cancel_plan.attrs = {"class": "btn btn-block btn-danger btn-sm"}
+
+    # === PDF actions (single + bulk) ===
+    def print_pdf(self, request, obj):
+        ctx = {"pp": obj}
+        return render_pdf_response("finances/paymentplan_pdf.html", ctx, request, f"{obj.plan_code}.pdf")
+    print_pdf.label = "🖨️ " + _("Print Receipt PDF")
+    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
+
+    @admin.action(description=_("Export selected to PDF"))
+    def export_selected_pdf(self, request, queryset):
+        rows = queryset.select_related("person_role__person", "person_role__role", "fiscal_year") \
+                       .order_by("fiscal_year__start", "plan_code")
+        return render_pdf_response("finances/paymentplans_list_pdf.html", {"rows": rows}, request, "payment_plans.pdf")
+
+    # (3) Draft-stage banner
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        obj = self.get_object(request, object_id)
+        if obj and obj.status == obj.Status.DRAFT:
+            messages.info(
+                request,
+                mark_safe(
+                    _("Draft: please review payee name, address, IBAN/BIC, reference and cost center manually. No fields are auto-filled.")
+                ),
+            )
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    # --- policy -------------------------------------------------------------
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    # ---------------- FY-aware Add behaviour ----------------
+    def has_add_permission(self, request):
+        """
+        Show the green 'Add' button on the changelist only if a FY chip is selected (?fy=<id>).
+        Always allow the actual add view itself.
+        """
+        allowed = super().has_add_permission(request)
+        if not allowed:
+            return False
+        if request.path.endswith("/add/"):
+            return True
+        return bool(request.GET.get("fy"))
+
+    def changelist_view(self, request, extra_context=None):
+        """
+        Remember the selected FY so we can prefill/hide the field on the add form.
+        Also pass a label for the custom Add button template.
+        """
+        fy_id = request.GET.get("fy")
+        if fy_id:
+            request.session["paymentplans_selected_fy"] = fy_id
+            try:
+                fy_obj = FiscalYear.objects.only("start", "end", "code").get(pk=fy_id)
+                selected_label = fy_obj.display_code()  # e.g. FY23_24 or WJ23_24
+            except FiscalYear.DoesNotExist:
+                selected_label = None
+        else:
+            request.session.pop("paymentplans_selected_fy", None)
+            selected_label = None
+
+        extra_context = extra_context or {}
+        extra_context["selected_fy_label"] = selected_label  # used by template to label the Add button
+        extra_context["selected_fy_id"] = fy_id
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def get_form(self, request, obj=None, **kwargs):
+        """
+        On the add view, prefill and hide fiscal_year using ?fy= or the stored session value.
+        """
+        form = super().get_form(request, obj, **kwargs)
+        if not obj and "fiscal_year" in form.base_fields:
+            fy_id = (
+                request.GET.get("fiscal_year")
+                or request.GET.get("fy")
+                or request.session.get("paymentplans_selected_fy")
+            )
+            if fy_id:
+                form.base_fields["fiscal_year"].initial = fy_id
+                form.base_fields["fiscal_year"].widget = forms.HiddenInput()
+
+        # forward the FY to the person_role autocomplete endpoint
+        fy_forward = (obj.fiscal_year_id if obj else
+                      request.GET.get("fy") or request.session.get("paymentplans_selected_fy"))
+        if "person_role" in form.base_fields and fy_forward:
+            w = form.base_fields["person_role"].widget
+            if hasattr(w, "url_parameters"):
+                w.url_parameters["fy"] = fy_forward
+            elif hasattr(w, "get_url"):
+                url = w.get_url()
+                sep = "&" if "?" in url else "?"
+                w.attrs["data-autocomplete-url"] = f"{url}{sep}fy={fy_forward}"
+        return form
+
+    # IMPORTANT: no prefill of monthly_amount/payee_name here anymore
+    def get_changeform_initial_data(self, request):
+        return super().get_changeform_initial_data(request)
+
+
+# =============== FiscalYear Admin ===============
 @admin.register(FiscalYear)
 class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [FiscalYearResource]
@@ -203,7 +629,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
             self.message_user(
                 request,
                 _("You cannot set a locked fiscal year as active. Deselect locked rows first."),
-                level=messages.warning,
+                level=messages.WARNING,
             )
             return
 
@@ -230,19 +656,17 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
                 FiscalYear.objects.exclude(pk=target.pk).update(is_active=False)
                 target.is_active = True
                 target.save(update_fields=["is_active"])
+            self.message_user(
+                request,
+                _("Activated %(code)s as the current fiscal year.") % {"code": target.display_code()},
+                level=messages.SUCCESS,
+            )
         except IntegrityError:
             self.message_user(
                 request,
                 _("Could not set active due to a database constraint (another year may have been activated concurrently)."),
                 level=messages.ERROR,
             )
-            return
-
-        self.message_user(
-            request,
-            _("Activated %(code)s as the current fiscal year.") % {"code": target.display_code()},
-            level=messages.SUCCESS,
-        )
 
     # === Object actions: Lock / Unlock (managers only) ===
     def get_change_actions(self, request, object_id, form_url):
@@ -285,361 +709,3 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         self.message_user(request, _("Fiscal year unlocked."), level=messages.SUCCESS)
     unlock_year.label = _("Unlock year")
     unlock_year.attrs = {"class": "btn btn-block btn-success btn-sm"}
-
-from .models import FiscalYear, PaymentPlan
-
-class FYChipsFilter(admin.SimpleListFilter):
-    title = _("Year")
-    parameter_name = "fy"
-    template = "admin/filters/fy_chips.html"   # custom template below
-
-    def lookups(self, request, model_admin):
-        # show most recent 6 years (tweak as you like)
-        fys = FiscalYear.objects.order_by("-start")[:4]
-        # label: 2023, 2024… (or use fy.display_code() for FY23_24)
-        return [(fy.pk, fy.display_code()) for fy in fys]
-
-    def queryset(self, request, qs):
-        val = self.value()
-        if val:
-            return qs.filter(fiscal_year_id=val)
-        return qs
-
-@admin.register(PaymentPlan)
-class PaymentPlanAdmin(DjangoObjectActions, ImportExportGuardMixin, ImportExportModelAdmin, SimpleHistoryAdmin):
-    resource_classes = [PaymentPlanResource]
-    form = PaymentPlanForm
-    actions = ("export_selected_pdf",)
-    # --- helpers ------------------------------------------------------------
-    def _is_manager(self, request) -> bool:
-        return request.user.groups.filter(name="module:finances:manager").exists()
-
-    # --- list / filters / search -------------------------------------------
-    list_display = (
-        "plan_code",
-        "person_role",
-        "fiscal_year",
-        "window_display",
-        "monthly_amount",
-        "effective_total_display",
-        "status_badge",
-        "updated_at",
-    )
-    list_filter = (FYChipsFilter, "status", "pay_start", "pay_end")
-    search_fields = (
-        "plan_code",
-        "person_role__person__last_name",
-        "person_role__person__first_name",
-        "person_role__role__name",
-        "payee_name",
-        "reference",
-    )
-    autocomplete_fields = ("person_role", "fiscal_year")
-    readonly_fields = (
-        "plan_code_or_hint",
-        "created_at", "updated_at",
-        "window_preview", "breakdown_preview", "recommended_total_display", "role_monthly_hint",
-    )
-    #date_hierarchy = None
-    list_per_page = 50
-    ordering = ("-created_at",)
-
-    fieldsets = (
-        (_("Scope"), {
-            "fields": ("plan_code_or_hint", "person_role", "fiscal_year"),
-        }),
-        (_("Payee & banking"), {
-            "fields": (("payee_name",), ("iban"), ("bic"), ("address"), "reference"),
-        }),
-        (_("Standing invoice window"), {
-            "fields": (("pay_start"), ("pay_end"), "window_preview"),
-        }),
-        (_("Monetary amounts"), {
-            "fields": (("monthly_amount"), "role_monthly_hint", ("total_override"), "recommended_total_display", "breakdown_preview"),
-        }),
-        (_("Status & signatures"), {
-            "fields": (("status"), ("status_note"),
-                       ("signed_person_at"), ("signed_wiref_at"), ("signed_chair_at")),
-        }),
-        (_("Timestamps"), {
-            "fields": (("created_at"), ("updated_at"),),
-        }),
-    )
-
-    # --- computed displays --------------------------------------------------
-    @admin.display(description=_("Window"))
-    def window_display(self, obj):
-        s, e = obj.resolved_window()
-        return f"{s:%Y-%m-%d} → {e:%Y-%m-%d}"
-
-    @admin.display(description=_("Total"))
-    def effective_total_display(self, obj):
-        # Pre-format to string to avoid SafeString + format spec collision
-        val = format(obj.effective_total, ".2f")
-        return format_html("<strong>{} €</strong>", val)
-
-    @admin.display(description=_("Status"))
-    def status_badge(self, obj):
-        colors = {
-            obj.Status.DRAFT: "#6b7280",      # gray
-            obj.Status.ACTIVE: "#2563eb",     # blue
-            obj.Status.SUSPENDED: "#f59e0b",  # amber
-            obj.Status.FINISHED: "#10b981",   # green
-            obj.Status.CANCELLED: "#ef4444",  # red
-        }
-        label = obj.get_status_display()
-        color = colors.get(obj.status, "#6b7280")
-        return format_html('<span class="badge" style="background:{};color:#fff;">{}</span>', color, label)
-
-    @admin.display(description=_("Resolved window (clamped to FY)"))
-    def window_preview(self, obj):
-        if not obj.pk:
-            return _("— will be shown after saving —")
-        s, e = obj.resolved_window()
-        if s > e:
-            return format_html('<div style="color:#ef4444;">{}</div>', _("No overlap with fiscal year."))
-        fy = obj.fiscal_year
-        return format_html(
-            '<div style="font-size:12px;">'
-            '<div><strong>{}</strong><span style="color:var(--uh-accent);font-weight:bold;"> {} → {}</span></div>'
-            '<div>{}:<span style="color:var(--uh-accent-700);"> {} → {} </span></div>'
-            "</div>",
-            _("Effective invoice (plan) window:"),
-            s.strftime("%Y-%m-%d"), e.strftime("%Y-%m-%d"),
-            _("FY bounds"),
-            fy.start.strftime("%Y-%m-%d"), fy.end.strftime("%Y-%m-%d"),
-        )
-
-    @admin.display(description=_("Plan code"))
-    def plan_code_or_hint(self, obj):
-        muted_style = "color:#e74c3c;"
-        if not obj or not getattr(obj, "pk", None):
-            # translators: shown on the PaymentPlan add form before the object is saved
-            msg = pgettext("PaymentPlan admin hint", "will be generated after saving")
-            # keep punctuation outside the translatable string
-            return format_html('<span style="{}">— {} —</span>', muted_style, msg)
-
-        # If somehow still empty after save, show a localized fallback
-        empty = pgettext("PaymentPlan admin hint", "not available")
-        return obj.plan_code or format_html('<span style="{}">{}</span>', muted_style, empty)
-
-    @admin.display(description=_("Bank line preview"))
-    def bank_preview(self, obj):
-        if not obj.pk:
-            return _("— will be shown after saving —")
-        iban = (obj.iban or "").replace(" ", "")
-        masked = f"{iban[:4]}••••••••••••{iban[-4:]}" if len(iban) > 8 else iban
-        val = format(obj.effective_total, ".2f")
-        return format_html("<code>{} | {} € | {}</code>", masked, val, obj.reference or _("Stipend"))
-
-    @admin.display(description=_("Role’s default monthly amount (per Statutes)"))
-    def role_monthly_hint(self, obj):
-        if not obj or not obj.person_role_id:
-            return "—"
-        amt = getattr(obj.person_role.role, "default_monthly_amount", None)
-        return f"{amt:.2f} €" if amt is not None else "—"
-
-    @admin.display(description=_("Monthly breakdown (30-day proration)"))
-    def breakdown_preview(self, obj):
-        if not obj or not obj.pk:
-            return _("— will be shown after saving —")
-
-        rows = obj.months_breakdown()
-        if not rows:
-            return _("No coverage in this fiscal year.")
-
-        # Plain text lines; no HTML tags inside, so nothing to escape/strip
-        lines = [
-            f"{r['year']}-{r['month']:02d}: {r['days']}d × {format(r['fraction'], '.4f')}"
-            for r in rows
-        ]
-        text = "\n".join(lines)
-        # Render in <pre> so newlines are preserved and content is visibly non-empty
-        return format_html(
-            "<pre style='margin:.5rem 0 .25rem 0; font-size:12px; white-space:pre-wrap;'>{}</pre>",
-            text,
-        )
-
-    @admin.display(description=_("Recommended total"))
-    def recommended_total_display(self, obj):
-        if not obj.pk:
-            return _("— will be shown after saving —")
-        val = format(obj.recommended_total(), ".2f")
-        return format_html('<code style="color: yellow;">{} €</code>', val)
-
-    # --- read-only ------------------------------------------
-    def get_readonly_fields(self, request, obj=None):
-        ro = list(super().get_readonly_fields(request, obj))
-
-        # NEW: once the object exists, never allow changing the FY in the UI
-        if obj:                      # i.e., editing an existing plan
-             ro += ["fiscal_year", "person_role"]
-        if obj and obj.fiscal_year and obj.fiscal_year.is_locked:
-            # existing lock behavior
-            ro += [
-                "person_role", "fiscal_year",
-                "payee_name", "iban", "bic", "address", "reference",
-                "pay_start", "pay_end",
-                "monthly_amount", "total_override",
-                "status", "status_note",
-                "signed_person_at", "signed_wiref_at", "signed_chair_at",
-                "pdf_file",
-            ]
-
-        # avoid duplicates
-        return list(dict.fromkeys(ro))
-
-    # --- queryset perf ------------------------------------------------------
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related("person_role__person", "person_role__role", "fiscal_year")
-
-    # --- object actions (status transitions) --------------------------------
-    change_actions = ("activate_plan", "suspend_plan", "finish_plan", "cancel_plan", "print_pdf")
-
-    def get_change_actions(self, request, object_id, form_url):
-        actions = list(super().get_change_actions(request, object_id, form_url))
-        obj = self.get_object(request, object_id)
-        if not obj:
-            return actions
-        if obj.fiscal_year and obj.fiscal_year.is_locked:
-             actions = [a for a in actions if a in ("print_pdf")]
-        if obj.status == obj.Status.DRAFT:
-            actions = [a for a in actions if a in ("activate_plan", "cancel_plan", "print_pdf")]
-        elif obj.status == obj.Status.ACTIVE:
-            actions = [a for a in actions if a in ("suspend_plan", "finish_plan", "cancel_plan", "print_pdf")]
-        elif obj.status == obj.Status.SUSPENDED:
-            actions = [a for a in actions if a in ("activate_plan", "finish_plan", "cancel_plan", "print_pdf")]
-        else:
-            actions = [a for a in actions if a in ("print_pdf")]  # FINISHED/CANCELLED -> no transitions
-        return actions
-
-    def activate_plan(self, request, obj):
-        try:
-            obj.mark_active(note=_("Activated from admin"))
-        except IntegrityError:
-            self.message_user(
-                request,
-                _("Could not activate: another active plan exists for this assignment and year."),
-                level=messages.ERROR,
-            )
-            return
-        self.message_user(request, _("Plan activated."), level=messages.SUCCESS)
-    activate_plan.label = _("Activate")
-    activate_plan.attrs = {"class": "btn btn-block btn-success btn-sm"}
-
-    def suspend_plan(self, request, obj):
-        obj.mark_suspended(note=_("Suspended from admin"))
-        self.message_user(request, _("Plan suspended."), level=messages.SUCCESS)
-    suspend_plan.label = _("Suspend")
-    suspend_plan.attrs = {"class": "btn btn-block btn-warning btn-sm"}
-
-    def finish_plan(self, request, obj):
-        obj.mark_finished(note=_("Finished from admin"))
-        self.message_user(request, _("Plan finished."), level=messages.SUCCESS)
-    finish_plan.label = _("Finish")
-    finish_plan.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
-
-    def cancel_plan(self, request, obj):
-        obj.mark_cancelled(note=_("Cancelled from admin"))
-        self.message_user(request, _("Plan cancelled."), level=messages.SUCCESS)
-    cancel_plan.label = _("Cancel")
-    cancel_plan.attrs = {"class": "btn btn-block btn-danger btn-sm"}
-
-    # === PDF actions (single + bulk) ===
-    def print_pdf(self, request, obj):
-        ctx = {"pp": obj}
-        return render_pdf_response("finances/paymentplan_pdf.html", ctx, request, f"{obj.plan_code}.pdf")
-    print_pdf.label = "🖨️ " + _("Print Receipt PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
-
-    @admin.action(description=_("Export selected to PDF"))
-    def export_selected_pdf(self, request, queryset):
-        rows = queryset.select_related("person_role__person", "person_role__role", "fiscal_year").order_by("fiscal_year__start", "plan_code")
-        return render_pdf_response("finances/paymentplans_list_pdf.html", {"rows": rows}, request, "payment_plans.pdf")
-
-    def get_changeform_initial_data(self, request):
-        initial = super().get_changeform_initial_data(request)
-        pr_id = request.GET.get("person_role") or request.GET.get("person_role__id__exact")
-        if pr_id:
-            from people.models import PersonRole
-            try:
-                pr = PersonRole.objects.select_related("role", "person").get(pk=pr_id)
-                amt = getattr(pr.role, "default_monthly_amount", None)
-                if amt:
-                    initial["monthly_amount"] = amt
-                initial.setdefault("payee_name", f"{pr.person.first_name} {pr.person.last_name}".strip())
-            except PersonRole.DoesNotExist:
-                pass
-        return initial
-
-    # --- policy -------------------------------------------------------------
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-    # ---------------- FY-aware Add behaviour ----------------
-    def has_add_permission(self, request):
-        """
-        Show the green 'Add' button on the changelist only if a FY chip is selected (?fy=<id>).
-        Always allow the actual add view itself.
-        """
-        allowed = super().has_add_permission(request)
-        if not allowed:
-            return False
-        # Always allow on the 'add' view
-        if request.path.endswith("/add/"):
-            return True
-        # On the changelist, require an FY chip
-        return bool(request.GET.get("fy"))
-    
-    def changelist_view(self, request, extra_context=None):
-        """
-        Remember the selected FY so we can prefill/hide the field on the add form.
-        Also pass a label for the custom Add button template.
-        """
-        fy_id = request.GET.get("fy")
-        if fy_id:
-            request.session["paymentplans_selected_fy"] = fy_id
-            try:
-                fy_obj = FiscalYear.objects.only("start", "end", "code").get(pk=fy_id)
-                selected_label = fy_obj.display_code()  # e.g. FY23_24 or WJ23_24
-            except FiscalYear.DoesNotExist:
-                selected_label = None
-        else:
-            request.session.pop("paymentplans_selected_fy", None)
-            selected_label = None
-
-        extra_context = extra_context or {}
-        extra_context["selected_fy_label"] = selected_label  # used by template to label the Add button
-        extra_context["selected_fy_id"] = fy_id
-        return super().changelist_view(request, extra_context=extra_context)
-
-    def get_form(self, request, obj=None, **kwargs):
-        """
-        On the add view, prefill and hide fiscal_year using ?fy= or the stored session value.
-        """
-        form = super().get_form(request, obj, **kwargs)
-        if not obj and "fiscal_year" in form.base_fields:
-            fy_id = (
-                request.GET.get("fiscal_year")
-                or request.GET.get("fy")
-                or request.session.get("paymentplans_selected_fy")
-            )
-            if fy_id:
-                form.base_fields["fiscal_year"].initial = fy_id
-                form.base_fields["fiscal_year"].widget = forms.HiddenInput()
-
-        #forward the FY to the person_role autocomplete endpoint
-        fy_forward = (obj.fiscal_year_id if obj else
-                    request.GET.get("fy") or request.session.get("paymentplans_selected_fy"))
-        if "person_role" in form.base_fields and fy_forward:
-            w = form.base_fields["person_role"].widget
-            # Django’s AutocompleteSelect exposes url_parameters; fall back to patching the URL.
-            if hasattr(w, "url_parameters"):
-                w.url_parameters["fy"] = fy_forward
-            elif hasattr(w, "get_url"):
-                url = w.get_url()
-                sep = "&" if "?" in url else "?"
-                w.attrs["data-autocomplete-url"] = f"{url}{sep}fy={fy_forward}"
-
-        return form

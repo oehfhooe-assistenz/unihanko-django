@@ -11,6 +11,19 @@ groups:
     models: {}
     custom_perms: {}
 
+  "module:organisation:editor":
+    inherits: []
+    models:
+      organisation.OrgInfo: [view]
+    custom_perms: {}
+  
+  "module:organisation:manager":
+    inherits:
+      - "module:organisation:editor"
+    models:
+      organisation.OrgInfo: [view, change]
+    custom_perms: {}
+
   "module:personnel:editor":
     inherits: []
     models:

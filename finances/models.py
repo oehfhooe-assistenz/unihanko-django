@@ -162,6 +162,7 @@ class PaymentPlan(models.Model):
 
     IBAN_SHAPE = r"^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$"
     BIC_SHAPE  = r"^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$"
+    CC_SHAPE = r"^\d{3}$"
 
     # Ownership / scope
     person_role  = models.ForeignKey(PersonRole, on_delete=models.PROTECT, related_name="payment_plans", verbose_name=_("Assignment"))
@@ -170,33 +171,36 @@ class PaymentPlan(models.Model):
     # per-FY human reference code (auto)
     plan_code = models.CharField(_("Plan code"), max_length=24, unique=True, blank=True, help_text=_("Auto-generated reference (e.g. WJ24_25-00001)."))
 
+    # cost center (3 digit number)
+    cost_center  = models.CharField(_("Cost center"), max_length=3, blank=True, null=True, validators=[RegexValidator(CC_SHAPE, _("Enter a valid 3-digit cost center (KSt)"))], help_text=_("Cost center for the payment plan's personnel cost."))
+
     # Banking + payee
-    payee_name   = models.CharField(_("Payee name (optional override)"), max_length=200, blank=True)
-    iban         = models.CharField(_("IBAN"), max_length=34, blank=True, validators=[RegexValidator(IBAN_SHAPE, _("Enter a valid IBAN (e.g. AT.., DE..)."))],)
-    bic          = models.CharField(_("BIC"), max_length=11, blank=True, validators=[RegexValidator(BIC_SHAPE, _("Enter a valid BIC (8 or 11 chars)."))],)
-    reference    = models.CharField(_("Payment reference"), max_length=140, blank=True)
-    address      = models.CharField(_("Payee address"), max_length=225, blank=True, help_text=_("Street, No., Post code, City"))
+    payee_name   = models.CharField(_("Payee name"), max_length=200, blank=True)
+    iban         = models.CharField(_("IBAN"), max_length=34, blank=True, validators=[RegexValidator(IBAN_SHAPE, _("Enter a valid IBAN (e.g. AT.., DE..)."))], help_text=_("Will only accept IBANs in correct format."))
+    bic          = models.CharField(_("BIC/SWIFT"), max_length=11, blank=True, validators=[RegexValidator(BIC_SHAPE, _("Enter a valid BIC (8 or 11 chars)."))], help_text=_("Will only accept BIC/SWIFT in correct format."))
+    reference    = models.CharField(_("Payment reference"), max_length=140, blank=True, help_text=_("For wire transfer."))
+    address      = models.CharField(_("Payee address"), max_length=225, blank=True, help_text=_("Format: Street, No., Post code, City."))
 
     # Window (optional overrides; otherwise we derive defaults from PR ∩ FY)
     pay_start    = models.DateField(_("Pay start (optional)"), blank=True, null=True)
     pay_end      = models.DateField(_("Pay end (optional)"), blank=True, null=True)
 
     # Money
-    monthly_amount = models.DecimalField(_("Monthly amount"), max_digits=10, decimal_places=2)
-    total_override = models.DecimalField(_("Total override (optional)"), max_digits=10, decimal_places=2, blank=True, null=True)
+    monthly_amount = models.DecimalField(_("Monthly amount"), max_digits=10, decimal_places=2, help_text=_("Monthly amount derived from assigned role. Can be edited."))
+    total_override = models.DecimalField(_("Total amount (plan)"), max_digits=10, decimal_places=2, blank=True, null=True, help_text=_("Total amount derived from auto-calculation ['richtwert']. Can be edited."))
 
     # Status + lightweight audit
-    status       = models.CharField(_("Status"), max_length=10, choices=Status.choices, default=Status.DRAFT)
-    status_note  = models.CharField(_("Status note (short)"), max_length=200, blank=True)
-    notes        = models.TextField(_("Notes (internal)"), blank=True)
+    status       = models.CharField(_("Status"), max_length=10, choices=Status.choices, default=Status.DRAFT, help_text=_("Status of payment plan. Payment plans can only be fully edited if they are in the DRAFT stage."))
+    status_note  = models.CharField(_("Status note (short)"), max_length=200, blank=True, help_text=_("Short note describing the current status. Optional."))
+    notes        = models.TextField(_("Notes (internal)"), blank=True, help_text=_("Longer notes for internal use (e.g. 'Buchungsvermerke'). Optional."))
 
     # Signatures (dates are enough for now)
-    signed_person_at = models.DateField(_("Signed by payee on"), blank=True, null=True)
-    signed_wiref_at  = models.DateField(_("Signed by WiRef on"), blank=True, null=True)
-    signed_chair_at  = models.DateField(_("Signed by chair on"), blank=True, null=True)
+    signed_person_at = models.DateField(_("Signed by payee on"), blank=True, null=True, help_text=_("Date of signature received."))
+    signed_wiref_at  = models.DateField(_("Signed by WiRef on"), blank=True, null=True, help_text=_("Date of signature received."))
+    signed_chair_at  = models.DateField(_("Signed by chair on"), blank=True, null=True, help_text=_("Date of signature received."))
 
     # Future media hook (nullable until the media container lands)
-    pdf_file     = models.FileField(_("Signed PDF (optional)"), upload_to="payment_plans/%Y/%m/", blank=True, null=True)
+    pdf_file     = models.FileField(_("Signed PDF (optional)"), upload_to="payment_plans/%Y/%m/", blank=True, null=True, help_text=_("Upload for the signed payment plan PDFs. Note: Simply re-upload after each signature."))
 
     # Timestamps
     created_at   = models.DateTimeField(auto_now_add=True)
@@ -375,6 +379,71 @@ class PaymentPlan(models.Model):
         """What we will actually present/export as total."""
         return (self.total_override if self.total_override is not None else self.recommended_total())
 
+    @staticmethod
+    def _short_person_name(full: str) -> str:
+        """
+        'Sven Varszegi' -> 'S. Varszegi'
+        'Sven P. Varszegi' -> 'S. Varszegi'
+        Single token -> initials only: 'S.'
+        """
+        parts = [p for p in (full or "").split() if p]
+        if not parts:
+            return ""
+        if len(parts) == 1:
+            return f"{parts[0][0]}."
+        first_initial = parts[0][0]
+        last = parts[-1]
+        return f"{first_initial}. {last}"
+
+    @staticmethod
+    def _initials(full: str) -> str:
+        """'Sven Zoltan Varszegi' -> 'SZV'"""
+        return "".join(p[0] for p in (full or "").split() if p)
+
+    @staticmethod
+    def _join_nonempty(*chunks: str, sep: str = " - ") -> str:
+        return sep.join([c for c in chunks if c])
+
+    @property
+    def bank_reference_long(self) -> str:
+        """
+        Full template: {reference} - {payee_name} - {cost_center}
+        (omit empty chunks)
+        """
+        name = self.resolved_payee_name
+        return self._join_nonempty(
+            (self.reference or "").strip(),
+            name,
+            (self.cost_center or "").strip(),
+        )
+
+    def bank_reference_short(self, limit: int = 140) -> str:
+        """
+        ≤ limit chars. Prefer 'S. Lastname' for name; if still too long, fall back to initials.
+        Finally, truncate the reference part to fit.
+        """
+        ref = (self.reference or "").strip()
+        kst = (self.cost_center or "").strip()
+        name_full = self.resolved_payee_name
+        name_short = self._short_person_name(name_full) or name_full
+        name_init = self._initials(name_full)
+
+        # try with short name
+        s = self._join_nonempty(ref, name_short, kst)
+        if len(s) <= limit:
+            return s
+
+        # try with initials
+        s = self._join_nonempty(ref, name_init, kst)
+        if len(s) <= limit:
+            return s
+
+        # last resort: truncate the reference part to fit
+        tail = self._join_nonempty(name_init, kst)
+        sep = " - " if tail else ""
+        avail = max(0, limit - len(sep) - len(tail))
+        ref_cut = (ref[:avail]).rstrip()
+        return ref_cut + (sep + tail if tail else "")
 
     # ---------- Validation ----------
 
@@ -420,6 +489,28 @@ class PaymentPlan(models.Model):
             # treat missing dates as open
             if pr_start and pr_start > fy.end or pr_end and pr_end < fy.start:
                 errors["person_role"] = _("Selected assignment does not overlap the fiscal year.")
+
+        if self.status != self.Status.DRAFT:
+            required_errors = {}
+            if not (self.payee_name or "").strip():
+                required_errors["payee_name"] = _("Required when leaving Draft.")
+            if not (self.address or "").strip():
+                required_errors["address"] = _("Required when leaving Draft.")
+            if not (self.reference or "").strip():
+                required_errors["reference"] = _("Required when leaving Draft.")
+            if not (self.cost_center or "").strip():
+                required_errors["cost_center"] = _("Required when leaving Draft.")
+            # monthly_amount already validated non-negative; ensure present:
+            if self.monthly_amount is None:
+                required_errors["monthly_amount"] = _("Required when leaving Draft.")
+            # IBAN/BIC presence (shape already validated via validators/ checksum)
+            if not (self.iban or "").strip():
+                required_errors["iban"] = _("Required when leaving Draft.")
+            if not (self.bic or "").strip():
+                required_errors["bic"] = _("Required when leaving Draft.")
+
+            if required_errors:
+                errors.update(required_errors)
 
         if errors:
             raise ValidationError(errors)

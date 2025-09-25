@@ -7,7 +7,7 @@
 {% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %}
 
 {% block content %}
-<h2 style="margin:0 0 8px 0;">{% trans "Internal receipt for standing invoice no. " %} <span style="color: var(--brand);">{{ pp.plan_code }}</span></h2>
+<h2 style="margin:0 0 8px 0;">{% trans "Internal receipt for standing invoice no. " %} <span style="color: var(--brand);">{{ pp.plan_code }}</span> <span style="color: var(--muted);">[{% trans "CC:" %} {{ pp.cost_center|default:"—" }}]</span></h2>
 <h3 style="margin:10px 0 6px 0;">{% trans "Standing invoice status" %}</h3>
 <table>
     <tbody>

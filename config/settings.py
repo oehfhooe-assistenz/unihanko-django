@@ -51,6 +51,9 @@ INSTALLED_APPS = [
     'core',
     'people',
     'finances',
+
+    'solo',
+    'organisation',
 ]
 
 MIDDLEWARE = [
@@ -175,7 +178,8 @@ JAZZMIN_SETTINGS = {
 
     # Icons (Font Awesome 5/6)
     "icons": {
-        "people": "fa-solid fa-users-gear",                 # app icon (Personnel)
+        "organisation.orginfo": "fa-solid fa-building-ngo",
+        "people": "fa-solid fa-users-gear",
         "people.person": "fa-solid fa-user",
         "people.personrole": "fa-solid fa-user-check",
         "people.role": "fa-solid fa-id-badge",
@@ -186,11 +190,12 @@ JAZZMIN_SETTINGS = {
     },
 
     # Sidebar ordering within the app
-    "order_with_respect_to": ["people", "people.person", "people.personrole", "people.roletransitionreason", "people.role", "finances", "finances.fiscalyear", "finances.paymentplan" ],
+    "order_with_respect_to": ["organisation", "organisation.orginfo", "people", "people.person", "people.personrole", "people.roletransitionreason", "people.role", "finances", "finances.fiscalyear", "finances.paymentplan" ],
 
 
     # Hide historical models from menu
     "hide_models": [
+        "organisation.HistoricalOrgInfo"
         "people.HistoricalPerson",
         "people.HistoricalRole",
         "people.HistoricalPersonRole",
@@ -203,7 +208,8 @@ JAZZMIN_SETTINGS = {
     "related_modal_active": True,                    # add related objects in a modal
     "changeform_format": "collapsible",            # or "horizontal_tabs" / "collapsible"
     "changeform_format_overrides": {
-        "finances.paymentplan": "single",              # example: person edit as collapsible
+        "finances.paymentplan": "single",
+        "organisation.orginfo": "single",
     },
     "language_chooser": True,                       # header language switcher
 
