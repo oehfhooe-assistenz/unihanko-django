@@ -2,16 +2,17 @@
 import json
 from django.contrib import admin, messages
 from django.utils import timezone
-from django.utils.html import format_html
+from django.utils.html import format_html, escapejs
 from django.utils.translation import gettext_lazy as _
-
+from django.utils.text import format_lazy, slugify
+from django.utils.functional import lazy
 from django_object_actions import DjangoObjectActions
 from import_export import resources, fields
 from import_export.admin import ImportExportModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-
+from organisation.models import OrgInfo
 from .models import Person, Role, PersonRole, RoleTransitionReason
 from core.pdf import render_pdf_response
 from core.admin_mixins import ImportExportGuardMixin
@@ -56,8 +57,8 @@ class PersonResource(resources.ModelResource):
 class RoleResource(resources.ModelResource):
     class Meta:
         model = Role
-        fields = ("id", "name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind", "default_monthly_amount", "notes")
-        export_order = ("id", "name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind", "default_monthly_amount", "notes")
+        fields = ("id", "name", "short_name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind", "default_monthly_amount", "notes")
+        export_order = ("id", "name", "short_name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind", "default_monthly_amount", "notes")
 
 
 class RoleTransitionReasonResource(resources.ModelResource):
@@ -180,6 +181,10 @@ class PersonRoleInline(admin.StackedInline):
 class PersonAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [PersonResource]
 
+    # Helper: who counts as a "manager" for people?
+    def _is_manager(self, request) -> bool:
+        return request.user.groups.filter(name="module:personnel:manager").exists()
+
     list_display = (
         "last_name",
         "first_name",
@@ -195,7 +200,7 @@ class PersonAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModel
     list_filter = (ActiveAssignmentFilter, "gender", "is_active")
     search_fields = ("first_name", "last_name", "email", "student_email", "matric_no")
     autocomplete_fields = ("user",)
-    readonly_fields = ("uuid", "created_at", "updated_at")
+    readonly_fields = ("uuid", "personal_access_code", "created_at", "updated_at")
     inlines = [PersonRoleInline]
     actions = ("archive_selected", "unarchive_selected", "export_selected_pdf")
 
@@ -211,6 +216,9 @@ class PersonAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModel
         }),
         (_("Account link"), {
             "fields": ("user",),
+        }),
+        (_("Personal access code"), {
+            "fields": ("personal_access_code",),
         }),
         (_("Status"), {
             "fields": (("is_active"), ("archived_at"),),
@@ -265,20 +273,60 @@ class PersonAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModel
             level=messages.SUCCESS,
         )
 
-    # === PDF actions (single + bulk) ===
-    change_actions = ("print_pdf",)
+    # === actions ===
+    change_actions = ("print_pdf", "print_pac_pdf", "regenerate_access_code", )
 
     def print_pdf(self, request, obj):
-        return render_pdf_response("people/person_pdf.html", {"p": obj}, request, f"person_{obj.id}.pdf")
+        date_str = timezone.localtime().strftime("%Y-%m-%d")
+        lname = slugify(obj.last_name)[:40]
+        return render_pdf_response("people/person_pdf.html", {"p": obj, "org": OrgInfo.get_solo(),}, request, f"HR-P_AKT_{obj.id}_{lname}_{date_str}.pdf")
 
-    print_pdf.label = _("Print Personnel Record PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
+    print_pdf.label = "🖨️ " + _("Print Personnel Record PDF")
+    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
+
+    def print_pac_pdf(self, request, obj):
+        date_str = timezone.localtime().strftime("%Y-%m-%d")
+        lname = slugify(obj.last_name)[:40]
+        return render_pdf_response("people/person_action_code_notice_pdf.html", {"p": obj}, request, f"HR-P_PAC_INFO_{obj.id}_{lname}_{date_str}.pdf")
+
+    print_pac_pdf.label = "🖨️ " + _("Print Personal Access Code Info PDF (ext.)")
+    print_pac_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
 
     @admin.action(description=_("Print selected as roster PDF"))
     def export_selected_pdf(self, request, queryset):
+        date_str = timezone.localtime().strftime("%Y-%m-%d")
         rows = queryset.order_by("last_name", "first_name")
-        return render_pdf_response("people/people_list_pdf.html", {"rows": rows}, request, "people_selected.pdf")
+        return render_pdf_response("people/people_list_pdf.html", {"rows": rows}, request, f"HR-P_SELECT_{date_str}.pdf")
+    
+    # --- Manager-only object action -----------------------------------------
+    def regenerate_access_code(self, request, obj):
+        if not self._is_manager(request):
+            self.message_user(request, _("You don’t have permission to regenerate access codes."), level=messages.WARNING)
+            return
+        new_code = obj.regenerate_access_code()
+        # Only show the new code; avoid logging the old one.
+        self.message_user(
+            request,
+            _("New access code generated: %(code)s") % {"code": new_code},
+            level=messages.SUCCESS,
+        )
+    _REGEN_MESSAGE = _("Regenerate the access code for this person? The old code will stop working.")
+    lazy_escapejs = lazy(escapejs, str)
+    regenerate_access_code.label = "🔐 " + _("Regenerate access code")
+    regenerate_access_code.attrs = {
+        "class": "btn btn-block btn-warning btn-sm",
+        # Simple JS confirm; keeps UX tight without extra templates
+        "onclick": format_lazy("return confirm('{0}');", lazy_escapejs(_REGEN_MESSAGE)),
+        "style": "margin-top:10px; margin-bottom: 10px;",
+    }
 
+    # Hide the button for non-managers
+    def get_change_actions(self, request, object_id, form_url):
+        actions = list(super().get_change_actions(request, object_id, form_url))
+        if not self._is_manager(request):
+            if "regenerate_access_code" in actions:
+                actions.remove("regenerate_access_code")
+        return actions
 
 # =========================
 # Role Admin
@@ -286,7 +334,7 @@ class PersonAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModel
 @admin.register(Role)
 class RoleAdmin(ImportExportGuardMixin, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [RoleResource]
-    list_display = ("name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind")
+    list_display = ("name", "short_name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind")
     search_fields = ("name",)
     list_filter = ("is_elected","is_stipend_reimbursed", "kind")
 
@@ -393,29 +441,42 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
             messages.SUCCESS,
         )
 
+
     def _render_cert(self, request, obj, template, filename):
-        ctx = {"pr": obj}
+        ctx = {
+            "pr": obj,
+            "org": OrgInfo.get_solo(),
+            }
         return render_pdf_response(template, ctx, request, filename)
 
     def print_appointment_regular(self, request, obj):
+        rsname = slugify(obj.role.short_name)[:10]
+        lname = slugify(obj.person.last_name)[:20]
+        date_str = timezone.localtime().strftime("%Y-%m-%d")
         return self._render_cert(
             request, obj,
             "people/certs/appointment_regular.html",
-            f"bestellung_{obj.person.last_name}_{obj.role.name}.pdf"
+            f"B_{rsname}_{lname}-{date_str}.pdf"
         )
     print_appointment_regular.label = "🧾 " + _("Print appointment (non-confirmation) PDF")
-    print_appointment_regular.attrs = {"class": "btn btn-block btn-warning btn-sm"}
+    print_appointment_regular.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
 
     def print_appointment_ad_interim(self, request, obj):
+        rsname = slugify(obj.role.short_name)[:10]
+        lname = slugify(obj.person.last_name)[:20]
+        date_str = timezone.localtime().strftime("%Y-%m-%d")
         return self._render_cert(
             request, obj,
             "people/certs/appointment_ad_interim.html",
-            f"bestellung_ad_interim_{obj.person.last_name}_{obj.role.name}.pdf"
+            f"B_interim_{rsname}_{lname}-{date_str}.pdf"
         )
     print_appointment_ad_interim.label = "💥 " + _("Print appointment (ad interim) PDF")
-    print_appointment_ad_interim.attrs = {"class": "btn btn-block btn-warning btn-sm"}
+    print_appointment_ad_interim.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
 
     def print_confirmation(self, request, obj):
+        rsname = slugify(obj.role.short_name)[:10]
+        lname = slugify(obj.person.last_name)[:20]
+        date_str = timezone.localtime().strftime("%Y-%m-%d")
         # role-kind guard
         if getattr(obj.role, "kind", None) != obj.role.Kind.DEPT_HEAD:
             self.message_user(
@@ -441,20 +502,23 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         return self._render_cert(
             request, obj,
             "people/certs/appointment_confirmation.html",
-            f"bestaetigung_{obj.person.last_name}_{obj.role.name}.pdf"
+            f"B_Beschluss_{obj.confirm_ref or ""}_{rsname}_{lname}-{date_str}.pdf"
         )
 
     print_confirmation.label = "☑️ " + _("Print confirmation (post-confirmation) PDF")
-    print_confirmation.attrs = {"class": "btn btn-block btn-warning btn-sm"}
+    print_confirmation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
 
     def print_resignation(self, request, obj):
+        rsname = slugify(obj.role.short_name)[:10]
+        lname = slugify(obj.person.last_name)[:20]
+        date_str = timezone.localtime().strftime("%Y-%m-%d")
         return self._render_cert(
             request, obj,
             "people/certs/resignation.html",
-            f"ruecktritt_{obj.person.last_name}_{obj.role.name}.pdf"
+            f"R_{rsname}_{lname}-{date_str}.pdf"
         )
     print_resignation.label = "🏁 " + _("Print resignation PDF")
-    print_resignation.attrs = {"class": "btn btn-block btn-warning btn-sm"}
+    print_resignation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
 
     # --- Visibility gates (buttons appear only when True) ---
     def get_change_actions(self, request, object_id, form_url):

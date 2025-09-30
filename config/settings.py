@@ -190,12 +190,12 @@ JAZZMIN_SETTINGS = {
     },
 
     # Sidebar ordering within the app
-    "order_with_respect_to": ["organisation", "organisation.orginfo", "people", "people.person", "people.personrole", "people.roletransitionreason", "people.role", "finances", "finances.fiscalyear", "finances.paymentplan" ],
+    "order_with_respect_to": ["organisation", "organisation.orginfo", "people", "people.personrole", "people.person", "people.roletransitionreason", "people.role", "finances", "finances.paymentplan", "finances.fiscalyear" ],
 
 
     # Hide historical models from menu
     "hide_models": [
-        "organisation.HistoricalOrgInfo"
+        "organisation.HistoricalOrgInfo",
         "people.HistoricalPerson",
         "people.HistoricalRole",
         "people.HistoricalPersonRole",
@@ -215,7 +215,7 @@ JAZZMIN_SETTINGS = {
 
     # Custom assets
     "custom_css": "admin/unihanko.css",
-    "custom_js":  "admin/help-button.js",
+    "custom_js":  "admin/custom.js",
 
     # Optional: show Jazzmin UI builder (handy for experimenting)
     # "show_ui_builder": True,

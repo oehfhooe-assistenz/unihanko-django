@@ -86,6 +86,8 @@ class OrgInfo(SingletonModel):
         PersonRole, verbose_name=_("Deputy Financial Officer"), on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
 
+    org_public_filing_url = models.CharField(_("Public filing URL"), max_length=128, blank=True, help_text=_("Do not change without permission."))
+
     history = HistoricalRecords()
 
     class Meta:

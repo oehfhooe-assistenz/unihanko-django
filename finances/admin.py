@@ -1,6 +1,8 @@
 from django.contrib import admin, messages
 from django import forms
 from django.utils.translation import gettext_lazy as _, pgettext
+from django.utils.text import slugify
+from django.utils import timezone
 from django.utils.html import format_html
 from django_object_actions import DjangoObjectActions
 from import_export import resources
@@ -414,38 +416,42 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
             return
         self.message_user(request, _("Plan activated."), level=messages.SUCCESS)
     activate_plan.label = _("Activate")
-    activate_plan.attrs = {"class": "btn btn-block btn-success btn-sm"}
+    activate_plan.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
 
     def suspend_plan(self, request, obj):
         obj.mark_suspended(note=_("Suspended from admin"))
         self.message_user(request, _("Plan suspended."), level=messages.SUCCESS)
     suspend_plan.label = _("Suspend")
-    suspend_plan.attrs = {"class": "btn btn-block btn-warning btn-sm"}
+    suspend_plan.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
 
     def finish_plan(self, request, obj):
         obj.mark_finished(note=_("Finished from admin"))
         self.message_user(request, _("Plan finished."), level=messages.SUCCESS)
     finish_plan.label = _("Finish")
-    finish_plan.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
+    finish_plan.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
 
     def cancel_plan(self, request, obj):
         obj.mark_cancelled(note=_("Cancelled from admin"))
         self.message_user(request, _("Plan cancelled."), level=messages.SUCCESS)
     cancel_plan.label = _("Cancel")
-    cancel_plan.attrs = {"class": "btn btn-block btn-danger btn-sm"}
+    cancel_plan.attrs = {"class": "btn btn-block btn-danger btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
 
     # === PDF actions (single + bulk) ===
     def print_pdf(self, request, obj):
+        date_str = timezone.localtime().strftime("%Y-%m-%d")
+        lname = slugify(obj.person_role.person.last_name)[:20]
+        rsname = slugify(obj.person_role.role.short_name)[:10]
         ctx = {"pp": obj}
-        return render_pdf_response("finances/paymentplan_pdf.html", ctx, request, f"{obj.plan_code}.pdf")
+        return render_pdf_response("finances/paymentplan_pdf.html", ctx, request, f"FGEB-BELEG_{obj.plan_code}_{rsname}_{lname}-{date_str}.pdf")
     print_pdf.label = "🖨️ " + _("Print Receipt PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
+    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
 
     @admin.action(description=_("Export selected to PDF"))
     def export_selected_pdf(self, request, queryset):
+        date_str = timezone.localtime().strftime("%Y-%m-%d")
         rows = queryset.select_related("person_role__person", "person_role__role", "fiscal_year") \
                        .order_by("fiscal_year__start", "plan_code")
-        return render_pdf_response("finances/paymentplans_list_pdf.html", {"rows": rows}, request, "payment_plans.pdf")
+        return render_pdf_response("finances/paymentplans_list_pdf.html", {"rows": rows}, request, f"FGEB_SELECT-{date_str}.pdf")
 
     # (3) Draft-stage banner
     def change_view(self, request, object_id, form_url="", extra_context=None):
@@ -607,15 +613,17 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
     change_actions = ("print_pdf", "lock_year", "unlock_year")
 
     def print_pdf(self, request, obj):
+        date_str = timezone.localtime().strftime("%Y-%m-%d")
         ctx = {"fy": obj}
-        return render_pdf_response("finances/fiscalyear_pdf.html", ctx, request, f"{obj.display_code()}.pdf")
+        return render_pdf_response("finances/fiscalyear_pdf.html", ctx, request, f"WJFY-STATUS_{obj.display_code()}-{date_str}.pdf")
     print_pdf.label = "🖨️ " + _("Print receipt PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
+    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
 
     @admin.action(description=_("Print selected as overview PDF"))
     def export_selected_pdf(self, request, queryset):
+        date_str = timezone.localtime().strftime("%Y-%m-%d")
         rows = queryset.order_by("-start")
-        return render_pdf_response("finances/fiscalyears_list_pdf.html", {"rows": rows}, request, "fiscal_years.pdf")
+        return render_pdf_response("finances/fiscalyears_list_pdf.html", {"rows": rows}, request, f"WJFY-SELECT-{date_str}.pdf")
 
     @admin.action(description=_("Set selected as active (and clear others)"))
     def make_active(self, request, queryset):
@@ -695,7 +703,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         obj.save(update_fields=["is_locked"])
         self.message_user(request, _("Fiscal year locked."), level=messages.SUCCESS)
     lock_year.label = _("Lock year")
-    lock_year.attrs = {"class": "btn btn-block btn-warning btn-sm"}
+    lock_year.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
 
     def unlock_year(self, request, obj):
         if not self._is_manager(request):
@@ -708,4 +716,4 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         obj.save(update_fields=["is_locked"])
         self.message_user(request, _("Fiscal year unlocked."), level=messages.SUCCESS)
     unlock_year.label = _("Unlock year")
-    unlock_year.attrs = {"class": "btn btn-block btn-success btn-sm"}
+    unlock_year.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}

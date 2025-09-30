@@ -1,11 +1,14 @@
 # people/models.py
 import uuid
+import secrets
 from django.conf import settings
 from django.db import models
 from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 from django.core.exceptions import ValidationError
+import re
+
 
 class Person(models.Model):
     class Gender(models.TextChoices):
@@ -63,6 +66,15 @@ class Person(models.Model):
         help_text=_("Link to a Django user account (optional)."),
     )
 
+    # public filing access
+    personal_access_code = models.CharField(
+        _("Personal access code"),
+        max_length=19,
+        unique=True,
+        blank=True,
+        help_text=_("To be shared with personnel for certain public filing systems (FuGeb etc.)."),
+    )
+
     # --- Lifecycle / flags ---------------------------------------------------
     is_active   = models.BooleanField(_("Active"), default=True)
     archived_at = models.DateTimeField(_("Archived at"), null=True, blank=True)
@@ -100,7 +112,51 @@ class Person(models.Model):
     def is_effectively_active(self) -> bool:
         """Useful flag for filters: active and not archived."""
         return self.is_active and not self.is_archived
+    
+    # Access code helpers
+    _ACCESS_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
+    @classmethod
+    def _generate_access_code(cls, groups: int = 2, chars_per_group: int = 4) -> str:
+        """
+        Example default: 'ABCD-EFGH' (8 chars + hyphen). Human-friendly, mixed alphanum.
+        """
+        rng = secrets.SystemRandom()
+        parts = [
+            "".join(rng.choice(cls._ACCESS_ALPHABET) for _ in range(chars_per_group))
+            for __ in range(groups)
+        ]
+        return "-".join(parts)
+    
+    @classmethod
+    def _generate_unique_access_code(cls) -> str:
+        # Try a few times, extremely low collision probability
+        for attempt in range(20):
+            code = cls._generate_access_code()
+            if not cls.objects.filter(personal_access_code=code).exists():
+                return code
+        # Fallback: longer code if we somehow collide often
+        for attempt in range(20):
+            code = cls._generate_access_code(groups=3, chars_per_group=4) # ABCD-EFGH-IJKL
+            if not cls.objects.filter(personal_access_code=code).exists():
+                return code
+        # If we still fail, raise a clear error
+        raise ValidationError(_("Could not generate a unique access code. Please try again."))
+    
+    def regenerate_access_code(self, *, commit: bool = True) -> str:
+        """
+        Regenerate to a new unique code. Returns the new code.
+        """
+        self.personal_access_code = self._generate_unique_access_code()
+        if commit:
+            self.save(update_fields=["personal_access_code", "updated_at"])
+        return self.personal_access_code
+    
+    def save(self, *args, **kwargs):
+        # Auto-assign a code on create (or if missing from legacy rows)
+        if not self.personal_access_code:
+            self.personal_access_code = self._generate_unique_access_code()
+        super().save(*args, **kwargs)
 
 class Role(models.Model):
     class Kind(models.TextChoices):
@@ -109,6 +165,16 @@ class Role(models.Model):
         OTHER = "OTHER", _("Other / miscellaneous")
 
     name = models.CharField(_("Name"), max_length=100, unique=True)
+    short_name = models.CharField(
+        _("Short form"),
+        max_length=20,
+        blank=True,
+        validators=[RegexValidator(
+            regex=r"^\D{1,20}$",
+            message=_("Format: no digits, max. 20 characters, e.g. WiRef"),
+        )],
+        help_text=_("Role short-form"),
+    )
     ects_cap = models.DecimalField(_("ECTS cap"), max_digits=4, decimal_places=1, default=0, help_text=_("The nominal reimbursible ECTS amount assigned to the role re: MOU with the academic board"))
     is_elected = models.BooleanField(_("Elected position"), default=False, help_text=_("Whether this role is elected via an election authority re: HSG 2014"))
     kind = models.CharField(_("Role type"), max_length=16, choices=Kind.choices, default=Kind.OTHER, db_index=True, help_text=_("Type of role within the (legal) personnel structure."))
@@ -236,8 +302,9 @@ class PersonRole(models.Model):
         help_text=_("Why this assignment ended (e.g. Austritt). Required when an end date is set."),
     )
     
+    CONFIRM_REF_REGEX = r"^(?:HV|AO)-[IVXLCDM]+-\d{4}$"  # HV-<roman>-YYYY or AO-<roman>-YYYY
     confirm_date = models.DateField(_("Confirmation date"), null=True, blank=True, help_text=_("Date of assembly confirmation (if applicable)"))
-    confirm_ref = models.CharField(_("Confirmation reference"), max_length=120, null=True, blank=True, help_text=_("Assembly reference or note (if applicable)"))
+    confirm_ref = models.CharField(_("Confirmation reference"), max_length=120, null=True, blank=True, validators=[RegexValidator(regex=CONFIRM_REF_REGEX, flags=re.I, message=_("Use HV-<roman>-YYYY or AO-<roman>-YYYY (e.g. HV-IV-2024, AO-VI-2023)."),)], help_text=_("Assembly reference or note (if applicable). Format: HV-<roman>-YYYY or AO-<roman>-YYYY (e.g. HV-IV-2024)."))
 
     # Per-assignment free-text note
     notes = models.TextField(_("Notes"), blank=True)
@@ -299,6 +366,8 @@ class PersonRole(models.Model):
     # Optional server-side form validation niceties (admin will show nicer errors)
     def clean(self):
         super().clean()
+        if self.confirm_ref:
+            self.confirm_ref = self.confirm_ref.upper()
         errors = {}
 
         if self.end_date and not self.end_reason:

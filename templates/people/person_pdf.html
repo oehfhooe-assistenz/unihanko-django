@@ -53,6 +53,10 @@ border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { pos
             <th>{% trans "UniHanko Account" %}</th>
             <td>{{ p.user|default:"—" }}</td>
         </tr>
+        <tr>
+            <th>Personal Access Code</th>
+            <td>{{ p.personal_access_code }}</td>
+        </tr>
     </tbody>
 </table>
 

@@ -1,5 +1,5 @@
 {% extends "pdf/base.html" %} {% load static i18n tz %} {% block extra_styles %} /* Kill base header/footer; tight top margin for full-bleed band */ @page { size: A4; margin: 30mm 14mm 18mm 14mm; @top-center { content: none; } @bottom-left { content:
-none; } @bottom-right { content: none; } } @page:first { margin: 0mm 14mm 18mm 14mm; @top-center { content: none; } } .header-hero, .header-std, .pdf-footer { display: none !important; } main { margin-top: 0 !important; } :root{ --brand:#f97316; --ink:#111;
+none; } @bottom-right { content: none; } } @page:first { margin: 0mm 14mm 18mm 14mm; @top-center { content: none; } @bottom-center { content: element(cert_footer); } } .header-hero, .header-std, .pdf-footer { display: none !important; } main { margin-top: 0 !important; } :root{ --brand:#f97316; --ink:#111;
 --muted:#6b7280; --rule:#e5e7eb; } html, body { font-family:"DejaVu Sans", Arial, sans-serif; color:var(--ink); } /* ---------- Generic layout helpers ---------- */ .page { display:block; } .page-break { break-before: page; page-break-before: always;
 } .label{ font-size:14px; color:var(--muted); } .en-em{ font-size:9px; font-style:italic; opacity:.9; color:#9ca3af; } .em{ font-style:italic; color:var(--brand); } .value{ font-size:16px; padding:4px 6px; border:1px solid var(--rule); border-radius:4px;
 } .section{ margin-top:10mm; } .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:8mm; } .right-stamp{ text-align:right; } .date-pill{ display:inline-block; border:1px solid var(--ink); padding:2mm 4mm; border-radius:3px; font-weight:700; } /*
@@ -10,7 +10,18 @@ color:#9ca3af; } .sig-caption{ margin-top:2mm; font-size:10px; color:#555; } .si
 ---------- Page 2: notes + contacts in two columns ---------- */ .two-col{ display:grid; grid-template-columns: 1fr 55mm; gap:10mm; align-items:start; } .notes{ border:1px dashed #9ca3af; padding:4mm; } .notes h3{ font-size:20px; margin:0 0 3mm 0; } .notes
 ul{ margin:0; padding-left:5mm; font-size:12px; } .notes li{ margin:1.5mm 0; } .footer-line{ margin-top:6mm; font-size:10px; display:flex; gap:6mm; align-items:center; flex-wrap:wrap; } .inline-field{ border:1px solid var(--ink); padding:1mm 3mm; min-width:35mm;
 display:inline-block; } .contacts h4{ font-size:10px; margin:0 0 2mm 0; color:#f97316; } .contacts{ font-size:10px; line-height:1.35; color:#374151; } /* Optional faint motto under the notes title */ .motto{ font-size:10px; color:#6b7280; margin:4mm 0
-0 0; } {% endblock %} {% block content %}
+0 0; } 
+
+  .cert-footerbar {
+    position: running(cert_footer);
+    font-size: 10px;
+    color: #374151;
+    border-top: 1px solid #ff8a3d;
+    padding-top: 4mm;
+    line-height: 1.3;
+  }
+  
+{% endblock %} {% block content %}
 <!-- ===== Page 1: certificate ===== -->
 <div class="page">
     <div class="cert-head">
@@ -76,9 +87,9 @@ display:inline-block; } .contacts h4{ font-size:10px; margin:0 0 2mm 0; color:#f
                 <!-- <span style="position:absolute;left:-9999px;top:-9999px;">SIGN_ANCHOR_CHAIR</span> -->
             </div>
             <div class="sig-caption">
-                {% block signer_caption %} Der*die Vorsitzende der HV FH Oberösterreich
-                <br>
-                <span class="en-em">The chairperson of the UAS Upper Austria’s Students’ Union</span> {% endblock %}
+                <strong>{{ org.org_chair.person.first_name|default:"" }} {{ org.org_chair.person.last_name|default:"" }}</strong>
+                <br>{% block signer_caption %} Der*die Vorsitzende der HV FH Oberösterreich
+                <br><span class="en-em">The chairperson of the UAS Upper Austria’s Students’ Union</span> {% endblock %}
             </div>
         </div>
 
@@ -87,6 +98,16 @@ display:inline-block; } .contacts h4{ font-size:10px; margin:0 0 2mm 0; color:#f
             <div class="en-em">undersigned per pro</div>
         </div>
     </section>
+
+    <div class="cert-footerbar">
+        <strong>{{ org.org_name_long_de }}</strong>
+        {% if org.org_address %} • <u>{% trans "Adresse" %}</u> <i>({% trans "Zentralstelle im Büro Linz" %})</i>: {{ org.org_address }}{% endif %}
+        {% if org.bank_name or org.bank_iban or org.bank_bic %}
+        <br><u>Bank</u>: {% if org.bank_name %}{{ org.bank_name }}{% endif %}
+        {% if org.bank_iban %} • IBAN: {{ org.bank_iban }}{% endif %}
+        {% if org.bank_bic %} • BIC: {{ org.bank_bic }}{% endif %}
+        {% endif %}
+    </div>
 </div>
 
 <!-- ===== Page 2: notes + contacts ===== -->

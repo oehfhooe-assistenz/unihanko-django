@@ -1,0 +1,77 @@
+{% extends "pdf/base.html" %} {% load i18n %} 
+{% block extra_styles %} .sig-section { margin-top: 12mm; page-break-inside: avoid; } .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; } .sig-box { height: 28mm; border: 1px dashed #9aa3af;
+border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { position: absolute; top: 4px; left: 6px; font-size: 10px; color: #9aa3af; } .sig-meta { margin-top: 6px; font-size: 11px; color: #6b7280; }
+.pac-section { font-family: "DejaVu Sans Mono", monospace; text-transform: uppercase; letter-spacing: 0.6mm; margin-top: 12mm; margin-bottom: 12mm; margin: auto; font-weight: bold; width: 50%; border: 4px solid var(--brand); padding: 10px; font-size: 32px; text-align: center; }
+{% endblock %}
+{% block pdf_title %}{% trans "PAC Info" %} — {{ p.last_name }}, {{ p.first_name }}{% if p.matric_no %}; {{ p.matric_no }}{% endif %}{% endblock %}
+{% block header_title %}{% trans "Personal Access Code Information Sheet" %}{% endblock %} 
+{% block header_subtitle %}{{ p.uuid }}{% endblock %}
+{% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %} 
+{% block content %}
+<h2 style="margin:0 0 8px 0;">Personal Access Code {% trans "for" %}:</h2>
+<h3 style="margin:10px 0 6px 0; color:var(--brand);">{{ p.first_name }} {{ p.last_name }}</h3>
+<section>
+    <div style="margin:4mm 0 10mm 0;">
+        <table>
+            <tbody>
+                <tr>
+                    <th>{% trans "Matriculation No." %}</th>
+                    <td>{{ p.matric_no|default:"—" }}</td>
+                </tr>
+                <tr>
+                    <th>{% trans "Email(s)" %}</th>
+                    <td>
+                        {% if p.email %}{{ p.email }}{% else %}—{% endif %} {% if p.student_email %}
+                        <br>{{ p.student_email }}{% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>{% trans "UniHanko ID" %}</th>
+                    <td>{{ p.uuid }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="margin:4mm 0 4mm 0;">
+            <p style="margin:0 0 4mm 0;"><strong>{% trans "Dear functionary" %},</strong><br></p>
+            <small>
+            {% blocktrans trimmed %}
+            Given your role within the UAS Upper Austria's students' union your personnel information has been stored within UniHanko, our internal personnel management system.
+            While you may not be supplied with an administrative account for UniHanko, you may file or register certain activities (e.g. your 'Funktionsgebühr') via UniHanko's public filing platform.
+            For these activities, you will be asked to provide your Personal Access Code, which you'll find on this sheet.
+            Please safeguard this information.
+            {% endblocktrans %}
+            </small>
+        </div>
+    </div>
+</section>
+<section style="margin: 4mm 0 10mm 0;">
+    <div class="pac-section">
+        {{ p.personal_access_code }}
+    </div>
+
+    <div style="margin:4mm 0 4mm 0;">
+    {% if org.org_public_filing_url %}
+    <p style="margin:4mm 0 4mm 0;">
+        <strong>{% trans "Use this code at" %}:
+            <a href="{{ org.org_public_filing_url }}" style="color:#2563eb; text-decoration:underline;">
+                {{ org.org_public_filing_url }}
+            </a>
+        </strong>
+    </p>
+    {% else %}
+    <p style="margin:4mm 0 4mm 0;"><strong>{% trans "Use this code at" %}: —</strong></p>
+    {% endif %}
+    </div>
+</section>
+
+<h3 style="margin:0 0 4mm 0;">{% trans "Important notice" %}</h3>
+<div>
+    <small>
+      {% blocktrans trimmed %}
+      This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited.
+      {% endblocktrans %}
+    </small>
+</div>
+
+{% endblock %}
