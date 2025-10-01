@@ -14,6 +14,17 @@ from core.admin_mixins import ImportExportGuardMixin
 from core.pdf import render_pdf_response
 from organisation.models import OrgInfo
 
+from django.urls import path, reverse
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseForbidden
+from django.views.decorators.http import require_http_methods
+from django.utils.dateparse import parse_date
+import json
+
+from django.utils.decorators import method_decorator
+from django.middleware.csrf import get_token
+from django.forms.models import model_to_dict
+
+
 from .models import (
     Employee,
     EmploymentDocument,
@@ -327,8 +338,6 @@ class TimeSheetStateFilter(admin.SimpleListFilter):
             return qs.filter(approved_at_chair__isnull=False)
         return qs
 
-from django.urls import path, reverse
-from django.http import JsonResponse
 
 @admin.register(TimeSheet)
 class TimeSheetAdmin(
@@ -375,26 +384,160 @@ class TimeSheetAdmin(
     def calendar_preview(self, obj):
         if not obj or not obj.pk:
             return _("— save first to see the calendar —")
-        url = reverse("admin:employees_timesheet_calendar", args=[obj.pk])
+        events_url = reverse("admin:employees_timesheet_events", args=[obj.pk])
+        totals_url = reverse("admin:employees_timesheet_totals", args=[obj.pk])
         initial = f"{obj.year}-{obj.month:02d}-01"
+        events_base = events_url.removesuffix("/events/")
         return format_html(
             '<div id="ts-calendar" '
-            'data-json-url="{}" '
+            'data-events-url="{}" '
+            'data-create-url="{}" '
+            'data-update-url="{}/events/" '
+            'data-delete-url="{}/events/" '
+            'data-totals-url="{}" '
             'data-initial="{}" '
-            'style="min-height:420px;border:1px solid #374151;border-radius:6px;padding:8px;"></div>',
-            url, initial
+            # i18n bits
+            'data-i18n-title-new="{}" '
+            'data-i18n-title-edit="{}" '
+            'data-i18n-label-date="{}" '
+            'data-i18n-label-kind="{}" '
+            'data-i18n-label-from="{}" '
+            'data-i18n-label-to="{}" '
+            'data-i18n-label-comment="{}" '
+            'data-i18n-btn-save="{}" '
+            'data-i18n-btn-cancel="{}" '
+            'data-i18n-btn-delete="{}" '
+            'data-i18n-confirm-delete="{}" '
+            'data-i18n-err-time-order="{}" '
+            'style="min-height:720px;border:1px solid #374151;border-radius:6px;padding:8px;"></div>',
+            events_url, events_url, events_base, events_base, totals_url, initial,
+            _("New entry"), _("Edit entry"),
+            _("Date"), _("Kind"), _("From"), _("To"), _("Comment"),
+            _("Save"), _("Cancel"), _("Delete"),
+            _("Delete this entry?"),
+            _("‘To’ must be after ‘From’ (same day)."),
         )
-    
+
+
 
     def get_urls(self):
         urls = super().get_urls()
         my = [
-            path("<int:object_id>/calendar.json",
-                self.admin_site.admin_view(self.calendar_json),
-                name="employees_timesheet_calendar"),
+            path("<int:object_id>/events/", self.admin_site.admin_view(self.api_events), name="employees_timesheet_events"),
+            path("<int:object_id>/events/<int:entry_id>/", self.admin_site.admin_view(self.api_event_detail), name="employees_timesheet_event"),
+            path("<int:object_id>/totals.json", self.admin_site.admin_view(self.api_totals), name="employees_timesheet_totals"),
         ]
         return my + urls
-    
+
+
+    @staticmethod
+    def _deny_locked(ts):
+        return ts.approved_at_wiref or ts.approved_at_chair
+
+    @staticmethod
+    def _within_month(ts, d):
+        return d.year == ts.year and d.month == ts.month
+
+    @method_decorator(require_http_methods(["GET", "POST"]))
+    def api_events(self, request, object_id):
+        ts = self.get_object(request, object_id)
+        if not ts:
+            return JsonResponse([], safe=False)
+
+        if request.method == "GET":
+            # list events
+            return self.calendar_json(request, object_id)
+
+        # POST = create (idempotent on unique key)
+        if not request.user.has_perm("employees.add_timeentry"):
+            return HttpResponseForbidden()
+        if self._deny_locked(ts):
+            return HttpResponseBadRequest("Locked timesheet")
+
+        try:
+            payload = json.loads(request.body.decode("utf-8") or "{}")
+        except Exception:
+            return HttpResponseBadRequest("Invalid JSON")
+
+        kind = (payload.get("kind") or "WORK").upper()
+        comment = (payload.get("comment") or "").strip()
+        try:
+            minutes = int(payload.get("minutes") or 0)
+        except ValueError:
+            return HttpResponseBadRequest("Minutes must be an integer")
+        d = parse_date(payload.get("date") or "")
+        if not d or not self._within_month(ts, d) or minutes <= 0:
+            return HttpResponseBadRequest("Bad data")
+
+        # Upsert on the unique constraint (timesheet, date, kind, comment)
+        obj, created = TimeEntry.objects.get_or_create(
+            timesheet=ts,
+            date=d,
+            kind=kind,
+            comment=comment,
+            defaults={"minutes": minutes},
+        )
+        if not created:
+            obj.minutes = minutes  # replace existing minutes
+            obj.save(update_fields=["minutes", "updated_at"])
+
+        return JsonResponse({"id": obj.id, "created": created})
+
+    @method_decorator(require_http_methods(["PATCH", "DELETE"]))
+    def api_event_detail(self, request, object_id, entry_id):
+        ts = self.get_object(request, object_id)
+        if not ts:
+            return HttpResponseBadRequest("No timesheet")
+        try:
+            e = ts.entries.get(pk=entry_id)
+        except TimeEntry.DoesNotExist:
+            return HttpResponseBadRequest("No entry")
+
+        if self._deny_locked(ts):
+            return HttpResponseBadRequest("Locked timesheet")
+
+        if request.method == "DELETE":
+            if not request.user.has_perm("employees.delete_timeentry"):
+                return HttpResponseForbidden()
+            e.delete()
+            return JsonResponse({"ok": True})
+
+        if not request.user.has_perm("employees.change_timeentry"):
+            return HttpResponseForbidden()
+        try:
+            payload = json.loads(request.body.decode("utf-8") or "{}")
+        except Exception:
+            return HttpResponseBadRequest("Invalid JSON")
+
+        if "minutes" in payload:
+            m = int(payload["minutes"])
+            if m < 0:
+                return HttpResponseBadRequest("Minutes must be ≥ 0")
+            e.minutes = m
+        if "kind" in payload:
+            e.kind = payload["kind"]
+        if "comment" in payload:
+            e.comment = (payload["comment"] or "").strip()
+        if "date" in payload:
+            d = parse_date(payload["date"])
+            if not d or not self._within_month(ts, d):
+                return HttpResponseBadRequest("Bad date")
+            e.date = d
+
+        e.save()
+        return JsonResponse({"ok": True})
+
+    @method_decorator(require_http_methods(["GET"]))
+    def api_totals(self, request, object_id):
+        ts = self.get_object(request, object_id)
+        if not ts:
+            return JsonResponse({"total": 0, "expected": 0, "delta": 0})
+        # values are kept in model on save()
+        t = int((ts.worked_minutes or 0) + (ts.credit_minutes or 0))
+        e = int(ts.expected_minutes or 0)
+        d = t - e
+        return JsonResponse({"total": t, "expected": e, "delta": d})
+
 
     def calendar_json(self, request, object_id):
         ts = self.get_object(request, object_id)
@@ -410,20 +553,24 @@ class TimeSheetAdmin(
             "OTHER":  "#93c5fd",
         }
 
-        # entries → events
         for e in ts.entries.all():
             title = e.get_kind_display()
             if e.minutes:
                 title += f" · {e.minutes}m"
             events.append({
+                "id": e.id,
                 "title": title,
                 "start": e.date.isoformat(),
                 "allDay": True,
                 "color": colors.get(e.kind, "#93c5fd"),
+                "extendedProps": {
+                    "minutes": e.minutes,
+                    "kind": e.kind,
+                    "comment": e.comment or "",
+                },
             })
 
-        # holidays → background events
-        hols = ts._active_holidays()  # your helper
+        hols = ts._active_holidays()
         for d in sorted(hols):
             if d.year == ts.year and d.month == ts.month:
                 events.append({
@@ -435,6 +582,7 @@ class TimeSheetAdmin(
                 })
 
         return JsonResponse(events, safe=False)
+
 
     # ---- computed displays ----
     @admin.display(description=_("Period"))
@@ -593,6 +741,13 @@ class TimeSheetAdmin(
 
     approve_chair.label = _("Approve (Chair)")
     approve_chair.attrs = {"class": "btn btn-block btn-success btn-sm"}
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        # Lock employee after the sheet exists, except for superusers
+        if obj and not request.user.is_superuser:
+            ro.append("employee")
+        return ro
 
 
 # =========================

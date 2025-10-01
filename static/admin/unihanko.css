@@ -321,3 +321,18 @@ div.alert-success .close { color: #e8fff0; opacity: .9; }
   border: 0; background: transparent; color: #e5e7eb;
   font-size: 20px; cursor: pointer;
 }
+
+.field-calendar_preview .readonly { padding: 0; border: 0; background: transparent; }
+.uh-calwrap { width: 100%; }
+#ts-calendar { width: 100%; min-height: 720px; } /* JS height still controls final height */
+
+/* Make the Timesheet calendar row full width */
+.field-calendar_preview label,
+.field-calendar_preview .col-sm-2 {
+  display: none !important;        /* hide the label column */
+}
+
+.field-calendar_preview .col-sm-7 {
+  flex: 0 0 100% !important;       /* take full row */
+  max-width: 100% !important;
+}
