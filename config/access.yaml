@@ -11,6 +11,27 @@ groups:
     models: {}
     custom_perms: {}
 
+  "module:employees:editor":
+    inherits: []
+    models:
+      employees.Employee: [view]
+      employees.HolidayCalendar: [view]
+      employees.EmploymentDocument: [view, add, change]
+      employees.TimeSheet: [view, add, change]
+      employees.TimeEntry: [view, add, change]
+    custom_perms: {}
+
+  "module:employees:manager":
+    inherits:
+      - "module:employees:editor"
+    models:
+      employees.Employee: [view, add, change]
+      employees.HolidayCalendar: [view, add, change]
+      employees.EmploymentDocument: [view, add, change]
+      employees.TimeSheet: [view, add, change]
+      employees.TimeEntry: [view, add, change]
+    custom_perms: {}
+
   "module:organisation:editor":
     inherits: []
     models:

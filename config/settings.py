@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'core',
     'people',
     'finances',
+    'employees',
 
     'solo',
     'organisation',
@@ -185,12 +186,18 @@ JAZZMIN_SETTINGS = {
         "people.role": "fa-solid fa-id-badge",
         "people.roletransitionreason": "fa-solid fa-flag",
         "finances": "fa-solid fa-calculator",
-        "finances.fiscalYear": "fa-solid fa-calendar-check",
+        "finances.fiscalyear": "fa-solid fa-calendar-check",
         "finances.paymentplan": "fa-solid fa-money-check-dollar",
+        "employees": "fa-solid fa-address-book",
+        "employees.employee": "fa-solid fa-address-book",
+        "employees.employmentdocument": "fa-solid fa-passport",
+        "employees.timesheet": "fa-solid fa-business-time",
+        "employees.timeentry": "fa-solid fa-calendar-xmark",
+        "employees.holidaycalendar": "fa-solid fa-gift",
     },
 
     # Sidebar ordering within the app
-    "order_with_respect_to": ["organisation", "organisation.orginfo", "people", "people.personrole", "people.person", "people.roletransitionreason", "people.role", "finances", "finances.paymentplan", "finances.fiscalyear" ],
+    "order_with_respect_to": ["organisation", "organisation.orginfo", "people", "people.personrole", "people.person", "people.roletransitionreason", "people.role", "finances", "finances.paymentplan", "finances.fiscalyear", "employees", "employees.timesheet", "employees.employmentdocument", "employees.employee", "employees.holidaycalendar", ],
 
 
     # Hide historical models from menu
@@ -202,6 +209,11 @@ JAZZMIN_SETTINGS = {
         "people.HistoricalRoleTransitionReason",
         "finances.HistoricalFiscalYear",
         "finances.HistoricalPaymentPlan",
+        "employees.HistoricalEmployee",
+        "employees.HistoricalEmploymentDocument",
+        "employees.HistoricalHolidayCalendar",
+        "employees.HistoricalTimeSheet",
+        "employees.HistoricalTimeEntry",
     ],
 
     # Quality of life
@@ -215,7 +227,7 @@ JAZZMIN_SETTINGS = {
 
     # Custom assets
     "custom_css": "admin/unihanko.css",
-    "custom_js":  "admin/custom.js",
+    "custom_js": "admin/custom.js",
 
     # Optional: show Jazzmin UI builder (handy for experimenting)
     # "show_ui_builder": True,
