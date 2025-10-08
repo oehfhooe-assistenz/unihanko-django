@@ -1,9 +1,10 @@
-# employees/admin.py
 from django.contrib import admin, messages
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _, get_language
 from django.db import IntegrityError, transaction
+from django.shortcuts import redirect, render
+from datetime import datetime as _dt
 
 from django_object_actions import DjangoObjectActions
 from import_export import resources
@@ -15,8 +16,7 @@ from core.pdf import render_pdf_response
 from organisation.models import OrgInfo
 
 from django.urls import path, reverse
-from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseForbidden
-from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.utils.dateparse import parse_date
 import json
 
@@ -24,6 +24,13 @@ from django.utils.decorators import method_decorator
 from django.middleware.csrf import get_token
 from django.forms.models import model_to_dict
 
+# NEW: helpers for the server-rendered calendar
+from calendar import monthrange
+from datetime import date as _date, timedelta
+from collections import Counter
+from django.template.loader import render_to_string
+from django.utils.safestring import mark_safe
+from django.utils.formats import date_format
 
 from .models import (
     Employee,
@@ -136,7 +143,6 @@ class TimeEntryInline(admin.TabularInline):
     ordering = ("date",)
 
     def get_max_num(self, request, obj=None, **kwargs):
-        # Keep inline manageable; you can tweak/remove this.
         return 200
 
 
@@ -184,7 +190,6 @@ class EmployeeAdmin(
 
     @admin.display(description=_("Saldo"))
     def saldo_display(self, obj):
-        # Show hours:minutes with sign, e.g. +03:15 or −01:30
         mins = int(obj.saldo_minutes or 0)
         sign = "-" if mins < 0 else "+"
         mins_abs = abs(mins)
@@ -201,7 +206,6 @@ class EmployeeAdmin(
     def has_delete_permission(self, request, obj=None):
         return False
 
-    # PDF roster export
     @admin.action(description=_("Print selected as Employee roster PDF"))
     def export_selected_pdf(self, request, queryset):
         rows = queryset.select_related("person_role__person", "person_role__role").order_by(
@@ -210,7 +214,6 @@ class EmployeeAdmin(
         ctx = {"rows": rows, "org": OrgInfo.get_solo()}
         return render_pdf_response("employee/employee_list_pdf.html", ctx, request, "employees_selected.pdf")
 
-    # Object action: single employee summary PDF
     change_actions = ("print_pdf",)
 
     def print_pdf(self, request, obj):
@@ -251,11 +254,11 @@ class EmploymentDocumentAdmin(
     @admin.display(description=_("Kind"))
     def kind_badge(self, obj):
         colors = {
-            obj.Kind.DV: "#2563eb",   # blue
-            obj.Kind.ZV: "#10b981",   # green
-            obj.Kind.AA: "#f59e0b",   # amber
-            obj.Kind.KM: "#ef4444",   # red
-            obj.Kind.ZZ: "#6b7280",   # gray
+            obj.Kind.DV: "#2563eb",
+            obj.Kind.ZV: "#10b981",
+            obj.Kind.AA: "#f59e0b",
+            obj.Kind.KM: "#ef4444",
+            obj.Kind.ZZ: "#6b7280",
         }
         return format_html(
             '<span class="badge" style="background:{};color:#fff;">{}</span>',
@@ -272,7 +275,6 @@ class EmploymentDocumentAdmin(
     def has_delete_permission(self, request, obj=None):
         return False
 
-    # --- Object actions: PDFs ---
     change_actions = ("print_receipt", "print_leave_request")
 
     def get_change_actions(self, request, object_id, form_url):
@@ -280,7 +282,6 @@ class EmploymentDocumentAdmin(
         obj = self.get_object(request, object_id)
         if not obj:
             return actions
-        # Only show the specific AA form for leave requests
         if obj.kind != obj.Kind.AA and "print_leave_request" in actions:
             actions.remove("print_leave_request")
         return actions
@@ -298,9 +299,7 @@ class EmploymentDocumentAdmin(
     print_receipt.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
 
     def print_leave_request(self, request, obj):
-        # AA only
         ctx = {"doc": obj, "org": OrgInfo.get_solo()}
-        # Fancy filename: e.g. Urlaubsantrag 2025-10-14–2025-10-15
         s = obj.start_date.strftime("%Y-%m-%d") if obj.start_date else ""
         e = obj.end_date.strftime("%Y-%m-%d") if obj.end_date else ""
         title = f"Urlaubsantrag {s}–{e}" if s and e else f"Urlaubsantrag_{obj.code or obj.id}"
@@ -380,208 +379,79 @@ class TimeSheetAdmin(
         (_("Timestamps"), {"fields": (("created_at"), ("updated_at"))}),
     )
 
+    # ---- server-rendered calendar preview (chips in cells, no day modal) ----
     @admin.display(description=_("Calendar"))
     def calendar_preview(self, obj):
         if not obj or not obj.pk:
             return _("— save first to see the calendar —")
-        events_url = reverse("admin:employees_timesheet_events", args=[obj.pk])
-        totals_url = reverse("admin:employees_timesheet_totals", args=[obj.pk])
-        initial = f"{obj.year}-{obj.month:02d}-01"
-        events_base = events_url.removesuffix("/events/")
-        return format_html(
-            '<div id="ts-calendar" '
-            'data-events-url="{}" '
-            'data-create-url="{}" '
-            'data-update-url="{}/events/" '
-            'data-delete-url="{}/events/" '
-            'data-totals-url="{}" '
-            'data-initial="{}" '
-            # i18n bits
-            'data-i18n-title-new="{}" '
-            'data-i18n-title-edit="{}" '
-            'data-i18n-label-date="{}" '
-            'data-i18n-label-kind="{}" '
-            'data-i18n-label-from="{}" '
-            'data-i18n-label-to="{}" '
-            'data-i18n-label-comment="{}" '
-            'data-i18n-btn-save="{}" '
-            'data-i18n-btn-cancel="{}" '
-            'data-i18n-btn-delete="{}" '
-            'data-i18n-confirm-delete="{}" '
-            'data-i18n-err-time-order="{}" '
-            'style="min-height:720px;border:1px solid #374151;border-radius:6px;padding:8px;"></div>',
-            events_url, events_url, events_base, events_base, totals_url, initial,
-            _("New entry"), _("Edit entry"),
-            _("Date"), _("Kind"), _("From"), _("To"), _("Comment"),
-            _("Save"), _("Cancel"), _("Delete"),
-            _("Delete this entry?"),
-            _("‘To’ must be after ‘From’ (same day)."),
-        )
 
+        month_start = _date(obj.year, obj.month, 1)
+        lead = (month_start.weekday() - 0) % 7  # Monday=0
+        grid_start = month_start - timedelta(days=lead)
 
+        # Bucket entries per day (ordered)
+        entries_by_day = {}
+        for e in obj.entries.all().order_by("date", "id"):
+            entries_by_day.setdefault(e.date, []).append(e)
 
-    def get_urls(self):
-        urls = super().get_urls()
-        my = [
-            path("<int:object_id>/events/", self.admin_site.admin_view(self.api_events), name="employees_timesheet_events"),
-            path("<int:object_id>/events/<int:entry_id>/", self.admin_site.admin_view(self.api_event_detail), name="employees_timesheet_event"),
-            path("<int:object_id>/totals.json", self.admin_site.admin_view(self.api_totals), name="employees_timesheet_totals"),
-        ]
-        return my + urls
+        # Active holidays in this month
+        hols = {d for d in obj._active_holidays()
+                if d.year == obj.year and d.month == obj.month}
 
-
-    @staticmethod
-    def _deny_locked(ts):
-        return ts.approved_at_wiref or ts.approved_at_chair
-
-    @staticmethod
-    def _within_month(ts, d):
-        return d.year == ts.year and d.month == ts.month
-
-    @method_decorator(require_http_methods(["GET", "POST"]))
-    def api_events(self, request, object_id):
-        ts = self.get_object(request, object_id)
-        if not ts:
-            return JsonResponse([], safe=False)
-
-        if request.method == "GET":
-            # list events
-            return self.calendar_json(request, object_id)
-
-        # POST = create (idempotent on unique key)
-        if not request.user.has_perm("employees.add_timeentry"):
-            return HttpResponseForbidden()
-        if self._deny_locked(ts):
-            return HttpResponseBadRequest("Locked timesheet")
-
-        try:
-            payload = json.loads(request.body.decode("utf-8") or "{}")
-        except Exception:
-            return HttpResponseBadRequest("Invalid JSON")
-
-        kind = (payload.get("kind") or "WORK").upper()
-        comment = (payload.get("comment") or "").strip()
-        try:
-            minutes = int(payload.get("minutes") or 0)
-        except ValueError:
-            return HttpResponseBadRequest("Minutes must be an integer")
-        d = parse_date(payload.get("date") or "")
-        if not d or not self._within_month(ts, d) or minutes <= 0:
-            return HttpResponseBadRequest("Bad data")
-
-        # Upsert on the unique constraint (timesheet, date, kind, comment)
-        obj, created = TimeEntry.objects.get_or_create(
-            timesheet=ts,
-            date=d,
-            kind=kind,
-            comment=comment,
-            defaults={"minutes": minutes},
-        )
-        if not created:
-            obj.minutes = minutes  # replace existing minutes
-            obj.save(update_fields=["minutes", "updated_at"])
-
-        return JsonResponse({"id": obj.id, "created": created})
-
-    @method_decorator(require_http_methods(["PATCH", "DELETE"]))
-    def api_event_detail(self, request, object_id, entry_id):
-        ts = self.get_object(request, object_id)
-        if not ts:
-            return HttpResponseBadRequest("No timesheet")
-        try:
-            e = ts.entries.get(pk=entry_id)
-        except TimeEntry.DoesNotExist:
-            return HttpResponseBadRequest("No entry")
-
-        if self._deny_locked(ts):
-            return HttpResponseBadRequest("Locked timesheet")
-
-        if request.method == "DELETE":
-            if not request.user.has_perm("employees.delete_timeentry"):
-                return HttpResponseForbidden()
-            e.delete()
-            return JsonResponse({"ok": True})
-
-        if not request.user.has_perm("employees.change_timeentry"):
-            return HttpResponseForbidden()
-        try:
-            payload = json.loads(request.body.decode("utf-8") or "{}")
-        except Exception:
-            return HttpResponseBadRequest("Invalid JSON")
-
-        if "minutes" in payload:
-            m = int(payload["minutes"])
-            if m < 0:
-                return HttpResponseBadRequest("Minutes must be ≥ 0")
-            e.minutes = m
-        if "kind" in payload:
-            e.kind = payload["kind"]
-        if "comment" in payload:
-            e.comment = (payload["comment"] or "").strip()
-        if "date" in payload:
-            d = parse_date(payload["date"])
-            if not d or not self._within_month(ts, d):
-                return HttpResponseBadRequest("Bad date")
-            e.date = d
-
-        e.save()
-        return JsonResponse({"ok": True})
-
-    @method_decorator(require_http_methods(["GET"]))
-    def api_totals(self, request, object_id):
-        ts = self.get_object(request, object_id)
-        if not ts:
-            return JsonResponse({"total": 0, "expected": 0, "delta": 0})
-        # values are kept in model on save()
-        t = int((ts.worked_minutes or 0) + (ts.credit_minutes or 0))
-        e = int(ts.expected_minutes or 0)
-        d = t - e
-        return JsonResponse({"total": t, "expected": e, "delta": d})
-
-
-    def calendar_json(self, request, object_id):
-        ts = self.get_object(request, object_id)
-        if not ts:
-            return JsonResponse([], safe=False)
-
-        events = []
-        colors = {
-            "WORK":   "#22c55e",
-            "LEAVE":  "#f59e0b",
-            "SICK":   "#ef4444",
-            "PUBHOL": "#64748b",
-            "OTHER":  "#93c5fd",
-        }
-
-        for e in ts.entries.all():
-            title = e.get_kind_display()
-            if e.minutes:
-                title += f" · {e.minutes}m"
-            events.append({
+        cells = []
+        d = grid_start
+        for _ in range(42):  # 6x7 grid
+            evs = entries_by_day.get(d, [])
+            items = [{
                 "id": e.id,
-                "title": title,
-                "start": e.date.isoformat(),
-                "allDay": True,
-                "color": colors.get(e.kind, "#93c5fd"),
-                "extendedProps": {
-                    "minutes": e.minutes,
-                    "kind": e.kind,
-                    "comment": e.comment or "",
-                },
+                "kind": e.kind,
+                "kind_display": e.get_kind_display(),
+                "minutes": int(e.minutes or 0),
+                "comment": e.comment or "",
+            } for e in evs]
+
+            kind_class = "empty"
+            if d in hols:
+                kind_class = "holiday"
+            elif evs:
+                from collections import Counter
+                top = Counter([e.kind for e in evs]).most_common(1)[0][0]
+                kind_class = {
+                    "WORK": "work",
+                    "LEAVE": "leave",
+                    "SICK": "sick",
+                    "OTHER": "other",
+                    "PUBHOL": "holiday",
+                }.get(top, "other")
+
+            cells.append({
+                "date": d,
+                "in_month": (d.month == obj.month),
+                "is_weekend": d.weekday() >= 5,
+                "is_today": d == _date.today(),
+                "items": items,               # <-- chips to render
+                "kind_class": kind_class,
             })
+            d += timedelta(days=1)
 
-        hols = ts._active_holidays()
-        for d in sorted(hols):
-            if d.year == ts.year and d.month == ts.month:
-                events.append({
-                    "title": "Public holiday",
-                    "start": d.isoformat(),
-                    "allDay": True,
-                    "display": "background",
-                    "backgroundColor": "#e5e7eb",
-                })
+        from django.utils.formats import date_format
+        month_label = date_format(month_start, "F Y", use_l10n=True)
+        base_monday = _date(2024, 1, 1)  # a Monday
+        weekday_labels = [
+            date_format(base_monday + timedelta(days=i), "D", use_l10n=True)[:1]
+            for i in range(7)
+        ]
 
-        return JsonResponse(events, safe=False)
+        ctx = {
+            "month_label": month_label,
+            "weekday_labels": weekday_labels,
+            "cells": cells,
+            "timesheet_id": obj.pk,
+            "add_url_base": reverse("admin:employees_timeentry_add"),
+            "ts_change_url": reverse("admin:employees_timesheet_change", args=[obj.pk]),
+        }
+        html = render_to_string("admin/employees/timesheet_calendar.html", ctx)
+        return mark_safe(html)
 
 
     # ---- computed displays ----
@@ -599,7 +469,6 @@ class TimeSheetAdmin(
             return format_html('<span class="badge" style="background:#f59e0b;color:#fff;">{}</span>', _("Submitted"))
         return format_html('<span class="badge" style="background:#6b7280;color:#fff;">{}</span>', _("Draft"))
 
-    # in TimesheetAdmin
     @admin.display(description=_("Minutes"))
     def minutes_summary(self, obj):
         t = int((obj.worked_minutes or 0) + (obj.credit_minutes or 0))
@@ -621,7 +490,6 @@ class TimeSheetAdmin(
     def has_delete_permission(self, request, obj=None):
         return False
 
-    # --- PDF: single + bulk ---
     change_actions = ("submit_timesheet", "withdraw_submission", "approve_wiref", "approve_chair", "print_pdf")
 
     def get_change_actions(self, request, object_id, form_url):
@@ -630,30 +498,24 @@ class TimeSheetAdmin(
         if not obj:
             return actions
 
-        # Default visibility by state
         def drop(name):
             if name in actions:
                 actions.remove(name)
 
         if obj.approved_at_chair:
-            # fully done → just print
             for n in ("submit_timesheet", "withdraw_submission", "approve_wiref", "approve_chair"):
                 drop(n)
         elif obj.approved_at_wiref:
-            # WiRef approved → chair can approve; allow withdraw to managers only
             drop("submit_timesheet")
             if not self._is_manager(request):
                 drop("withdraw_submission")
-                # leave "approve_chair" visible only if manager
                 drop("approve_chair")
         elif obj.submitted_at:
-            # submitted → WiRef may approve; allow withdraw/approve for managers only
             drop("submit_timesheet")
             if not self._is_manager(request):
                 drop("withdraw_submission")
                 drop("approve_wiref")
         else:
-            # draft → only submit
             for n in ("withdraw_submission", "approve_wiref", "approve_chair"):
                 drop(n)
 
@@ -744,9 +606,8 @@ class TimeSheetAdmin(
 
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
-        # Lock employee after the sheet exists, except for superusers
         if obj and not request.user.is_superuser:
-            ro.append("employee")
+            ro += ["employee", "year", "month"]
         return ro
 
 
@@ -769,7 +630,6 @@ class HolidayCalendarAdmin(ImportExportGuardMixin, ImportExportModelAdmin, Simpl
 
     def get_actions(self, request):
         actions = super().get_actions(request)
-        # Optional: only allow toggling active via edit form; avoid bulk surprises
         return actions
 
     def has_delete_permission(self, request, obj=None):
@@ -782,16 +642,39 @@ class HolidayCalendarAdmin(ImportExportGuardMixin, ImportExportModelAdmin, Simpl
 
 @admin.register(TimeEntry)
 class TimeEntryAdmin(ImportExportGuardMixin, ImportExportModelAdmin):
-    """
-    Registered for import/export convenience and lookups,
-    but hidden from the sidebar.
-    """
     resource_classes = [TimeEntryResource]
     list_display = ("timesheet", "date", "minutes", "kind", "short_comment", "updated_at")
-    list_filter = ("kind", "date")
+    list_filter = ("timesheet", "kind", "date")
     search_fields = ("timesheet__employee__person_role__person__last_name", "comment")
     autocomplete_fields = ("timesheet",)
     readonly_fields = ("created_at", "updated_at")
+
+    # Close Jazzmin modal / Django popup and refresh parent
+    def _close_popup(self):
+        return HttpResponse("""
+<script>
+try { window.top.location.reload(); } catch(e) {}
+try { window.close(); } catch(e) {}
+</script>
+""")
+
+    def response_add(self, request, obj, post_url_continue=None):
+        # If opened as popup/modal, close & refresh parent
+        if request.GET.get("_popup") or request.POST.get("_popup"):
+            return self._close_popup()
+        # If we passed a next=... param, go back to the timesheet
+        nxt = request.GET.get("next") or request.POST.get("next")
+        if nxt:
+            return redirect(nxt)
+        return super().response_add(request, obj, post_url_continue)
+
+    def response_change(self, request, obj):
+        if request.GET.get("_popup") or request.POST.get("_popup"):
+            return self._close_popup()
+        nxt = request.GET.get("next") or request.POST.get("next")
+        if nxt:
+            return redirect(nxt)
+        return super().response_change(request, obj)
 
     def short_comment(self, obj):
         txt = obj.comment or ""
@@ -809,5 +692,5 @@ class TimeEntryAdmin(ImportExportGuardMixin, ImportExportModelAdmin):
         return initial
 
     def get_model_perms(self, request):
-        # Hide from app index/menu; still accessible directly
+        # Keep it off the sidebar
         return {}

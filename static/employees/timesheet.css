@@ -1,0 +1,69 @@
+.ts-card{background:var(--uh-surface,#2b3642);border:1px solid var(--uh-border,#334155);border-radius:12px;padding:24px}
+.ts-title{font-size:1.25rem;font-weight:600;margin:0 0 12px}
+.ts-weekday-row{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:6px 0 8px}
+.ts-weekday-row>div{text-align:center;font-weight:600;opacity:.85}
+.ts-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.ts-cell{display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-start;min-height:76px;padding:8px 10px;border-radius:10px;text-decoration:none;color:inherit;border:1px solid var(--uh-border,#334155);background:var(--uh-tile,#1f2937)}
+.ts-cell:hover{outline:2px solid #f39c12;outline-offset:0}
+.ts-daynum{font-weight:700;opacity:.9}
+.ts-total{margin-top:auto;font-size:12px;color:#ff8a3d}
+.ts-out{opacity:.35;background:transparent;border-style:dashed}
+.ts-work{border-width: 2px;border-color:#1f6241;}
+.ts-leave{border-width: 2px; border-style:dashed; border-color:#745b0f}
+.ts-sick{border-width: 2px; border-style:dotted; border-color:purple;}
+.ts-holiday{border-width: 2px; border-style: double; background: #5a1f1f; border-color:white;}
+.ts-weekend.ts-cell{filter:saturate(.9)}
+.ts-today{box-shadow:0 0 0 2px #f39c12 inset}
+.ts-legend{display:flex;gap:8px;margin-top:12px}
+.chip{display:inline-block;padding:4px 8px;font-size:12px;}
+.chip-work{background:#163c2a}.chip-leave{background:#4a380a}.chip-sick{background:purple}.chip-holiday{background:#5a1f1f}
+
+/* Head row inside each cell */
+.ts-cell .ts-dayhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem}
+.ts-cell .ts-add{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:1.45rem;height:1.45rem;border:1px solid rgba(255,255,255,.15);
+  border-radius:.4rem;text-decoration:none;opacity:.8;font-weight:600;line-height:1
+}
+.ts-cell .ts-add:hover{opacity:1}
+
+/* Chips container – let the row grow with content */
+.ts-chips{
+  display:flex;
+  flex-direction:column;
+  gap:.35rem;
+  margin:0;
+  padding:0;
+  list-style:none;
+  /* remove the old max-height/overflow rules */
+}
+
+/* Each chip wraps onto multiple lines */
+.ts-chips .chip a{
+  display:block;
+  padding:.35rem .5rem;
+  border-radius:.6rem;
+  border:1px solid rgba(255,255,255,.12);
+  text-decoration:none;
+
+  /* turn OFF single-line/ellipsis */
+  white-space:normal;              /* was: nowrap */
+  overflow:visible;                /* was: hidden/ellipsis */
+  text-overflow:clip;
+
+  /* allow breaks anywhere so long comments don’t overflow */
+  overflow-wrap:anywhere;          /* a.k.a. word-break: break-word */
+  line-height:1.25;
+}
+
+/* keep the little “+” button from shifting when chips wrap */
+.ts-cell .ts-dayhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem}
+.ts-cell .ts-add{width:1.45rem;height:1.45rem;border:1px solid rgba(255,255,255,.15);border-radius:.4rem;
+  display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-weight:600;opacity:.8}
+.ts-cell .ts-add:hover{opacity:1}
+
+/* Kind colors (dark theme friendly) */
+.ts-chips .chip.k-work a{background:#163a29}
+.ts-chips .chip.k-leave a{background:#3b2a10}
+.ts-chips .chip.k-sick a{background:#3b1919}
+.ts-chips .chip.k-holiday a{background:#28303a}

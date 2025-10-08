@@ -313,10 +313,10 @@ class Employee(models.Model):
 
 class EmploymentDocument(models.Model):
     class Kind(models.TextChoices):
-        ZV = "ZV", _("Zusatzvereinbarung")
-        DV = "DV", _("Dienstvertrag")
-        AA = "AA", _("Abwesenheitsantrag")
-        KM = "KM", _("Krankmeldung")
+        ZV = "ZV", _("Supplemental Agreement")
+        DV = "DV", _("Contract of Employment")
+        AA = "AA", _("Leave Request")
+        KM = "KM", _("Sick Note")
         ZZ = "ZZ", _("Other / Miscellaneous")
 
     employee = models.ForeignKey(
@@ -426,6 +426,8 @@ class TimeSheet(models.Model):
 
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
+
+    
 
     history = HistoricalRecords()
 

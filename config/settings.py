@@ -125,7 +125,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = 'en-gb'
-
+X_FRAME_OPTIONS = "SAMEORIGIN"
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
@@ -226,7 +226,8 @@ JAZZMIN_SETTINGS = {
     "language_chooser": True,                       # header language switcher
 
     # Custom assets
-    "custom_css": "admin/unihanko.css",
+    # "custom_css": "admin/unihanko.css",
+    "custom_css": "admin/uh_new.css",
     "custom_js": "admin/custom.js",
 
     # Optional: show Jazzmin UI builder (handy for experimenting)
