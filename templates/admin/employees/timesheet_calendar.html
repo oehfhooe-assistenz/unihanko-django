@@ -1,6 +1,6 @@
 {% load i18n static %}
 <link rel="stylesheet" href="{% static 'employees/timesheet.css' %}">
-<div class="ts-card">
+<div class="ts-card-{{ cal_type }}">
   <div class="ts-head">
     <div class="ts-title">{{ month_label }}</div>
   </div>
@@ -17,11 +17,15 @@
         <div class="ts-cell ts-{{ c.kind_class }}{% if c.is_weekend %} ts-weekend{% endif %}{% if c.is_today %} ts-today{% endif %}">
           <div class="ts-dayhead">
             <span class="ts-daynum">{{ c.date|date:"j" }}</span>
-            <a class="ts-add related-widget-wrapper-link"
-               data-popup="yes"
-               onclick="return showAddAnotherPopup(this);"
-               href="{{ add_url_base }}?timesheet={{ timesheet_id }}&date={{ c.date|date:'Y-m-d' }}&_popup=1&next={{ ts_change_url|urlencode }}"
-               title="{% trans 'Add entry' %}">+</a>
+            {% if not c.is_holiday %}
+              <a class="ts-add related-widget-wrapper-link"
+                data-popup="yes"
+                onclick="return showAddAnotherPopup(this);"
+                href="{{ add_url_base }}&timesheet={{ timesheet_id }}&date={{ c.date|date:'Y-m-d' }}&_popup=1&next={{ ts_change_url|urlencode }}"
+                title="{% trans 'Add entry' %}">+</a>
+            {% else %}
+              <span class="ts-add ts-add-disabled" title="{% trans 'Public holiday - no entries' %}">—</span>
+            {% endif %}
           </div>
 
           {% if c.items %}
@@ -49,10 +53,16 @@
   </div>
 
   <div class="ts-legend">
+    {% if cal_type == "wrk" %}
     <span class="chip chip-work">{% trans "Work" %}</span>
+    <span class="chip chip-other">{% trans "Other" %}</span>
+    <span class="chip chip-holiday">{% trans "Holiday" %}</span>
+    {% elif cal_type == "pto" %}
     <span class="chip chip-leave">{% trans "Leave" %}</span>
     <span class="chip chip-sick">{% trans "Sick" %}</span>
     <span class="chip chip-holiday">{% trans "Holiday" %}</span>
+    {% else %}
+    {% endif %}
   </div>
 </div>
 

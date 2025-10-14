@@ -32,6 +32,11 @@ from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.utils.formats import date_format
 
+from concurrency.admin import ConcurrentModelAdmin
+from django import forms
+from django.forms.widgets import HiddenInput
+from django.contrib.admin.widgets import AdminTimeWidget
+
 from .models import (
     Employee,
     EmploymentDocument,
@@ -133,10 +138,42 @@ class ManagerGateMixin:
 # Inlines
 # =========================
 
+class TimeEntryAdminForm(forms.ModelForm):
+    class Meta:
+        model = TimeEntry
+        fields = "__all__"
+        widgets = {
+            "timesheet": forms.HiddenInput(),
+            "start_time": AdminTimeWidget(format="%H:%M"),
+            "end_time": AdminTimeWidget(format="%H:%M"),
+            "minutes": forms.NumberInput(attrs={"readonly": "readonly"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        k = TimeEntry.Kind
+        self.fields["kind"].choices = [(v, label) for v, label in self.fields["kind"].choices if v != k.PUBLIC_HOLIDAY]
+        # Accept HH:MM (preferred) and HH:MM:SS (admin "now" chip)
+        for name in ("start_time", "end_time"):
+            self.fields[name].input_formats = ["%H:%M", "%H:%M:%S"]
+        
+        self.fields["minutes"].required = False
+
+    # Optional: normalize seconds to :00 at form level too
+    def clean_start_time(self):
+        t = self.cleaned_data.get("start_time")
+        return t.replace(second=0, microsecond=0) if t else t
+
+    def clean_end_time(self):
+        t = self.cleaned_data.get("end_time")
+        return t.replace(second=0, microsecond=0) if t else t
+
 class TimeEntryInline(admin.TabularInline):
+
     model = TimeEntry
+    form = TimeEntryAdminForm
     extra = 0
-    fields = ("date", "minutes", "kind", "comment")
+    fields = ("date", "kind", "start_time", "end_time", "minutes", "comment", "version",)
     readonly_fields = ()
     can_delete = True
     show_change_link = False
@@ -144,6 +181,7 @@ class TimeEntryInline(admin.TabularInline):
 
     def get_max_num(self, request, obj=None, **kwargs):
         return 200
+    
 
 
 class EmploymentDocumentInline(admin.StackedInline):
@@ -230,7 +268,7 @@ class EmployeeAdmin(
 
 @admin.register(EmploymentDocument)
 class EmploymentDocumentAdmin(
-    ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
+    ConcurrentModelAdmin, ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
 ):
     resource_classes = [EmploymentDocumentResource]
     list_display = ("code", "employee", "kind_badge", "title", "period_display", "is_active", "updated_at")
@@ -243,12 +281,12 @@ class EmploymentDocumentAdmin(
         "employee__person_role__role__name",
     )
     autocomplete_fields = ("employee",)
-    readonly_fields = ("code", "created_at", "updated_at")
+    readonly_fields = ("code", "created_at", "updated_at",)
 
     fieldsets = (
         (_("Link"), {"fields": ("employee",)}),
         (_("Document"), {"fields": ("kind", "title", "start_date", "end_date", "is_active", "pdf_file", "details")}),
-        (_("System"), {"fields": ("code", "created_at", "updated_at")}),
+        (_("System"), {"fields": ("code", "version", "created_at", "updated_at")}),
     )
 
     @admin.display(description=_("Kind"))
@@ -340,7 +378,7 @@ class TimeSheetStateFilter(admin.SimpleListFilter):
 
 @admin.register(TimeSheet)
 class TimeSheetAdmin(
-    ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
+    ConcurrentModelAdmin, ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
 ):
     resource_classes = [TimeSheetResource]
     list_display = (
@@ -366,22 +404,31 @@ class TimeSheetAdmin(
         "pdf_file",
         "export_payload",
         "totals_preview",
-        "calendar_preview",
+        "work_calendar_preview",
+        "leave_calendar_preview",
     )
     inlines = [TimeEntryInline]
     actions = ("export_selected_pdf",)
 
     fieldsets = (
         (_("Scope"), {"fields": ("employee", ("year", "month"))}),
-        (_("Calendar"), {"fields": ("calendar_preview",)}),
+        (_("Work Calendar"), {"fields": ("work_calendar_preview",)}),
+        (_("Leave Calendar"), {"fields": ("leave_calendar_preview",)}),
         (_("Workflow"), {"fields": ("submitted_at", "approved_at_wiref", "approved_at_chair")}),
         (_("Exports"), {"fields": ("pdf_file", "export_payload", "totals_preview")}),
-        (_("Timestamps"), {"fields": (("created_at"), ("updated_at"))}),
+        (_("Timestamps"), {"fields": (("version"), ("created_at"), ("updated_at"))}),
     )
 
+    @admin.display(description=_("Work Calendar"))
+    def work_calendar_preview(self, obj):
+        return self._render_calendar(obj, allow_kinds="work", show_kinds={"WORK", "OTHER"}, title=_("Work Calendar"), cal_type="wrk")
+    
+    @admin.display(description=_("Leave Calendar"))
+    def leave_calendar_preview(self, obj):
+        return self._render_calendar(obj, allow_kinds="leave", show_kinds={"LEAVE", "SICK"}, title=_("Leave Calendar"), cal_type="pto")
+
     # ---- server-rendered calendar preview (chips in cells, no day modal) ----
-    @admin.display(description=_("Calendar"))
-    def calendar_preview(self, obj):
+    def _render_calendar(self, obj, *, allow_kinds: str, show_kinds: set[str], title: str, cal_type: str):
         if not obj or not obj.pk:
             return _("— save first to see the calendar —")
 
@@ -389,18 +436,19 @@ class TimeSheetAdmin(
         lead = (month_start.weekday() - 0) % 7  # Monday=0
         grid_start = month_start - timedelta(days=lead)
 
-        # Bucket entries per day (ordered)
+        # Bucket entries per day, but only show selected kinds
         entries_by_day = {}
-        for e in obj.entries.all().order_by("date", "id"):
-            entries_by_day.setdefault(e.date, []).append(e)
+        qs = obj.entries.all().order_by("date", "id")
+        for e in qs:
+            if e.kind in show_kinds:
+                entries_by_day.setdefault(e.date, []).append(e)
 
-        # Active holidays in this month
         hols = {d for d in obj._active_holidays()
                 if d.year == obj.year and d.month == obj.month}
 
         cells = []
         d = grid_start
-        for _ in range(42):  # 6x7 grid
+        for _ in range(42):
             evs = entries_by_day.get(d, [])
             items = [{
                 "id": e.id,
@@ -429,12 +477,12 @@ class TimeSheetAdmin(
                 "in_month": (d.month == obj.month),
                 "is_weekend": d.weekday() >= 5,
                 "is_today": d == _date.today(),
-                "items": items,               # <-- chips to render
+                "is_holiday": d in hols,
+                "items": items,
                 "kind_class": kind_class,
             })
             d += timedelta(days=1)
 
-        from django.utils.formats import date_format
         month_label = date_format(month_start, "F Y", use_l10n=True)
         base_monday = _date(2024, 1, 1)  # a Monday
         weekday_labels = [
@@ -443,11 +491,14 @@ class TimeSheetAdmin(
         ]
 
         ctx = {
+            "cal_type": cal_type,
+            "title": title,
             "month_label": month_label,
             "weekday_labels": weekday_labels,
             "cells": cells,
             "timesheet_id": obj.pk,
-            "add_url_base": reverse("admin:employees_timeentry_add"),
+            # IMPORTANT: pass allow_kinds to constrain the modal form choices
+            "add_url_base": f'{reverse("admin:employees_timeentry_add")}?allow_kinds={allow_kinds}',
             "ts_change_url": reverse("admin:employees_timesheet_change", args=[obj.pk]),
         }
         html = render_to_string("admin/employees/timesheet_calendar.html", ctx)
@@ -641,13 +692,13 @@ class HolidayCalendarAdmin(ImportExportGuardMixin, ImportExportModelAdmin, Simpl
 # =========================
 
 @admin.register(TimeEntry)
-class TimeEntryAdmin(ImportExportGuardMixin, ImportExportModelAdmin):
+class TimeEntryAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, ImportExportModelAdmin):
     resource_classes = [TimeEntryResource]
+    form = TimeEntryAdminForm
     list_display = ("timesheet", "date", "minutes", "kind", "short_comment", "updated_at")
     list_filter = ("timesheet", "kind", "date")
     search_fields = ("timesheet__employee__person_role__person__last_name", "comment")
-    autocomplete_fields = ("timesheet",)
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = ("created_at", "updated_at", )
 
     # Close Jazzmin modal / Django popup and refresh parent
     def _close_popup(self):
@@ -681,6 +732,33 @@ try { window.close(); } catch(e) {}
         return (txt[:60] + "…") if len(txt) > 60 else (txt or "—")
     short_comment.short_description = _("Comment")
 
+    def get_form(self, request, obj=None, **kwargs):
+        Form = super().get_form(request, obj, **kwargs)
+        ts_id = request.GET.get("timesheet") or request.POST.get("timesheet")
+        allow = (request.GET.get("allow_kinds") or request.POST.get("allow_kinds") or "").lower()
+        kind_qs = request.GET.get("kind") or request.POST.get("kind")
+
+        if "timesheet" in Form.base_fields and ts_id:
+            f = Form.base_fields["timesheet"]
+            f.initial = ts_id
+            f.widget = forms.HiddenInput()
+            f.disabled = False
+
+        if "kind" in Form.base_fields:
+            f = Form.base_fields["kind"]
+            if allow == "work":
+                f.choices = [c for c in f.choices if c[0] in ("WORK", "OTHER")]
+                f.initial = "WORK"
+            elif allow == "leave":
+                f.choices = [c for c in f.choices if c[0] in ("LEAVE", "SICK")]
+                f.initial = "LEAVE"
+            if kind_qs and kind_qs in dict(f.choices):
+                f.initial = kind_qs
+                # if you want single-click modals, uncomment:
+                # f.widget = forms.HiddenInput()
+
+        return Form
+
     def get_changeform_initial_data(self, request):
         initial = super().get_changeform_initial_data(request)
         ts = request.GET.get("timesheet")
@@ -694,3 +772,9 @@ try { window.close(); } catch(e) {}
     def get_model_perms(self, request):
         # Keep it off the sidebar
         return {}
+    
+    def save_model(self, request, obj, form, change):
+        # if the FK is still missing, pull from GET/POST
+        if not obj.timesheet_id:
+            obj.timesheet_id = request.POST.get("timesheet") or request.GET.get("timesheet")
+        super().save_model(request, obj, form, change)

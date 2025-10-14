@@ -1,4 +1,5 @@
-.ts-card{background:var(--uh-surface,#2b3642);border:1px solid var(--uh-border,#334155);border-radius:12px;padding:24px}
+.ts-card-wrk{background:var(--uh-surface,#2b3642);border:1px solid var(--uh-border,#334155);border-radius:12px;padding:24px}
+.ts-card-pto{background:var(--uh-surface,#2c2424);border:2px solid var(--uh-border,#D3D3D3);border-radius:12px;padding:24px}
 .ts-title{font-size:1.25rem;font-weight:600;margin:0 0 12px}
 .ts-weekday-row{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:6px 0 8px}
 .ts-weekday-row>div{text-align:center;font-weight:600;opacity:.85}
@@ -11,12 +12,13 @@
 .ts-work{border-width: 2px;border-color:#1f6241;}
 .ts-leave{border-width: 2px; border-style:dashed; border-color:#745b0f}
 .ts-sick{border-width: 2px; border-style:dotted; border-color:purple;}
+.ts-other{border-width: 2px; border-style:dashed; border-color:whitesmoke;}
 .ts-holiday{border-width: 2px; border-style: double; background: #5a1f1f; border-color:white;}
 .ts-weekend.ts-cell{filter:saturate(.9)}
 .ts-today{box-shadow:0 0 0 2px #f39c12 inset}
 .ts-legend{display:flex;gap:8px;margin-top:12px}
 .chip{display:inline-block;padding:4px 8px;font-size:12px;}
-.chip-work{background:#163c2a}.chip-leave{background:#4a380a}.chip-sick{background:purple}.chip-holiday{background:#5a1f1f}
+.chip-work{background:#163c2a}.chip-leave{background:#4a380a}.chip-sick{background:purple}.chip-holiday{background:#5a1f1f}.chip-other{background:slategray}
 
 /* Head row inside each cell */
 .ts-cell .ts-dayhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem}
@@ -67,3 +69,4 @@
 .ts-chips .chip.k-leave a{background:#3b2a10}
 .ts-chips .chip.k-sick a{background:#3b1919}
 .ts-chips .chip.k-holiday a{background:#28303a}
+.ts-chips .chip.k-other a{background:whitesmoke}

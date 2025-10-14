@@ -17,6 +17,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from simple_history.models import HistoricalRecords
+from concurrency.fields import AutoIncVersionField
 
 # External app references
 from people.models import PersonRole
@@ -254,6 +255,10 @@ class Employee(models.Model):
     end_override   = models.DateField(_("Employment end (override)"),   null=True, blank=True)
     is_active = models.BooleanField(_("Active"), default=True)
 
+    annual_leave_days_base = models.PositiveSmallIntegerField(_("Annual leave days (base)"), default=25, help_text=_("Base days per PTO year (for a 5-day-week; legal standard: 25)"))
+    annual_leave_days_extra = models.PositiveSmallIntegerField(_("Extra leave days"), default=0, help_text=_("Additional annual days (e.g. disability, agreements)."))
+    leave_reset_override = models.DateField(_("PTO reset date override"), null=True, blank=True, help_text=_("If empty, PTO year resets on Jan 1. If set, PTO year starts each year on this month/day."))
+
     notes = models.TextField(_("Notes"), blank=True)
 
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
@@ -305,7 +310,105 @@ class Employee(models.Model):
 
     def saldo_as_hhmm(self) -> str:
         return minutes_to_hhmm(self.saldo_minutes)
+    
+class EmployeeLeaveYear(models.Model):
+    """
+    Annual PTO snapshot per employee.
+    Label year is the 'PTO year' label determined by the reset day:
+    - If reset=Jan 1 → label year == calendar year.
+    - If reset=July 1 → days from 2025-07-01..2026-06-30 are label_year=2025, etc.
+    """
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name="leave_years", verbose_name=_("Employee"))
+    label_year = models.PositiveIntegerField(_("PTO year label"))
+    period_start = models.DateField(_("Period start"))
+    period_end = models.DateField(_("Period end (exclusive)"))
 
+    entitlement_minutes = models.IntegerField(_("Entitlement (minutes)"))  # (base+extra) * daily_expected_minutes at reset
+    carry_in_minutes = models.IntegerField(_("Carry-in (minutes)"), default=0)
+    manual_adjust_minutes = models.IntegerField(_("Manual adjust (minutes)"), default=0)
+
+    created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
+
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = _("Employee PTO year")
+        verbose_name_plural = _("Employee PTO years")
+        unique_together = (("employee", "label_year"),)
+        ordering = ("-label_year", "employee_id")
+
+    def __str__(self):
+        return f"{self.employee} — PTO {self.label_year}"
+
+    # ---- helpers ----
+    @staticmethod
+    def _reset_md(emp: Employee) -> tuple[int, int]:
+        """Return (month, day) for PTO reset."""
+        if emp.leave_reset_override:
+            return emp.leave_reset_override.month, emp.leave_reset_override.day
+        return 1, 1
+
+    @classmethod
+    def pto_label_year_for(cls, emp: Employee, any_date: date) -> int:
+        """Map any date to the PTO label year based on reset MD."""
+        rm, rd = cls._reset_md(emp)
+        if (any_date.month, any_date.day) >= (rm, rd):
+            return any_date.year
+        return any_date.year - 1
+
+    @classmethod
+    def pto_period_for(cls, emp: Employee, label_year: int) -> tuple[date, date]:
+        """Compute [start, end) for the label_year."""
+        rm, rd = cls._reset_md(emp)
+        start = date(label_year, rm, rd)
+        # naive "+1 year same MD"
+        try:
+            end = date(label_year + 1, rm, rd)
+        except ValueError:
+            # 29 Feb edge → push to 28 Feb
+            if rm == 2 and rd == 29:
+                end = date(label_year + 1, 2, 28)
+            else:
+                raise
+        return start, end
+
+    @classmethod
+    def ensure_for(cls, emp: Employee, label_year: int) -> "EmployeeLeaveYear":
+        """Idempotently create (or return) the snapshot for label_year."""
+        obj = cls.objects.filter(employee=emp, label_year=label_year).first()
+        if obj:
+            return obj
+        start, end = cls.pto_period_for(emp, label_year)
+        daily = emp.daily_expected_minutes  # snapshot with current daily minutes at reset
+        days = int(emp.annual_leave_days_base or 0) + int(emp.annual_leave_days_extra or 0)
+        ent = daily * days
+        return cls.objects.create(
+            employee=emp,
+            label_year=label_year,
+            period_start=start,
+            period_end=end,
+            entitlement_minutes=ent,
+            carry_in_minutes=0,
+            manual_adjust_minutes=0,
+        )
+
+    # ---- computed totals ----
+    @property
+    def taken_minutes(self) -> int:
+        from django.db.models import Sum, Q
+        # sum LEAVE minutes from TimeEntry within [start,end)
+        agg = TimeEntry.objects.filter(
+            timesheet__employee=self.employee,
+            date__gte=self.period_start,
+            date__lt=self.period_end,
+            kind=TimeEntry.Kind.LEAVE,
+        ).aggregate(s=Sum("minutes"))
+        return int(agg["s"] or 0)
+
+    @property
+    def remaining_minutes(self) -> int:
+        return int(self.entitlement_minutes + self.carry_in_minutes + self.manual_adjust_minutes - self.taken_minutes)
 
 # ------------------------------
 # Employment documents (ZV, DV, AA, KM, ZZ)
@@ -342,6 +445,7 @@ class EmploymentDocument(models.Model):
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
 
     history = HistoricalRecords()
+    version = AutoIncVersionField()
 
     class Meta:
         verbose_name = _("Employee Document")
@@ -427,9 +531,8 @@ class TimeSheet(models.Model):
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
 
-    
-
     history = HistoricalRecords()
+    version = AutoIncVersionField()
 
     class Meta:
         verbose_name = _("Timesheet")
@@ -576,6 +679,7 @@ class TimeEntry(models.Model):
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
 
     history = HistoricalRecords()
+    version = AutoIncVersionField()
 
     class Meta:
         verbose_name = _("Time entry")
@@ -599,25 +703,52 @@ class TimeEntry(models.Model):
         super().clean()
         errors = {}
 
-        # Guard against entries outside the month
-        if self.date and (self.date.year != self.timesheet.year or self.date.month != self.timesheet.month):
-            errors["date"] = _("Entry date must lie within the sheet’s year and month.")
+        # Normalize seconds to :00 so HH:MM works cleanly
+        if self.start_time:
+            self.start_time = self.start_time.replace(second=0, microsecond=0)
+        if self.end_time:
+            self.end_time = self.end_time.replace(second=0, microsecond=0)
 
-        # Optional convenience: if start/end present and minutes is zero, derive minutes
-        if (self.start_time and self.end_time) and self.minutes == 0:
+        # Guard: must stay inside the sheet’s month
+        if self.date and self.timesheet_id:
+            ts = self.timesheet  # safe now
+            if self.date.year != ts.year or self.date.month != ts.month:
+                errors["date"] = _("Entry date must lie within the sheet’s year and month.")
+
+        # OPTIONAL policy to prevent "double time" on public holidays:
+        # Block WORK entries on a holiday (use OTHER if you really need to)
+        hols = self.timesheet._active_holidays()
+        if self.date in hols:
+            raise ValidationError({"date": _("This date is a public holiday. Entries are not allowed.")})
+
+        # If either time is provided, require both
+        if (self.start_time and not self.end_time) or (self.end_time and not self.start_time):
+            errors["end_time"] = _("Please provide both start and end times (same day).")
+
+        # If both times are present, enforce same-day order and COMPUTE minutes (span wins)
+        if self.start_time and self.end_time:
             dt_start = datetime.combine(self.date, self.start_time)
             dt_end = datetime.combine(self.date, self.end_time)
-            if dt_end < dt_start:
-                errors["end_time"] = _("End time must be after start time.")
+            if dt_end <= dt_start:
+                errors["end_time"] = _("End time must be after start time (same day).")
             else:
-                delta = int((dt_end - dt_start).total_seconds() // 60)
-                if delta >= 0:
-                    self.minutes = delta
+                self.minutes = int((dt_end - dt_start).total_seconds() // 60)
 
-        # Paid categories typically shouldn't exceed expected daily minutes too wildly
-        if self.kind in (self.Kind.LEAVE, self.Kind.SICK) and self.minutes == 0:
-            # Soft default: credit expected daily minutes for the employee
-            self.minutes = self.timesheet.employee.daily_expected_minutes
+        # Kind-specific rules
+        if self.kind == self.Kind.WORK:
+            # Require a span and nonzero minutes
+            if not (self.start_time and self.end_time):
+                errors["start_time"] = _("Work entries require a start and end time.")
+            if self.minutes <= 0:
+                errors["minutes"] = _("Work minutes must be greater than zero.")
+        elif self.kind in (self.Kind.LEAVE, self.Kind.SICK):
+            # If no span & minutes still zero → auto-credit expected daily minutes
+            if self.minutes == 0 and not (self.start_time and self.end_time):
+                self.minutes = self.timesheet.employee.daily_expected_minutes
+        else:
+            # OTHER: if both times given we already computed; if neither given and minutes==0
+            # you can allow zero or require a span; leaving permissive for now.
+            pass
 
         if errors:
             raise ValidationError(errors)

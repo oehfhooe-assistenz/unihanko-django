@@ -8,7 +8,12 @@
   display: none !important;        /* hide the label column */
 }
 
-.field-calendar_preview .col-sm-7 {
+.field-work_calendar_preview .col-sm-7 {
+  flex: 0 0 100% !important;       /* take full row */
+  max-width: 100% !important;
+}
+
+.field-leave_calendar_preview .col-sm-7 {
   flex: 0 0 100% !important;       /* take full row */
   max-width: 100% !important;
 }

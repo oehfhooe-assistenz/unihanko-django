@@ -35,6 +35,7 @@ LOGIN_REDIRECT_URL = "/admin/"
 
 INSTALLED_APPS = [
     'jazzmin',
+    'concurrency',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
