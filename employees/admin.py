@@ -1,10 +1,8 @@
 from django.contrib import admin, messages
 from django.utils import timezone
 from django.utils.html import format_html
-from django.utils.translation import gettext_lazy as _, get_language
-from django.db import IntegrityError, transaction
-from django.shortcuts import redirect, render
-from datetime import datetime as _dt
+from django.utils.translation import gettext_lazy as _
+from django.shortcuts import redirect
 
 from django_object_actions import DjangoObjectActions
 from import_export import resources
@@ -15,26 +13,17 @@ from core.admin_mixins import ImportExportGuardMixin
 from core.pdf import render_pdf_response
 from organisation.models import OrgInfo
 
-from django.urls import path, reverse
-from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
-from django.utils.dateparse import parse_date
-import json
-
-from django.utils.decorators import method_decorator
-from django.middleware.csrf import get_token
-from django.forms.models import model_to_dict
+from django.urls import reverse
+from django.http import HttpResponse
 
 # NEW: helpers for the server-rendered calendar
-from calendar import monthrange
 from datetime import date as _date, timedelta
-from collections import Counter
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.utils.formats import date_format
 
 from concurrency.admin import ConcurrentModelAdmin
 from django import forms
-from django.forms.widgets import HiddenInput
 from django.contrib.admin.widgets import AdminTimeWidget
 
 from .models import (
@@ -146,7 +135,6 @@ class TimeEntryAdminForm(forms.ModelForm):
             "timesheet": forms.HiddenInput(),
             "start_time": AdminTimeWidget(format="%H:%M"),
             "end_time": AdminTimeWidget(format="%H:%M"),
-            "minutes": forms.NumberInput(attrs={"readonly": "readonly"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -157,7 +145,6 @@ class TimeEntryAdminForm(forms.ModelForm):
         for name in ("start_time", "end_time"):
             self.fields[name].input_formats = ["%H:%M", "%H:%M:%S"]
         
-        self.fields["minutes"].required = False
 
     # Optional: normalize seconds to :00 at form level too
     def clean_start_time(self):
@@ -182,7 +169,24 @@ class TimeEntryInline(admin.TabularInline):
     def get_max_num(self, request, obj=None, **kwargs):
         return 200
     
+    def has_add_permission(self, request, obj):
+        if obj and getattr(self.admin_site._registry[type(obj)], "_is_locked", None):
+            if self.admin_site._registry[type(obj)]._is_locked(request, obj):
+                return False
+        return super().has_add_permission(request, obj)
 
+    def has_change_permission(self, request, obj=None):
+        if obj and getattr(self.admin_site._registry[type(obj)], "_is_locked", None):
+            if self.admin_site._registry[type(obj)]._is_locked(request, obj):
+                return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj and getattr(self.admin_site._registry[type(obj)], "_is_locked", None):
+            if self.admin_site._registry[type(obj)]._is_locked(request, obj):
+                return False
+        return super().has_delete_permission(request, obj)
+    
 
 class EmploymentDocumentInline(admin.StackedInline):
     model = EmploymentDocument
@@ -223,6 +227,8 @@ class EmployeeAdmin(
     fieldsets = (
         (_("Assignment"), {"fields": ("person_role", "is_active")}),
         (_("Work terms"), {"fields": ("weekly_hours", "saldo_minutes")}),
+        (_("PTO terms"), {"fields": ("annual_leave_days_base", "annual_leave_days_extra", "leave_reset_override")}),
+        (_("Miscellaneous"), {"fields": ("notes",)}),
         (_("Timestamps"), {"fields": (("created_at"), ("updated_at"),)}),
     )
 
@@ -260,6 +266,12 @@ class EmployeeAdmin(
 
     print_pdf.label = _("🧾 Print Employee PDF")
     print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        if obj and not request.user.is_superuser:
+            ro += ["person_role", ]
+        return ro
 
 
 # =========================
@@ -429,8 +441,12 @@ class TimeSheetAdmin(
 
     # ---- server-rendered calendar preview (chips in cells, no day modal) ----
     def _render_calendar(self, obj, *, allow_kinds: str, show_kinds: set[str], title: str, cal_type: str):
+        from django.utils.translation import gettext_lazy as _t
         if not obj or not obj.pk:
-            return _("— save first to see the calendar —")
+            return _t("— save first to see the calendar —")
+
+        request = getattr(self, "_req", None)   # <— pick up request
+        is_locked = self._is_locked(request, obj)
 
         month_start = _date(obj.year, obj.month, 1)
         lead = (month_start.weekday() - 0) % 7  # Monday=0
@@ -489,7 +505,6 @@ class TimeSheetAdmin(
             date_format(base_monday + timedelta(days=i), "D", use_l10n=True)[:1]
             for i in range(7)
         ]
-
         ctx = {
             "cal_type": cal_type,
             "title": title,
@@ -497,12 +512,25 @@ class TimeSheetAdmin(
             "weekday_labels": weekday_labels,
             "cells": cells,
             "timesheet_id": obj.pk,
+            "is_locked": is_locked,
             # IMPORTANT: pass allow_kinds to constrain the modal form choices
             "add_url_base": f'{reverse("admin:employees_timeentry_add")}?allow_kinds={allow_kinds}',
             "ts_change_url": reverse("admin:employees_timesheet_change", args=[obj.pk]),
         }
         html = render_to_string("admin/employees/timesheet_calendar.html", ctx)
         return mark_safe(html)
+    
+    def _is_locked(self, request, obj):
+        """Lock for non-managers once submitted or approved. Managers bypass."""
+        if not obj:
+            return False
+        locked_by_status = bool(obj.submitted_at or obj.approved_at_wiref or obj.approved_at_chair)
+        if request is None:
+            # If we don't have a request (e.g., weird render path), fall back to status-only.
+            return locked_by_status
+        if self._is_manager(request):
+            return False
+        return locked_by_status
 
 
     # ---- computed displays ----
@@ -659,7 +687,15 @@ class TimeSheetAdmin(
         ro = list(super().get_readonly_fields(request, obj))
         if obj and not request.user.is_superuser:
             ro += ["employee", "year", "month"]
+            if self._is_locked(request, obj):
+                # fully freeze workflow fields too
+                ro += ["submitted_at", "approved_at_wiref", "approved_at_chair"]
         return ro
+    
+    def render_change_form(self, request, context, *args, **kwargs):
+        # Stash the request so display methods can read it
+        self._req = request
+        return super().render_change_form(request, context, *args, **kwargs)
 
 
 # =========================
@@ -778,3 +814,33 @@ try { window.close(); } catch(e) {}
         if not obj.timesheet_id:
             obj.timesheet_id = request.POST.get("timesheet") or request.GET.get("timesheet")
         super().save_model(request, obj, form, change)
+
+    def _parent_locked(self, request, obj=None):
+        try:
+            ts = obj.timesheet if obj else None
+            if not ts:
+                ts_id = request.GET.get("timesheet") or request.POST.get("timesheet")
+                if ts_id:
+                    ts = TimeSheet.objects.filter(pk=ts_id).first()
+            if not ts:
+                return False
+            # reuse TimeSheetAdmin’s rule (manager can bypass)
+            ts_admin = self.admin_site._registry[TimeSheet]
+            return ts_admin._is_locked(request, ts)
+        except Exception:
+            return False
+
+    def has_add_permission(self, request):
+        if self._parent_locked(request, None):
+            return False
+        return super().has_add_permission(request)
+
+    def has_change_permission(self, request, obj=None):
+        if self._parent_locked(request, obj):
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if self._parent_locked(request, obj):
+            return False
+        return super().has_delete_permission(request, obj)

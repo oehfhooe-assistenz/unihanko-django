@@ -17,14 +17,14 @@
         <div class="ts-cell ts-{{ c.kind_class }}{% if c.is_weekend %} ts-weekend{% endif %}{% if c.is_today %} ts-today{% endif %}">
           <div class="ts-dayhead">
             <span class="ts-daynum">{{ c.date|date:"j" }}</span>
-            {% if not c.is_holiday %}
+            {% if not c.is_holiday and not c.is_weekend and not is_locked %}
               <a class="ts-add related-widget-wrapper-link"
                 data-popup="yes"
                 onclick="return showAddAnotherPopup(this);"
                 href="{{ add_url_base }}&timesheet={{ timesheet_id }}&date={{ c.date|date:'Y-m-d' }}&_popup=1&next={{ ts_change_url|urlencode }}"
                 title="{% trans 'Add entry' %}">+</a>
             {% else %}
-              <span class="ts-add ts-add-disabled" title="{% trans 'Public holiday - no entries' %}">—</span>
+              <span class="ts-add ts-add-disabled" title="{% trans 'No entry' %}">—</span>
             {% endif %}
           </div>
 

@@ -703,55 +703,63 @@ class TimeEntry(models.Model):
         super().clean()
         errors = {}
 
-        # Normalize seconds to :00 so HH:MM works cleanly
+        # ---- normalize seconds so HH:MM works cleanly
         if self.start_time:
             self.start_time = self.start_time.replace(second=0, microsecond=0)
         if self.end_time:
             self.end_time = self.end_time.replace(second=0, microsecond=0)
 
-        # Guard: must stay inside the sheet’s month
+        # ---- must stay inside the sheet’s month (only if FK known)
         if self.date and self.timesheet_id:
-            ts = self.timesheet  # safe now
+            ts = self.timesheet
             if self.date.year != ts.year or self.date.month != ts.month:
                 errors["date"] = _("Entry date must lie within the sheet’s year and month.")
 
-        # OPTIONAL policy to prevent "double time" on public holidays:
-        # Block WORK entries on a holiday (use OTHER if you really need to)
-        hols = self.timesheet._active_holidays()
-        if self.date in hols:
-            raise ValidationError({"date": _("This date is a public holiday. Entries are not allowed.")})
+        # ---- holiday policy: block WORK on public holidays (UI also hides add button there)
+        if self.timesheet_id:
+            hols = self.timesheet._active_holidays()
+            if self.kind == self.Kind.WORK and self.date in hols:
+                errors["date"] = _("This date is a public holiday. Entering work time would double-count.")
 
-        # If either time is provided, require both
-        if (self.start_time and not self.end_time) or (self.end_time and not self.start_time):
-            errors["end_time"] = _("Please provide both start and end times (same day).")
+        # ---- agnostic input logic
+        span_given = bool(self.start_time and self.end_time)
+        mins_given = (self.minutes or 0) > 0
 
-        # If both times are present, enforce same-day order and COMPUTE minutes (span wins)
-        if self.start_time and self.end_time:
+        if span_given:
             dt_start = datetime.combine(self.date, self.start_time)
             dt_end = datetime.combine(self.date, self.end_time)
             if dt_end <= dt_start:
                 errors["end_time"] = _("End time must be after start time (same day).")
             else:
-                self.minutes = int((dt_end - dt_start).total_seconds() // 60)
+                span_minutes = round((dt_end - dt_start).total_seconds() / 60)
+                if mins_given and self.minutes != span_minutes:
+                    errors["minutes"] = _(
+                        "Minutes ({mins}) don’t match the time span ({span})."
+                    ).format(mins=self.minutes, span=span_minutes)
+                else:
+                    # span wins; keep DB canonical
+                    self.minutes = span_minutes
 
-        # Kind-specific rules
-        if self.kind == self.Kind.WORK:
-            # Require a span and nonzero minutes
-            if not (self.start_time and self.end_time):
-                errors["start_time"] = _("Work entries require a start and end time.")
-            if self.minutes <= 0:
-                errors["minutes"] = _("Work minutes must be greater than zero.")
-        elif self.kind in (self.Kind.LEAVE, self.Kind.SICK):
-            # If no span & minutes still zero → auto-credit expected daily minutes
-            if self.minutes == 0 and not (self.start_time and self.end_time):
-                self.minutes = self.timesheet.employee.daily_expected_minutes
-        else:
-            # OTHER: if both times given we already computed; if neither given and minutes==0
-            # you can allow zero or require a span; leaving permissive for now.
+        elif mins_given:
+            # OK: minutes only; leave start/end empty
             pass
+
+        else:
+            # Neither given — provide smart defaults for paid credits; otherwise error
+            if self.kind in (self.Kind.LEAVE, self.Kind.SICK):
+                self.minutes = self.timesheet.employee.daily_expected_minutes
+                if (self.minutes or 0) <= 0:
+                    errors["minutes"] = _("Expected daily minutes are zero; please enter a value.")
+            else:
+                errors["minutes"] = _("Provide either minutes or a start/end time.")
+
+        # Optional: forbid giving only one side of the span
+        if (self.start_time and not self.end_time) or (self.end_time and not self.start_time):
+            errors["end_time"] = _("Please provide both start and end times or neither.")
 
         if errors:
             raise ValidationError(errors)
+
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

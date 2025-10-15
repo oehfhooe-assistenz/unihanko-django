@@ -14,7 +14,9 @@
 .ts-sick{border-width: 2px; border-style:dotted; border-color:purple;}
 .ts-other{border-width: 2px; border-style:dashed; border-color:whitesmoke;}
 .ts-holiday{border-width: 2px; border-style: double; background: #5a1f1f; border-color:white;}
-.ts-weekend.ts-cell{filter:saturate(.9)}
+.ts-weekend.ts-cell{filter:grayscale()}
+.ts-weekend { opacity: .75; }
+.ts-weekend .ts-dayhead .ts-daynum { font-style: italic;}
 .ts-today{box-shadow:0 0 0 2px #f39c12 inset}
 .ts-legend{display:flex;gap:8px;margin-top:12px}
 .chip{display:inline-block;padding:4px 8px;font-size:12px;}
