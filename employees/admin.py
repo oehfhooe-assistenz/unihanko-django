@@ -32,6 +32,7 @@ from .models import (
     TimeSheet,
     TimeEntry,
     HolidayCalendar,
+    EmployeeLeaveYear,
 )
 
 # =========================
@@ -160,7 +161,7 @@ class TimeEntryInline(admin.TabularInline):
     model = TimeEntry
     form = TimeEntryAdminForm
     extra = 0
-    fields = ("date", "kind", "start_time", "end_time", "minutes", "comment", "version",)
+    fields = ("version","date", "kind", "start_time", "end_time", "minutes", "comment",)
     readonly_fields = ()
     can_delete = True
     show_change_link = False
@@ -201,6 +202,38 @@ class EmploymentDocumentInline(admin.StackedInline):
 # Employee Admin
 # =========================
 
+class EmployeeLeaveYearInline(admin.TabularInline):
+    model = EmployeeLeaveYear
+    extra = 0
+    can_delete = False
+    fields = (
+        "label_year",
+        "period_start",
+        "period_end",
+        "entitlement_minutes",
+        "carry_in_minutes",
+        "manual_adjust_minutes",
+        "taken_minutes",
+        "remaining_minutes",
+    )
+    readonly_fields = (
+        "label_year",
+        "period_start",
+        "period_end",
+        "entitlement_minutes",
+        "carry_in_minutes",
+        "taken_minutes",
+        "remaining_minutes",
+    )
+
+    def has_add_permission(self, request, obj):
+        return False
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.order_by("-label_year")
+
+
 @admin.register(Employee)
 class EmployeeAdmin(
     ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
@@ -221,7 +254,7 @@ class EmployeeAdmin(
     )
     autocomplete_fields = ("person_role",)
     readonly_fields = ("created_at", "updated_at")
-    inlines = [EmploymentDocumentInline]
+    inlines = [EmploymentDocumentInline, EmployeeLeaveYearInline]
     actions = ("export_selected_pdf",)
 
     fieldsets = (
@@ -272,6 +305,20 @@ class EmployeeAdmin(
         if obj and not request.user.is_superuser:
             ro += ["person_role", ]
         return ro
+    
+    def get_inline_instances(self, request, obj=None):
+        instances = super().get_inline_instances(request, obj)
+        if not self._is_manager(request):
+            # hide the PTO inline from editors
+            instances = [i for i in instances if not isinstance(i, EmployeeLeaveYearInline)]
+        return instances
+    
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        # Ensure the current label year exists
+        today = timezone.localdate()
+        ly_label = EmployeeLeaveYear.pto_label_year_for(obj, today)
+        EmployeeLeaveYear.ensure_for(obj, ly_label)
 
 
 # =========================
@@ -418,14 +465,16 @@ class TimeSheetAdmin(
         "totals_preview",
         "work_calendar_preview",
         "leave_calendar_preview",
+        "pto_infobox",
+        "work_infobox",
     )
-    inlines = [TimeEntryInline]
+    inlines = []
     actions = ("export_selected_pdf",)
 
     fieldsets = (
         (_("Scope"), {"fields": ("employee", ("year", "month"))}),
-        (_("Work Calendar"), {"fields": ("work_calendar_preview",)}),
-        (_("Leave Calendar"), {"fields": ("leave_calendar_preview",)}),
+        (_("Work Calendar"), {"fields": ("work_calendar_preview", "work_infobox")}),
+        (_("Leave Calendar"), {"fields": ("leave_calendar_preview", "pto_infobox",)}),
         (_("Workflow"), {"fields": ("submitted_at", "approved_at_wiref", "approved_at_chair")}),
         (_("Exports"), {"fields": ("pdf_file", "export_payload", "totals_preview")}),
         (_("Timestamps"), {"fields": (("version"), ("created_at"), ("updated_at"))}),
@@ -447,6 +496,11 @@ class TimeSheetAdmin(
 
         request = getattr(self, "_req", None)   # <— pick up request
         is_locked = self._is_locked(request, obj)
+
+        emp = obj.employee
+        anchor = _date(obj.year, obj.month, min(15, 28))
+        label_year = EmployeeLeaveYear.pto_label_year_for(emp, anchor)
+        EmployeeLeaveYear.ensure_for(emp, label_year)
 
         month_start = _date(obj.year, obj.month, 1)
         lead = (month_start.weekday() - 0) % 7  # Monday=0
@@ -554,6 +608,65 @@ class TimeSheetAdmin(
         e = int(obj.expected_minutes or 0)
         d = t - e
         return f"{t} / {e} (Δ {d})"
+    
+    @admin.display(description=_("Worktime overview"))
+    def work_infobox(self, obj):
+        from django.utils.translation import gettext_lazy as _t
+        if not obj or not obj.pk:
+            return _t("— save first to see worktime —")
+
+        # Use the sheet’s maintained aggregates
+        expected = int(obj.expected_minutes or 0)
+        worked   = int(obj.worked_minutes   or 0)
+        credit   = int(obj.credit_minutes   or 0)
+        total    = worked + credit
+        delta    = total - expected
+
+        ctx = {
+            "month_label": f"{obj.year}-{obj.month:02d}",
+            "expected": expected,
+            "worked": worked,
+            "credit": credit,
+            "total": total,
+            "delta": delta,
+            "delta_abs": abs(delta),
+            "opening": int(obj.opening_saldo_minutes or 0),
+            "closing": int(obj.closing_saldo_minutes or 0),
+            "is_locked": self._is_locked(getattr(self, "_req", None), obj),
+        }
+        html = render_to_string("admin/employees/work_infobox.html", ctx)
+        return mark_safe(html)
+
+
+    @admin.display(description=_("PTO overview"))
+    def pto_infobox(self, obj):
+        from django.utils.translation import gettext_lazy as _t
+        from django.utils.safestring import mark_safe
+        from django.template.loader import render_to_string
+        from datetime import timedelta
+
+        if not obj or not obj.pk:
+            return _t("— save first to see PTO —")
+
+        emp = obj.employee
+        anchor = _date(obj.year, obj.month, min(15, 28))
+        label_year = EmployeeLeaveYear.pto_label_year_for(emp, anchor)
+        ly = EmployeeLeaveYear.ensure_for(emp, label_year)
+
+        ctx = {
+            "label_year": label_year,
+            "period_label": f"{ly.period_start.strftime('%Y-%m-%d')} → {(ly.period_end - timedelta(days=1)).strftime('%Y-%m-%d')}",
+            "daily": int(emp.daily_expected_minutes or 0),
+            "ent":   int(ly.entitlement_minutes or 0),
+            "carry": int(ly.carry_in_minutes or 0),
+            "adj":   int(ly.manual_adjust_minutes or 0),
+            "taken": int(ly.taken_minutes),
+            "remain": int(ly.remaining_minutes),
+            "remain_abs": abs(int(ly.remaining_minutes)),
+        }
+        html = render_to_string("admin/employees/pto_infobox.html", ctx)
+        return mark_safe(html)
+
 
     @admin.display(description=_("Totals preview"))
     def totals_preview(self, obj):
@@ -844,3 +957,5 @@ try { window.close(); } catch(e) {}
         if self._parent_locked(request, obj):
             return False
         return super().has_delete_permission(request, obj)
+    
+

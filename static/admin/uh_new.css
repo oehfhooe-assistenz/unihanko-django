@@ -18,6 +18,16 @@
   max-width: 100% !important;
 }
 
+.field-pto_infobox .col-sm-7 {
+  flex: 0 0 100% !important;
+  max-width: 100% !important;
+}
+
+.field-work_infobox .col-sm-7 {
+  flex: 0 0 100% !important;
+  max-width: 100% !important;
+}
+
 /* Global floating Help button in admin */
 #uh-help-fab{
   position: fixed; right: 20px; bottom: 60px;

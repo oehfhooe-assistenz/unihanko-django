@@ -15,6 +15,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import get_language
 
 from simple_history.models import HistoricalRecords
 from concurrency.fields import AutoIncVersionField
@@ -379,17 +380,23 @@ class EmployeeLeaveYear(models.Model):
         obj = cls.objects.filter(employee=emp, label_year=label_year).first()
         if obj:
             return obj
+
         start, end = cls.pto_period_for(emp, label_year)
         daily = emp.daily_expected_minutes  # snapshot with current daily minutes at reset
         days = int(emp.annual_leave_days_base or 0) + int(emp.annual_leave_days_extra or 0)
         ent = daily * days
+
+        # Carry-over (no cap): previous label_year's remaining becomes this year's carry-in
+        prev = cls.objects.filter(employee=emp, label_year=label_year - 1).first()
+        carry_in = int(prev.remaining_minutes) if prev else 0
+
         return cls.objects.create(
             employee=emp,
             label_year=label_year,
             period_start=start,
             period_end=end,
             entitlement_minutes=ent,
-            carry_in_minutes=0,
+            carry_in_minutes=carry_in,
             manual_adjust_minutes=0,
         )
 
@@ -409,6 +416,7 @@ class EmployeeLeaveYear(models.Model):
     @property
     def remaining_minutes(self) -> int:
         return int(self.entitlement_minutes + self.carry_in_minutes + self.manual_adjust_minutes - self.taken_minutes)
+
 
 # ------------------------------
 # Employment documents (ZV, DV, AA, KM, ZZ)
@@ -760,8 +768,13 @@ class TimeEntry(models.Model):
         if errors:
             raise ValidationError(errors)
 
-
     def save(self, *args, **kwargs):
+        # Auto-provision PTO snapshot if this is a LEAVE entry
+        if self.kind == self.Kind.LEAVE and self.timesheet_id and self.date:
+            emp = self.timesheet.employee
+            ly_label = EmployeeLeaveYear.pto_label_year_for(emp, self.date)
+            EmployeeLeaveYear.ensure_for(emp, ly_label)
+
         super().save(*args, **kwargs)
         # Keep parent aggregates in sync
         self.timesheet.recompute_aggregates(commit=True)

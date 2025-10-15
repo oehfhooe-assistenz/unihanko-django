@@ -1,0 +1,54 @@
+{% load i18n static %}
+<link rel="stylesheet" href="{% static 'employees/timesheet.css' %}">
+
+<div class="ts-card-wrk ts-infobox">
+  <div class="ts-title">{% trans "Worktime overview" %} — {{ month_label }}</div>
+
+  <div class="row">
+    <span class="lbl">{% trans "Expected (Mon–Fri excl. holidays)" %}</span>
+    <span class="val">{{ expected }} min</span>
+  </div>
+
+  <div class="row">
+    <span class="lbl">{% trans "Worked" %}</span>
+    <span class="val">{{ worked }} min</span>
+  </div>
+
+  <div class="row">
+    <span class="lbl">{% trans "Credits (leave/sick/etc.)" %}</span>
+    <span class="val">{{ credit }} min</span>
+  </div>
+
+  <div class="row">
+    <span class="lbl"><b>{% trans "Total (worked + credits)" %}</b></span>
+    <span class="val"><b>{{ total }} min</b></span>
+  </div>
+
+  <div class="row">
+    <span class="lbl">{% trans "Delta (total − expected)" %}</span>
+    <span class="val {% if delta < 0 %}neg{% elif delta > 0 %}pos{% endif %}">
+      {% if delta > 0 %}+{% endif %}{{ delta }} min
+    </span>
+  </div>
+
+  <hr class="sep"/>
+
+  <div class="row">
+    <span class="lbl">{% trans "Opening saldo" %}</span>
+    <span class="val">{{ opening }} min</span>
+  </div>
+  <div class="row">
+    <span class="lbl"><b>{% trans "Closing saldo" %}</b></span>
+    <span class="val"><b>{{ closing }} min</b></span>
+  </div>
+
+  {% if delta < 0 %}
+    <div class="note neg">{% trans "Behind expected by" %} {{ delta_abs }} min</div>
+  {% elif delta > 0 %}
+    <div class="note pos">{% trans "Ahead of expected by" %} {{ delta_abs }} min</div>
+  {% endif %}
+
+  {% if is_locked %}
+    <div class="note muted">{% trans "Locked (submitted/approved)" %}</div>
+  {% endif %}
+</div>

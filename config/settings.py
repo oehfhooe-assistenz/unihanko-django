@@ -232,21 +232,20 @@ JAZZMIN_SETTINGS = {
     "custom_js": "admin/custom.js",
 
     # Optional: show Jazzmin UI builder (handy for experimenting)
-    # "show_ui_builder": True,
+    "show_ui_builder": True,
 }
 
 JAZZMIN_UI_TWEAKS = {
     # Bootswatch theme names: flatly, simplex, cosmo, lumen, slate, darkly, etc.
-    "theme": "darkly",
-    "dark_mode_theme": "darkly",
+    "theme": "superhero",
 
     # Navbar / sidebar styling
-    "navbar": "navbar-dark",
+    "navbar": "navbar-light",
     "no_navbar_border": True,
     "brand_small_text": False,
     "navbar_small_text": False,
 
-    "sidebar": "sidebar-dark-primary",              # or "sidebar-light-primary"
+    "sidebar": "sidebar-light-primary",              # or "sidebar-light-primary"
     "sidebar_nav_small_text": False,
     "sidebar_nav_child_indent": True,
     "sidebar_nav_compact_style": False,

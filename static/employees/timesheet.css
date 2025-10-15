@@ -72,3 +72,24 @@
 .ts-chips .chip.k-sick a{background:#3b1919}
 .ts-chips .chip.k-holiday a{background:#28303a}
 .ts-chips .chip.k-other a{background:whitesmoke}
+
+/* PTO box layout */
+.pto-grid{
+  display:grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin-top: 6px;
+}
+.pto-notes{ margin-top:10px; font-size:.95rem; opacity:.95 }
+.pto-notes .note{ opacity:.9 }
+.pto-neg, .pto-notes .neg{ color:#b91c1c; font-weight:600 }
+
+/* Generic infobox rows reused by PTO & Worktime */
+.ts-infobox .row{display:flex;justify-content:space-between;gap:12px;margin:.25rem 0}
+.ts-infobox .lbl{opacity:.9}
+.ts-infobox .val{font-weight:600}
+.ts-infobox .sep{border:0;border-top:1px solid rgba(255,255,255,.15);margin:.5rem 0}
+.ts-infobox .note{margin-top:.4rem;font-size:.95rem}
+.ts-infobox .note.neg{color:#ef4444}
+.ts-infobox .note.pos{color:#10b981}
+.ts-infobox .note.muted{opacity:.7}

@@ -1,0 +1,51 @@
+{% load i18n static %}
+<link rel="stylesheet" href="{% static 'employees/timesheet.css' %}">
+
+<div class="ts-card-pto ts-infobox">
+    <div class="ts-title">{% trans "PTO overview for year" %} {{ label_year }} — {{ period_label }}</div>
+
+  <div class="row">
+    <span class="lbl">{% trans "Daily nominal value" %}</span>
+    <span class="val">{{ daily }} min</span>
+  </div>
+
+  <div class="row">
+    <span class="lbl">{% trans "Total yearly entitlement" %}</span>
+    <span class="val">{{ ent }} min</span>
+  </div>
+
+  <div class="row">
+    <span class="lbl">{% trans "Carry-in (last year)" %}</span>
+    <span class="val">{{ carry }} min</span>
+  </div>
+
+  <div class="row">
+    <span class="lbl">{% trans "Manual adjust (correction)" %}</span>
+    <span class="val">{{ adj }} min</span>
+  </div>
+
+  <hr class="sep"/>
+
+  <div class="row">
+    <span class="lbl"><b>{% trans "Taken (to date)" %}</b></span>
+    <span class="val"><b>{{ taken }} min</b></span>
+  </div>
+
+  <hr class="sep"/>
+
+  <div class="row">
+    <span class="lbl"><b>{% trans "Remaining" %}</b></span>
+    <span class="val {% if remain < 0 %}pto-neg{% endif %}"><b>{{ remain }} min</b></span>
+  </div>
+
+  {% if carry > 0 or remain < 0 %}
+  <div class="pto-notes">
+    {% if carry > 0 %}
+      <div class="note">{% trans "Carry-over from last year" %}: {{ carry }} min</div>
+    {% endif %}
+    {% if remain < 0 %}
+      <div class="note neg">{% trans "Overspent by" %}: {{ remain_abs }} min</div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
