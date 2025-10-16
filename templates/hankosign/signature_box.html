@@ -1,0 +1,22 @@
+{% load i18n static %}
+<link rel="stylesheet" href="{% static 'employees/timesheet.css' %}">
+
+<div class="ts-card-sig ts-infobox" style="margin-top:.5rem;">
+  <div class="ts-title">{{ title }}</div>
+
+  {% if not has_rows %}
+    <div>—</div>
+  {% else %}
+    <div class="sig-grid">
+      {% for r in rows %}
+        <div class="sig-row">
+          <span class="sig-badge">{{ r.code }}</span>
+          <span class="sig-who">{{ r.who }}</span>
+          <span class="sig-when">{{ r.when|date:"Y-m-d H:i" }}</span>
+          <span class="sig-id"><code>{{ r.sig_id_short }}…</code></span>
+          {% if r.note %}<span class="sig-note">— {{ r.note }}</span>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>

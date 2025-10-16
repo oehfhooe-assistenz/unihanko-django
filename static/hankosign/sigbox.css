@@ -1,5 +1,6 @@
 .ts-card-wrk{background:var(--uh-surface,#2b3642);border:1px solid var(--uh-border,#334155);border-radius:12px;padding:24px}
 .ts-card-pto{background:var(--uh-surface,#2c2424);border:2px solid var(--uh-border,#D3D3D3);border-radius:12px;padding:24px}
+.ts-card-sig{background:var(--uh-surface,#333c3f);border:2px solid var(--uh-border,#D3D3D3);border-radius:12px;padding:24px}
 .ts-title{font-size:1.25rem;font-weight:600;margin:0 0 12px}
 .ts-weekday-row{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:6px 0 8px}
 .ts-weekday-row>div{text-align:center;font-weight:600;opacity:.85}
@@ -97,4 +98,28 @@
 .cmt {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.sig-grid {
+  display: flex; flex-direction: column; gap: .4rem;
+}
+.sig-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: .5rem;
+  align-items: baseline;
+  border-bottom: 1px dashed rgba(255,255,255,.12);
+  padding-bottom: .25rem;
+}
+.sig-row:last-child { border-bottom: none; }
+.sig-badge {
+  display:inline-block; padding:.2rem .4rem; border:1px solid rgba(255,255,255,.15);
+  border-radius:.35rem; font-size:.85rem; background:#3b2a10; /* similar to PTO tone */
+}
+.sig-who { font-weight:600; }
+.sig-when { opacity:.9; font-variant-numeric: tabular-nums; }
+.sig-id { opacity:.9; }
+.sig-note { opacity:.85; }
+@media (max-width: 640px){
+  .sig-row { grid-template-columns: auto / 1fr / auto; grid-auto-flow: row; }
 }

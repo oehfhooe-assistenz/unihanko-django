@@ -141,12 +141,15 @@ class TimeEntryAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         k = TimeEntry.Kind
-        self.fields["kind"].choices = [(v, label) for v, label in self.fields["kind"].choices if v != k.PUBLIC_HOLIDAY]
-        # Accept HH:MM (preferred) and HH:MM:SS (admin "now" chip)
+        if "kind" in self.fields:
+            self.fields["kind"].choices = [
+                (v, label) for v, label in self.fields["kind"].choices if v != k.PUBLIC_HOLIDAY
+            ]
+        # Accept HH:MM and HH:MM:SS only if those fields are present
         for name in ("start_time", "end_time"):
-            self.fields[name].input_formats = ["%H:%M", "%H:%M:%S"]
+            if name in self.fields:
+                self.fields[name].input_formats = ["%H:%M", "%H:%M:%S"]
         
-
     # Optional: normalize seconds to :00 at form level too
     def clean_start_time(self):
         t = self.cleaned_data.get("start_time")
@@ -586,7 +589,6 @@ class TimeSheetAdmin(
             return False
         return locked_by_status
 
-
     # ---- computed displays ----
     @admin.display(description=_("Period"))
     def period_label(self, obj):
@@ -637,7 +639,6 @@ class TimeSheetAdmin(
         html = render_to_string("admin/employees/work_infobox.html", ctx)
         return mark_safe(html)
 
-
     @admin.display(description=_("PTO overview"))
     def pto_infobox(self, obj):
         from django.utils.translation import gettext_lazy as _t
@@ -666,7 +667,6 @@ class TimeSheetAdmin(
         }
         html = render_to_string("admin/employees/pto_infobox.html", ctx)
         return mark_safe(html)
-
 
     @admin.display(description=_("Totals preview"))
     def totals_preview(self, obj):
@@ -810,6 +810,14 @@ class TimeSheetAdmin(
         self._req = request
         return super().render_change_form(request, context, *args, **kwargs)
 
+    def get_inline_instances(self, request, obj=None):
+        instances = super().get_inline_instances(request, obj)
+        if not request.user.is_superuser:
+            # hide the TimeEntry inline for non-SUs
+            from .admin import TimeEntryInline  # if needed to avoid circulars; else remove this line
+            instances = [i for i in instances if not isinstance(i, TimeEntryInline)]
+        return instances
+
 
 # =========================
 # HolidayCalendar Admin
@@ -905,8 +913,28 @@ try { window.close(); } catch(e) {}
                 f.initial = kind_qs
                 # if you want single-click modals, uncomment:
                 # f.widget = forms.HiddenInput()
+            if allow == "leave" and (kind_qs or len(f.choices) == 1):
+                f.widget = forms.HiddenInput()
+        
+        is_leave_flow = (allow == "leave") or (obj and obj.kind in (TimeEntry.Kind.LEAVE, TimeEntry.Kind.SICK))
+        if is_leave_flow:
+            for name in ("minutes", "start_time", "end_time"):
+                fld = Form.base_fields.get(name)
+                if fld:
+                    fld.required = False
+                    fld.widget = forms.HiddenInput()
+                    # also clear help_text to reduce clutter (optional)
+                    fld.help_text = ""
 
         return Form
+
+    def get_fields(self, request, obj=None):
+        allow = (request.GET.get("allow_kinds") or request.POST.get("allow_kinds") or "").lower()
+        # Leave/Sick flow → only the essentials
+        if allow == "leave" or (obj and obj.kind in (TimeEntry.Kind.LEAVE, TimeEntry.Kind.SICK)):
+            return ("timesheet", "date", "kind", "comment", "version")
+        # Default (work/other) → full form
+        return ("timesheet", "date", "kind", "start_time", "end_time", "minutes", "comment", "version")
 
     def get_changeform_initial_data(self, request):
         initial = super().get_changeform_initial_data(request)

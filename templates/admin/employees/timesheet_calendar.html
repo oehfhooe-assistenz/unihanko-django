@@ -35,9 +35,10 @@
                   <a class="related-widget-wrapper-link"
                      data-popup="yes"
                      onclick="return showAddAnotherPopup(this);"
+                     title="{% if it.comment %} {{ it.comment }} {% endif %}"
                      href="{% url 'admin:employees_timeentry_change' it.id %}?_popup=1&next={{ ts_change_url|urlencode }}">
-                    <span class="txt">{{ it.kind_display }}{% if it.minutes %} {{ it.minutes }}m{% endif %}</span>
-                    {% if it.comment %}<span class="cmt"> — {{ it.comment }}</span>{% endif %}
+                    <span class="txt">{% if it.minutes %}{{ it.minutes }}m{% endif %}</span><br>
+                    {% if it.comment %}<span class="cmt">{{ it.comment }}</span>{% endif %}
                   </a>
                 </li>
               {% endfor %}

@@ -77,4 +77,21 @@ groups:
       finances.PaymentPlan:    [view, add, change]
     custom_perms: {} 
 
+  "module:hankosign:editor":
+    inherits: []
+    models:
+      hankosign.Action: [view]
+      hankosign.Policy: [view]
+      hankosign.Signatory: [view]
+      hankosign.Signature: [view]
+    custom_perms: {}
 
+  "module:hankosign:manager":
+    inherits:
+      - "module:hankosign:editor"
+    models:
+      hankosign.Action: [view, add, change]
+      hankosign.Policy: [view, add, change]
+      hankosign.Signatory: [view, add, change]
+      hankosign.Signature: [view, add, change]
+    custom_perms: {}

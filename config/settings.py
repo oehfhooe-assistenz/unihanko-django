@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'django_renderpdf',
 
     'core',
+    'hankosign',
     'people',
     'finances',
     'employees',
@@ -195,10 +196,15 @@ JAZZMIN_SETTINGS = {
         "employees.timesheet": "fa-solid fa-business-time",
         "employees.timeentry": "fa-solid fa-calendar-xmark",
         "employees.holidaycalendar": "fa-solid fa-gift",
+        "hankosign":"fa-solid fa-key",
+        "hankosign.action":"fa-solid fa-layer-group",
+        "hankosign.policy":"fa-solid fa-pen-nib",
+        "hankosign.Signatory":"fa-solid fa-fingerprint",
+        "hankosign.Signature":"fa-solid fa-receipt",
     },
 
     # Sidebar ordering within the app
-    "order_with_respect_to": ["organisation", "organisation.orginfo", "people", "people.personrole", "people.person", "people.roletransitionreason", "people.role", "finances", "finances.paymentplan", "finances.fiscalyear", "employees", "employees.timesheet", "employees.employmentdocument", "employees.employee", "employees.holidaycalendar", ],
+    "order_with_respect_to": ["organisation", "organisation.orginfo", "people", "people.personrole", "people.person", "people.roletransitionreason", "people.role", "finances", "finances.paymentplan", "finances.fiscalyear", "employees", "employees.timesheet", "employees.employmentdocument", "employees.employee", "employees.holidaycalendar", "hankosign", "hankosign.signatory", "hankosign.policy", "hankosign.action"],
 
 
     # Hide historical models from menu
@@ -215,6 +221,10 @@ JAZZMIN_SETTINGS = {
         "employees.HistoricalHolidayCalendar",
         "employees.HistoricalTimeSheet",
         "employees.HistoricalTimeEntry",
+        "hankosign.HistoricalAction",
+        "hankosign.HistoricalPolicy",
+        "hankosign.HistoricalSignatory",
+        "hankosign.HistoricalSignature",
     ],
 
     # Quality of life
@@ -238,21 +248,39 @@ JAZZMIN_SETTINGS = {
 JAZZMIN_UI_TWEAKS = {
     # Bootswatch theme names: flatly, simplex, cosmo, lumen, slate, darkly, etc.
     "theme": "superhero",
+    "dark_mode_theme": None,
 
     # Navbar / sidebar styling
     "navbar": "navbar-light",
     "no_navbar_border": True,
     "brand_small_text": False,
     "navbar_small_text": False,
-
-    "sidebar": "sidebar-light-primary",              # or "sidebar-light-primary"
-    "sidebar_nav_small_text": False,
-    "sidebar_nav_child_indent": True,
-    "sidebar_nav_compact_style": False,
-    "sidebar_disable_expand": False,
-
-    # Typography
+    "footer_small_text": True,
     "body_small_text": False,
-    "footer_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": False,
+    "accent": "accent-orange",
+    "navbar": "navbar-orange navbar-light",
+    "no_navbar_border": True,
+    "navbar_fixed": False,
+    "layout_boxed": False,
+    "footer_fixed": True,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-orange",
+    "sidebar_nav_small_text": True,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": True,
+    "sidebar_nav_compact_style": True,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": True,
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-outline-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
+    },
+    "actions_sticky_top": True
 }
 
