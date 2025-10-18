@@ -18,9 +18,6 @@ from simple_history.models import HistoricalRecords
 from people.models import Role, PersonRole  # Role: your role taxonomy; PersonRole: assignment
 
 
-User = get_user_model()
-
-
 class Action(models.Model):
     class Verb(models.TextChoices):
         SUBMIT = "SUBMIT", _("Submit")
@@ -95,11 +92,8 @@ def _default_base_key() -> str:
 class Signatory(models.Model):
     """
     Person-capability for signing/authorizing actions.
-    We allow a direct 1:1 to auth.User to make resolution trivial.
     """
-    user = models.OneToOneField(
-        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="signatory", verbose_name=_("User")
-    )
+
     person_role = models.ForeignKey(
         PersonRole, on_delete=models.PROTECT, related_name="signatories", verbose_name=_("Assignment")
     )
@@ -122,12 +116,13 @@ class Signatory(models.Model):
     class Meta:
         verbose_name = _("Signatory")
         verbose_name_plural = _("Signatories")
-        constraints = [
-            models.UniqueConstraint(fields=["user"], condition=models.Q(user__isnull=False), name="uq_signatory_user")
-        ]
 
     def __str__(self) -> str:
         return self.display_name
+    
+    @property
+    def user(self):
+        return getattr(self.person_role.person, "user", None)
 
     @property
     def display_name(self) -> str:

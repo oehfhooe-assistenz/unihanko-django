@@ -25,6 +25,7 @@ from django.utils.formats import date_format
 from concurrency.admin import ConcurrentModelAdmin
 from django import forms
 from django.contrib.admin.widgets import AdminTimeWidget
+from hankosign.utils import render_signatures_box
 
 from .models import (
     Employee,
@@ -34,6 +35,9 @@ from .models import (
     HolidayCalendar,
     EmployeeLeaveYear,
 )
+
+from django.core.exceptions import PermissionDenied
+from hankosign.utils import record_signature, get_action
 
 # =========================
 # Import–Export resources
@@ -470,6 +474,7 @@ class TimeSheetAdmin(
         "leave_calendar_preview",
         "pto_infobox",
         "work_infobox",
+        "signatures_box",
     )
     inlines = []
     actions = ("export_selected_pdf",)
@@ -478,7 +483,7 @@ class TimeSheetAdmin(
         (_("Scope"), {"fields": ("employee", ("year", "month"))}),
         (_("Work Calendar"), {"fields": ("work_calendar_preview", "work_infobox")}),
         (_("Leave Calendar"), {"fields": ("leave_calendar_preview", "pto_infobox",)}),
-        (_("Workflow"), {"fields": ("submitted_at", "approved_at_wiref", "approved_at_chair")}),
+        (_("HankoSign Workflow"), {"fields": ("submitted_at", "approved_at_wiref", "approved_at_chair", "signatures_box",), }),
         (_("Exports"), {"fields": ("pdf_file", "export_payload", "totals_preview")}),
         (_("Timestamps"), {"fields": (("version"), ("created_at"), ("updated_at"))}),
     )
@@ -578,16 +583,8 @@ class TimeSheetAdmin(
         return mark_safe(html)
     
     def _is_locked(self, request, obj):
-        """Lock for non-managers once submitted or approved. Managers bypass."""
-        if not obj:
-            return False
-        locked_by_status = bool(obj.submitted_at or obj.approved_at_wiref or obj.approved_at_chair)
-        if request is None:
-            # If we don't have a request (e.g., weird render path), fall back to status-only.
-            return locked_by_status
-        if self._is_manager(request):
-            return False
-        return locked_by_status
+        return obj.is_locked_for(getattr(request, "user", None))
+
 
     # ---- computed displays ----
     @admin.display(description=_("Period"))
@@ -679,6 +676,10 @@ class TimeSheetAdmin(
             t, e, d
         )
 
+    @admin.display(description=_("Signatures"))
+    def signatures_box(self, obj):
+        return render_signatures_box(obj)
+
     def has_delete_permission(self, request, obj=None):
         return False
 
@@ -735,12 +736,29 @@ class TimeSheetAdmin(
 
     # --- workflow transitions ---
     def submit_timesheet(self, request, obj):
+        # 1) idempotency
         if obj.submitted_at:
             messages.info(request, _("Already submitted."))
             return
-        obj.submitted_at = timezone.now()
+
+        # 2) resolve action
+        action = get_action("SUBMIT:ASS@employees.timesheet")
+        if not action:
+            messages.error(request, _("Submission action is not configured."))
+            return
+
+        # 3) record signature
+        try:
+            sig = record_signature(request.user, action, obj, note="Timesheet submitted")
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+
+        # 4) persist state using the signature timestamp
+        obj.submitted_at = sig.at
         obj.save(update_fields=["submitted_at", "updated_at"])
         messages.success(request, _("Timesheet submitted."))
+
 
     submit_timesheet.label = _("Submit")
     submit_timesheet.attrs = {"class": "btn btn-block btn-warning btn-sm"}

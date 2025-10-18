@@ -13,28 +13,38 @@ User = get_user_model()
 
 def resolve_signatory(user: User) -> Optional[Signatory]:
     """
-    Primary: 1:1 on Signatory.user.
-    Fallbacks can be added here if you keep signatories without linking users.
+    Resolve the active Signatory for a given Django user via Person -> PersonRole.
+    Assumes Person has a OneToOne to auth.User (people.Person.user).
     """
     if not user or not user.is_authenticated:
         return None
-    sig = Signatory.objects.filter(user=user, is_active=True).first()
-    return sig
+
+    return (
+        Signatory.objects
+        .filter(
+            is_active=True,
+            person_role__person__user=user,
+        )
+        .select_related("person_role", "person_role__person")
+        .order_by("-updated_at")   # pick a stable winner if multiple exist
+        .first()
+    )
 
 
 def get_action(action_ref: Union[str, Action]) -> Optional[Action]:
-    """
-    Accept either an Action instance or an action_code string like:
-    'APPROVE:WIREF@employees.timesheet'
-    """
     if isinstance(action_ref, Action):
         return action_ref
     try:
-        verb_stage, scope_str = action_ref.split("@", 1)
+        s = action_ref.strip()
+        verb_stage, scope_str = s.split("@", 1)
         verb, stage = verb_stage.split(":", 1)
         app_label, model = scope_str.split(".", 1)
-        ct = ContentType.objects.get(app_label=app_label, model=model)
-        return Action.objects.get(verb=verb, stage=stage if stage != "-" else "", scope=ct)
+        ct = ContentType.objects.get(app_label=app_label.strip(), model=model.strip().lower())
+        return Action.objects.get(
+            verb=verb.strip().upper(),
+            stage=(stage.strip().upper() if stage.strip() != "-" else ""),
+            scope=ct,
+        )
     except Exception:
         return None
 

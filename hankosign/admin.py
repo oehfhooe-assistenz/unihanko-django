@@ -2,7 +2,6 @@ from django.contrib import admin
 
 # Register your models here.
 
-from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from .models import Action, Policy, Signatory, Signature
@@ -48,17 +47,22 @@ class PolicyAdmin(admin.ModelAdmin):
 
 @admin.register(Signatory)
 class SignatoryAdmin(admin.ModelAdmin):
-    list_display = ("display_name", "user", "person_role", "is_active", "is_verified", "updated_at")
+    list_display = ("display_name", "user_display", "person_role", "is_active", "is_verified", "updated_at")
     list_filter = ("is_active", "is_verified", "person_role__role")
-    search_fields = ("person_role__person__last_name", "person_role__person__first_name", "user__username")
-    readonly_fields = ("created_at", "updated_at", "base_key")
-    autocomplete_fields = ("user", "person_role")
+    search_fields = ("person_role__person__last_name", "person_role__person__first_name", "person_role__person__user__username")
+    readonly_fields = ("created_at", "updated_at", "base_key", "user_display")
+    autocomplete_fields = ("person_role",)
     inlines = [SignatureInline]
     fieldsets = (
-        (_("Identity"), {"fields": ("user", "person_role", "name_override")}),
+        (_("Identity"), {"fields": ("person_role", "user_display", "name_override")}),
         (_("Status"), {"fields": ("is_active", "is_verified", "pdf_specimen")}),
         (_("System"), {"fields": ("base_key", "created_at", "updated_at")}),
     )
+
+    @admin.display(description=_("User"))
+    def user_display(self, obj):
+        u = obj.user
+        return getattr(u, "username", "—")
 
 
 @admin.register(Signature)

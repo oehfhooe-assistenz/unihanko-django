@@ -572,6 +572,11 @@ class TimeSheet(models.Model):
     @property
     def is_approved_chair(self) -> bool:
         return self.approved_at_chair is not None
+    
+    def is_locked_for(self, user) -> bool:
+        if user and user.groups.filter(name="module:employees:manager").exists():
+            return False
+        return bool(self.submitted_at or self.approved_at_wiref or self.approved_at_chair)
 
     # ---- expectations & aggregates ----
     def _active_holidays(self) -> Set[date]:
