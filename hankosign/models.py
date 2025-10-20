@@ -24,6 +24,10 @@ class Action(models.Model):
         VERIFY = "VERIFY", _("Verify")
         APPROVE = "APPROVE", _("Approve")
         RELEASE = "RELEASE", _("Release/Print")
+        WITHDRAW = "WITHDRAW", _("Withdraw")
+        REJECT = "REJECT", _("Reject")
+        LOCK = "LOCK", _("Lock")
+        UNLOCK = "UNLOCK", _("Unlock")
 
     verb = models.CharField(_("Verb"), max_length=20, choices=Verb.choices)
     stage = models.CharField(
@@ -68,6 +72,11 @@ class Policy(models.Model):
         help_text=_("If enabled, the same person cannot perform multiple gated stages on the same object."),
     )
 
+    is_repeatable = models.BooleanField(
+        _("Is repeatable"),
+        default=False,
+        help_text=_("If enabled, the action linked to this policy can be performed multiple times on the same object."),
+    )
     notes = models.CharField(_("Notes"), max_length=240, blank=True)
 
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
@@ -131,11 +140,11 @@ class Signatory(models.Model):
         p = self.person_role.person
         return f"{p.first_name} {p.last_name}"
 
-
+from django.db.models import Q
 class Signature(models.Model):
     """Immutable record of a performed action on an object."""
     signatory = models.ForeignKey(Signatory, on_delete=models.PROTECT, related_name="signatures", verbose_name=_("Signatory"))
-
+    is_repeatable = models.BooleanField(default=False, editable=False)
     # Target object (generic)
     content_type = models.ForeignKey(ContentType, on_delete=models.PROTECT)
     object_id = models.CharField(max_length=64)
@@ -160,12 +169,18 @@ class Signature(models.Model):
     class Meta:
         verbose_name = _("Signature")
         verbose_name_plural = _("Signatures")
-        # Prevent duplicate milestone actions on the same object
-        unique_together = (("content_type", "object_id", "verb", "stage"),)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["content_type", "object_id", "verb", "stage"],
+                condition=Q(is_repeatable=False),
+                name="uq_sig_nonrepeat_per_object_verb_stage",
+            )
+        ]
         ordering = ("-at", "-id")
         indexes = [
             models.Index(fields=["content_type", "object_id"]),
             models.Index(fields=["verb", "stage"]),
+            models.Index(fields=["content_type", "object_id", "verb", "stage",])
         ]
 
     def __str__(self) -> str:

@@ -2,6 +2,7 @@
 <link rel="stylesheet" href="{% static 'hankosign/sigbox.css' %}">
 
 <div class="ts-card-sig ts-infobox" style="margin-top:.5rem;">
+  <img class="sig-seal" src="{% static 'img/hankosign-cert.svg' %}" alt="" aria-hidden="true">
   <div class="ts-title">{{ title }}</div>
 
   {% if not has_rows %}

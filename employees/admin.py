@@ -37,7 +37,7 @@ from .models import (
 )
 
 from django.core.exceptions import PermissionDenied
-from hankosign.utils import record_signature, get_action
+from hankosign.utils import record_signature, get_action, has_sig, sig_time, state_snapshot
 
 # =========================
 # Import–Export resources
@@ -84,9 +84,10 @@ class TimeSheetResource(resources.ModelResource):
             "employee",
             "year",
             "month",
-            "submitted_at",
-            "approved_at_wiref",
-            "approved_at_chair",
+            "expected_minutes",
+            "worked_minutes",
+            "credit_minutes",
+            "closing_saldo_minutes",
             "created_at",
             "updated_at",
         )
@@ -417,6 +418,10 @@ class EmploymentDocumentAdmin(
 # Timesheet Admin
 # =========================
 
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import Exists, OuterRef
+from hankosign.models import Signature
+
 class TimeSheetStateFilter(admin.SimpleListFilter):
     title = _("State")
     parameter_name = "state"
@@ -431,14 +436,43 @@ class TimeSheetStateFilter(admin.SimpleListFilter):
 
     def queryset(self, request, qs):
         v = self.value()
+        if not v:
+            return qs
+
+        ct = ContentType.objects.get_for_model(TimeSheet)
+        sub = Signature.objects.filter(
+            content_type=ct,
+            object_id=OuterRef("pk"),
+            verb="SUBMIT",
+            stage="ASS",
+        )
+        wi = Signature.objects.filter(
+            content_type=ct,
+            object_id=OuterRef("pk"),
+            verb="APPROVE",
+            stage="WIREF",
+        )
+        ch = Signature.objects.filter(
+            content_type=ct,
+            object_id=OuterRef("pk"),
+            verb="APPROVE",
+            stage="CHAIR",
+        )
+
+        qs = qs.annotate(
+            _has_submit=Exists(sub),
+            _has_wiref=Exists(wi),
+            _has_chair=Exists(ch),
+        )
+
         if v == "draft":
-            return qs.filter(submitted_at__isnull=True)
+            return qs.filter(_has_submit=False)
         if v == "submitted":
-            return qs.filter(submitted_at__isnull=False, approved_at_wiref__isnull=True)
+            return qs.filter(_has_submit=True, _has_wiref=False, _has_chair=False)
         if v == "approved_wiref":
-            return qs.filter(approved_at_wiref__isnull=False, approved_at_chair__isnull=True)
+            return qs.filter(_has_wiref=True, _has_chair=False)
         if v == "approved_all":
-            return qs.filter(approved_at_chair__isnull=False)
+            return qs.filter(_has_chair=True)
         return qs
 
 
@@ -464,9 +498,6 @@ class TimeSheetAdmin(
     readonly_fields = (
         "created_at",
         "updated_at",
-        "submitted_at",
-        "approved_at_wiref",
-        "approved_at_chair",
         "pdf_file",
         "export_payload",
         "totals_preview",
@@ -483,7 +514,7 @@ class TimeSheetAdmin(
         (_("Scope"), {"fields": ("employee", ("year", "month"))}),
         (_("Work Calendar"), {"fields": ("work_calendar_preview", "work_infobox")}),
         (_("Leave Calendar"), {"fields": ("leave_calendar_preview", "pto_infobox",)}),
-        (_("HankoSign Workflow"), {"fields": ("submitted_at", "approved_at_wiref", "approved_at_chair", "signatures_box",), }),
+        (_("HankoSign Workflow"), {"fields": ("signatures_box",),}),
         (_("Exports"), {"fields": ("pdf_file", "export_payload", "totals_preview")}),
         (_("Timestamps"), {"fields": (("version"), ("created_at"), ("updated_at"))}),
     )
@@ -583,23 +614,36 @@ class TimeSheetAdmin(
         return mark_safe(html)
     
     def _is_locked(self, request, obj):
-        return obj.is_locked_for(getattr(request, "user", None))
+        if not obj:
+            return False
+        st = state_snapshot(obj)
+        locked_by_status = st["locked"]   # << use the universal decision
+        if request is None:
+            return locked_by_status
+        if self._is_manager(request):
+            return False
+        return locked_by_status
 
 
     # ---- computed displays ----
     @admin.display(description=_("Period"))
     def period_label(self, obj):
         return f"{obj.year}-{obj.month:02d}"
+    
 
+    # temporary update, I would like to do this with bootstrap's table-cols or "universal" ribbons instead of monolithic per-module-badges
     @admin.display(description=_("Status"))
     def status_badge(self, obj):
-        if obj.approved_at_chair:
+        st = state_snapshot(obj)
+        approved = st["approved"]
+        if st["final"] or "CHAIR" in approved:
             return format_html('<span class="badge" style="background:#16a34a;color:#fff;">{}</span>', _("Final"))
-        if obj.approved_at_wiref:
+        if "WIREF" in approved:
             return format_html('<span class="badge" style="background:#0ea5e9;color:#fff;">{}</span>', _("Approved (WiRef)"))
-        if obj.submitted_at:
+        if st["submitted"]:
             return format_html('<span class="badge" style="background:#f59e0b;color:#fff;">{}</span>', _("Submitted"))
         return format_html('<span class="badge" style="background:#6b7280;color:#fff;">{}</span>', _("Draft"))
+
 
     @admin.display(description=_("Minutes"))
     def minutes_summary(self, obj):
@@ -607,7 +651,8 @@ class TimeSheetAdmin(
         e = int(obj.expected_minutes or 0)
         d = t - e
         return f"{t} / {e} (Δ {d})"
-    
+
+
     @admin.display(description=_("Worktime overview"))
     def work_infobox(self, obj):
         from django.utils.translation import gettext_lazy as _t
@@ -635,6 +680,7 @@ class TimeSheetAdmin(
         }
         html = render_to_string("admin/employees/work_infobox.html", ctx)
         return mark_safe(html)
+
 
     @admin.display(description=_("PTO overview"))
     def pto_infobox(self, obj):
@@ -665,6 +711,7 @@ class TimeSheetAdmin(
         html = render_to_string("admin/employees/pto_infobox.html", ctx)
         return mark_safe(html)
 
+
     @admin.display(description=_("Totals preview"))
     def totals_preview(self, obj):
         t = int((obj.worked_minutes or 0) + (obj.credit_minutes or 0))
@@ -676,14 +723,17 @@ class TimeSheetAdmin(
             t, e, d
         )
 
+
     @admin.display(description=_("Signatures"))
     def signatures_box(self, obj):
         return render_signatures_box(obj)
 
+
     def has_delete_permission(self, request, obj=None):
         return False
 
-    change_actions = ("submit_timesheet", "withdraw_submission", "approve_wiref", "approve_chair", "print_pdf")
+
+    change_actions = ("submit_timesheet", "withdraw_timesheet", "approve_wiref", "approve_chair", "reject_wiref", "reject_chair")
 
     def get_change_actions(self, request, object_id, form_url):
         actions = list(super().get_change_actions(request, object_id, form_url))
@@ -695,24 +745,37 @@ class TimeSheetAdmin(
             if name in actions:
                 actions.remove(name)
 
-        if obj.approved_at_chair:
-            for n in ("submit_timesheet", "withdraw_submission", "approve_wiref", "approve_chair"):
-                drop(n)
-        elif obj.approved_at_wiref:
-            drop("submit_timesheet")
-            if not self._is_manager(request):
-                drop("withdraw_submission")
-                drop("approve_chair")
-        elif obj.submitted_at:
-            drop("submit_timesheet")
-            if not self._is_manager(request):
-                drop("withdraw_submission")
-                drop("approve_wiref")
-        else:
-            for n in ("withdraw_submission", "approve_wiref", "approve_chair"):
-                drop(n)
+        st = state_snapshot(obj)
+        approved = st["approved"]
+        chair_ok = "CHAIR" in approved or st["final"]
+        wiref_ok = "WIREF" in approved
+        submitted = st["submitted"]
 
+        if chair_ok:
+            for n in ("submit_timesheet","withdraw_timesheet","approve_wiref","approve_chair","reject_wiref","reject_chair"):
+                drop(n)
+            return actions
+
+        if wiref_ok and not chair_ok:
+            drop("submit_timesheet")
+            drop("withdraw_timesheet")
+            drop("approve_wiref")
+            # keep approve_chair / reject_chair
+            return actions
+
+        if submitted and not wiref_ok:
+            drop("submit_timesheet")
+            # keep withdraw_timesheet / approve_wiref / reject_wiref
+            drop("approve_chair")
+            drop("reject_chair")
+            return actions
+
+        # draft
+        for n in ("withdraw_timesheet","approve_wiref","approve_chair","reject_wiref","reject_chair"):
+            drop(n)
         return actions
+
+
 
     def print_pdf(self, request, obj):
         ctx = {"ts": obj, "org": OrgInfo.get_solo()}
@@ -724,7 +787,8 @@ class TimeSheetAdmin(
         )
 
     print_pdf.label = "🖨️ " + _("Print Timesheet PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
+    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm","style": "margin-bottom: 1rem;",}
+
 
     @admin.action(description=_("Print selected as Timesheet overview PDF"))
     def export_selected_pdf(self, request, queryset):
@@ -734,93 +798,190 @@ class TimeSheetAdmin(
         ctx = {"rows": rows, "org": OrgInfo.get_solo()}
         return render_pdf_response("employee/timesheets_list_pdf.html", ctx, request, "timesheets_selected.pdf")
 
+
     # --- workflow transitions ---
+    from django.core.exceptions import PermissionDenied
+
+    # SUBMIT by ASS
     def submit_timesheet(self, request, obj):
-        # 1) idempotency
-        if obj.submitted_at:
+        st = state_snapshot(obj)
+        if st["submitted"]:
             messages.info(request, _("Already submitted."))
             return
 
-        # 2) resolve action
         action = get_action("SUBMIT:ASS@employees.timesheet")
         if not action:
             messages.error(request, _("Submission action is not configured."))
             return
 
-        # 3) record signature
         try:
-            sig = record_signature(request.user, action, obj, note="Timesheet submitted")
+            record_signature(
+                request.user, action, obj,
+                note=_("Timesheet %(period)s submitted") % {"period": f"{obj.year}-{obj.month:02d}"}
+            )
         except PermissionDenied as e:
             messages.error(request, str(e))
             return
 
-        # 4) persist state using the signature timestamp
-        obj.submitted_at = sig.at
-        obj.save(update_fields=["submitted_at", "updated_at"])
         messages.success(request, _("Timesheet submitted."))
 
-
     submit_timesheet.label = _("Submit")
-    submit_timesheet.attrs = {"class": "btn btn-block btn-warning btn-sm"}
+    submit_timesheet.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
 
-    def withdraw_submission(self, request, obj):
-        if not self._is_manager(request):
-            messages.warning(request, _("You don’t have permission to withdraw submissions."))
-            return
-        if obj.approved_at_wiref or obj.approved_at_chair:
-            messages.warning(request, _("Cannot withdraw after approvals."))
-            return
-        if not obj.submitted_at:
+
+    # WITHDRAW by ASS (only if no approvals yet)
+    def withdraw_timesheet(self, request, obj):
+        st = state_snapshot(obj)
+        if not st["submitted"]:
             messages.info(request, _("This timesheet hasn’t been submitted yet."))
             return
-        obj.submitted_at = None
-        obj.save(update_fields=["submitted_at", "updated_at"])
+        if "WIREF" in st["approved"] or "CHAIR" in st["approved"]:
+            messages.warning(request, _("Cannot withdraw after approvals."))
+            return
+
+        action = get_action("WITHDRAW:ASS@employees.timesheet")
+        if not action:
+            messages.error(request, _("Withdraw action is not configured."))
+            return
+
+        try:
+            record_signature(
+                request.user, action, obj,
+                note=_("Timesheet %(period)s withdrawn") % {"period": f"{obj.year}-{obj.month:02d}"}
+            )
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+
         messages.success(request, _("Submission withdrawn."))
 
-    withdraw_submission.label = _("Withdraw submission")
-    withdraw_submission.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
+    withdraw_timesheet.label = _("Withdraw submission")
+    withdraw_timesheet.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;",}
 
+
+    # APPROVE by WIREF
     def approve_wiref(self, request, obj):
-        if not self._is_manager(request):
-            messages.warning(request, _("You don’t have permission to approve (WiRef)."))
-            return
-        if not obj.submitted_at:
+        st = state_snapshot(obj)
+        if not st["submitted"]:
             messages.warning(request, _("Submit first before approving."))
             return
-        if obj.approved_at_wiref:
+        if "WIREF" in st["approved"]:
             messages.info(request, _("Already approved by WiRef."))
             return
-        obj.approved_at_wiref = timezone.now()
-        obj.save(update_fields=["approved_at_wiref", "updated_at"])
+
+        action = get_action("APPROVE:WIREF@employees.timesheet")
+        if not action:
+            messages.error(request, _("WiRef approval action is not configured."))
+            return
+
+        try:
+            record_signature(
+                request.user, action, obj,
+                note=_("Timesheet %(period)s approved") % {"period": f"{obj.year}-{obj.month:02d}"}
+            )
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+
         messages.success(request, _("Approved by WiRef."))
 
     approve_wiref.label = _("Approve (WiRef)")
-    approve_wiref.attrs = {"class": "btn btn-block btn-success btn-sm"}
+    approve_wiref.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-bottom: 1rem;",}
 
+
+    # APPROVE by CHAIR
     def approve_chair(self, request, obj):
-        if not self._is_manager(request):
-            messages.warning(request, _("You don’t have permission to approve (Chair)."))
+        st = state_snapshot(obj)
+        if not st["submitted"]:
+            messages.warning(request, _("Submit first before approving."))
             return
-        if not obj.approved_at_wiref:
-            messages.warning(request, _("WiRef must approve before Chair approval."))
-            return
-        if obj.approved_at_chair:
+        if "CHAIR" in st["approved"]:
             messages.info(request, _("Already approved by Chair."))
             return
-        obj.approved_at_chair = timezone.now()
-        obj.save(update_fields=["approved_at_chair", "updated_at"])
+
+        action = get_action("APPROVE:CHAIR@employees.timesheet")
+        if not action:
+            messages.error(request, _("Chair approval action is not configured."))
+            return
+
+        try:
+            record_signature(
+                request.user, action, obj,
+                note=_("Timesheet %(period)s approved") % {"period": f"{obj.year}-{obj.month:02d}"}
+            )
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+
         messages.success(request, _("Approved by Chair."))
 
     approve_chair.label = _("Approve (Chair)")
-    approve_chair.attrs = {"class": "btn btn-block btn-success btn-sm"}
+    approve_chair.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-bottom: 1rem;",}
+
+    # REJECT by WIREF
+    def reject_wiref(self, request, obj):
+        st = state_snapshot(obj)
+        if not st["submitted"]:
+            messages.warning(request, _("Nothing to reject (not submitted)."))
+            return
+        if "CHAIR" in st["approved"]:
+            messages.warning(request, _("Already final; cannot reject."))
+            return
+
+        action = get_action("REJECT:WIREF@employees.timesheet")
+        if not action:
+            messages.error(request, _("WiRef rejection action is not configured."))
+            return
+
+        try:
+            record_signature(
+                request.user, action, obj,
+                note=_("Timesheet %(period)s rejected") % {"period": f"{obj.year}-{obj.month:02d}"}
+            )
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+
+        messages.success(request, _("Rejected by WiRef."))
+
+    reject_wiref.label = _("Reject (WiRef)")
+    reject_wiref.attrs = {"class": "btn btn-block btn-danger btn-sm", "style": "margin-bottom: 1rem;",}
+
+
+    # REJECT by CHAIR
+    def reject_chair(self, request, obj):
+        st = state_snapshot(obj)
+        if not st["submitted"]:
+            messages.warning(request, _("Nothing to reject (not submitted)."))
+            return
+        if "CHAIR" in st["approved"]:
+            messages.warning(request, _("Already final; cannot reject."))
+            return
+
+        action = get_action("REJECT:CHAIR@employees.timesheet")
+        if not action:
+            messages.error(request, _("Chair rejection action is not configured."))
+            return
+
+        try:
+            record_signature(
+                request.user, action, obj,
+                note=_("Timesheet %(period)s rejected") % {"period": f"{obj.year}-{obj.month:02d}"}
+            )
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+
+        messages.success(request, _("Rejected by Chair."))
+
+    reject_chair.label = _("Reject (Chair)")
+    reject_chair.attrs = {"class": "btn btn-block btn-danger btn-sm", "style": "margin-bottom: 1rem;",}
+
 
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
         if obj and not request.user.is_superuser:
             ro += ["employee", "year", "month"]
-            if self._is_locked(request, obj):
-                # fully freeze workflow fields too
-                ro += ["submitted_at", "approved_at_wiref", "approved_at_chair"]
         return ro
     
     def render_change_form(self, request, context, *args, **kwargs):

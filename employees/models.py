@@ -507,10 +507,6 @@ class EmploymentDocument(models.Model):
 class TimeSheet(models.Model):
     """
     One sheet per employee per (year, month).
-    Approval flow:
-      - submitted_at set when employee submits
-      - approved_at_wiref set by WiRef
-      - approved_at_chair set by Chair (after WiRef)
 
     We snapshot the employee’s saldo at month start in `opening_saldo_minutes`
     and keep computed aggregates for convenience/exports.
@@ -520,11 +516,6 @@ class TimeSheet(models.Model):
     )
     year = models.PositiveIntegerField(_("Year"), validators=[MinValueValidator(2000), MaxValueValidator(9999)])
     month = models.PositiveSmallIntegerField(_("Month"), validators=[MinValueValidator(1), MaxValueValidator(12)])
-
-    # lifecycle
-    submitted_at = models.DateTimeField(_("Submitted at"), null=True, blank=True)
-    approved_at_wiref = models.DateTimeField(_("Approved by WiRef at"), null=True, blank=True)
-    approved_at_chair = models.DateTimeField(_("Approved by Chair at"), null=True, blank=True)
 
     # snapshot + aggregates (minutes)
     opening_saldo_minutes = models.IntegerField(_("Opening balance (minutes)"), default=0)
@@ -559,24 +550,6 @@ class TimeSheet(models.Model):
 
     def __str__(self) -> str:
         return f"{self.employee} — {self.year}-{self.month:02d}"
-
-    # ---- status flags ----
-    @property
-    def is_submitted(self) -> bool:
-        return self.submitted_at is not None
-
-    @property
-    def is_approved_wiref(self) -> bool:
-        return self.approved_at_wiref is not None
-
-    @property
-    def is_approved_chair(self) -> bool:
-        return self.approved_at_chair is not None
-    
-    def is_locked_for(self, user) -> bool:
-        if user and user.groups.filter(name="module:employees:manager").exists():
-            return False
-        return bool(self.submitted_at or self.approved_at_wiref or self.approved_at_chair)
 
     # ---- expectations & aggregates ----
     def _active_holidays(self) -> Set[date]:
@@ -633,11 +606,6 @@ class TimeSheet(models.Model):
     def clean(self):
         super().clean()
         errors = {}
-        if self.approved_at_chair and not self.approved_at_wiref:
-            errors["approved_at_chair"] = _("Chair approval requires WiRef approval first.")
-        if self.submitted_at and self.submitted_at.tzinfo is None:
-            # Normalize the unlikely case someone writes naive datetimes
-            self.submitted_at = timezone.make_aware(self.submitted_at, timezone.get_current_timezone())
         if errors:
             raise ValidationError(errors)
 

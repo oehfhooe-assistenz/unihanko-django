@@ -1,125 +1,53 @@
-.ts-card-wrk{background:var(--uh-surface,#2b3642);border:1px solid var(--uh-border,#334155);border-radius:12px;padding:24px}
-.ts-card-pto{background:var(--uh-surface,#2c2424);border:2px solid var(--uh-border,#D3D3D3);border-radius:12px;padding:24px}
-.ts-card-sig{background:var(--uh-surface,#333c3f);border:2px solid var(--uh-border,#D3D3D3);border-radius:12px;padding:24px}
-.ts-title{font-size:1.25rem;font-weight:600;margin:0 0 12px}
-.ts-weekday-row{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:6px 0 8px}
-.ts-weekday-row>div{text-align:center;font-weight:600;opacity:.85}
-.ts-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-.ts-cell{display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-start;min-height:76px;padding:8px 10px;border-radius:10px;text-decoration:none;color:inherit;border:1px solid var(--uh-border,#334155);background:var(--uh-tile,#1f2937)}
-.ts-cell:hover{outline:2px solid #f39c12;outline-offset:0}
-.ts-daynum{font-weight:700;opacity:.9}
-.ts-total{margin-top:auto;font-size:12px;color:#ff8a3d}
-.ts-out{opacity:.35;background:transparent;border-style:dashed}
-.ts-work{border-width: 2px;border-color:#1f6241;}
-.ts-leave{border-width: 2px; border-style:dashed; border-color:#745b0f}
-.ts-sick{border-width: 2px; border-style:dotted; border-color:purple;}
-.ts-other{border-width: 2px; border-style:dashed; border-color:whitesmoke;}
-.ts-holiday{border-width: 2px; border-style: double; background: #5a1f1f; border-color:white;}
-.ts-weekend.ts-cell{filter:grayscale()}
-.ts-weekend { opacity: .75; }
-.ts-weekend .ts-dayhead .ts-daynum { font-style: italic;}
-.ts-today{box-shadow:0 0 0 2px #f39c12 inset}
-.ts-legend{display:flex;gap:8px;margin-top:12px}
-.chip{display:inline-block;padding:4px 8px;font-size:12px;}
-.chip-work{background:#163c2a}.chip-leave{background:#4a380a}.chip-sick{background:purple}.chip-holiday{background:#5a1f1f}.chip-other{background:slategray}
-
-/* Head row inside each cell */
-.ts-cell .ts-dayhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem}
-.ts-cell .ts-add{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:1.45rem;height:1.45rem;border:1px solid rgba(255,255,255,.15);
-  border-radius:.4rem;text-decoration:none;opacity:.8;font-weight:600;line-height:1
+/* Card + title */
+.ts-card-sig{
+  background:var(--uh-surface,#333c3f);
+  border:2px solid var(--uh-border,#D3D3D3);
+  border-radius:12px;
+  padding:24px;
+  position:relative;               /* for absolute seal */
 }
-.ts-cell .ts-add:hover{opacity:1}
+.ts-title{font-size:1.25rem;font-weight:600;margin:0 0 32px;padding-right:64px}
 
-/* Chips container – let the row grow with content */
-.ts-chips{
-  display:flex;
-  flex-direction:column;
-  gap:.35rem;
-  margin:0;
-  padding:0;
-  list-style:none;
-  /* remove the old max-height/overflow rules */
+/* Seal (50×50, subtle mono) */
+.sig-seal{
+  position:absolute; top:12px; right:12px;
+  width:75px; height:75px;
+  filter:grayscale(1) contrast(1.05) opacity(.9);  /* swap for sepia: sepia(1) saturate(.6) */
+  pointer-events:none; user-select:none;
 }
 
-/* Each chip wraps onto multiple lines */
-.ts-chips .chip a{
-  display:block;
-  padding:.35rem .5rem;
-  border-radius:.6rem;
-  border:1px solid rgba(255,255,255,.12);
-  text-decoration:none;
-
-  /* turn OFF single-line/ellipsis */
-  white-space:normal;              /* was: nowrap */
-  overflow:visible;                /* was: hidden/ellipsis */
-  text-overflow:clip;
-
-  /* allow breaks anywhere so long comments don’t overflow */
-  overflow-wrap:anywhere;          /* a.k.a. word-break: break-word */
-  line-height:1.25;
-}
-
-/* keep the little “+” button from shifting when chips wrap */
-.ts-cell .ts-dayhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem}
-.ts-cell .ts-add{width:1.45rem;height:1.45rem;border:1px solid rgba(255,255,255,.15);border-radius:.4rem;
-  display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-weight:600;opacity:.8}
-.ts-cell .ts-add:hover{opacity:1}
-
-/* Kind colors (dark theme friendly) */
-.ts-chips .chip.k-work a{background:#163a29}
-.ts-chips .chip.k-leave a{background:#3b2a10}
-.ts-chips .chip.k-sick a{background:#3b1919}
-.ts-chips .chip.k-holiday a{background:#28303a}
-.ts-chips .chip.k-other a{background:whitesmoke}
-
-/* PTO box layout */
-.pto-grid{
+/* Rows */
+.sig-grid{display:flex;flex-direction:column;gap:.4rem}
+.sig-row{
   display:grid;
-  grid-template-columns: auto 1fr;
-  gap: 6px 12px;
-  margin-top: 6px;
+  grid-template-columns: auto minmax(0,1fr) auto auto;
+  grid-template-areas:
+    "code who when id"
+    "note note note note";
+  column-gap:.5rem; row-gap:.2rem;
+  align-items:baseline;
+  border-bottom:1px dashed rgba(255,255,255,.12);
+  padding:.25rem 0 .35rem;
 }
-.pto-notes{ margin-top:10px; font-size:.95rem; opacity:.95 }
-.pto-notes .note{ opacity:.9 }
-.pto-neg, .pto-notes .neg{ color:#b91c1c; font-weight:600 }
+.sig-row:last-child{border-bottom:none}
+.sig-badge{grid-area:code}
+.sig-who{grid-area:who; font-weight:600; min-width:0}
+.sig-when{grid-area:when; opacity:.9; font-variant-numeric:tabular-nums; justify-self:end}
+.sig-id{grid-area:id; opacity:.9; justify-self:end}
+.sig-note{grid-area:note; opacity:.85}
 
-/* Generic infobox rows reused by PTO & Worktime */
-.ts-infobox .row{display:flex;justify-content:space-between;gap:12px;margin:.25rem 0}
-.ts-infobox .lbl{opacity:.9}
-.ts-infobox .val{font-weight:600}
-.ts-infobox .sep{border:0;border-top:1px solid rgba(255,255,255,.15);margin:.5rem 0}
-.ts-infobox .note{margin-top:.4rem;font-size:.95rem}
-.ts-infobox .note.neg{color:#ef4444}
-.ts-infobox .note.pos{color:#10b981}
-.ts-infobox .note.muted{opacity:.7}
-
-.cmt {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sig-grid {
-  display: flex; flex-direction: column; gap: .4rem;
-}
-.sig-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  gap: .5rem;
-  align-items: baseline;
-  border-bottom: 1px dashed rgba(255,255,255,.12);
-  padding-bottom: .25rem;
-}
-.sig-row:last-child { border-bottom: none; }
-.sig-badge {
+.sig-badge{
   display:inline-block; padding:.2rem .4rem; border:1px solid rgba(255,255,255,.15);
-  border-radius:.35rem; font-size:.85rem; background:#3b2a10; /* similar to PTO tone */
+  border-radius:.35rem; font-size:.85rem; background:#3b2a10;
 }
-.sig-who { font-weight:600; }
-.sig-when { opacity:.9; font-variant-numeric: tabular-nums; }
-.sig-id { opacity:.9; }
-.sig-note { opacity:.85; }
-@media (max-width: 640px){
-  .sig-row { grid-template-columns: auto / 1fr / auto; grid-auto-flow: row; }
+
+@media (max-width:720px){
+  .sig-row{
+    grid-template-columns: auto minmax(0,1fr);
+    grid-template-areas:
+      "code who"
+      "when id"
+      "note note";
+  }
+  .sig-when, .sig-id{justify-self:start}
 }

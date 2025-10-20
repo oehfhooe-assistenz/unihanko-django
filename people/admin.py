@@ -282,7 +282,7 @@ class PersonAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModel
         return render_pdf_response("people/person_pdf.html", {"p": obj, "org": OrgInfo.get_solo(),}, request, f"HR-P_AKT_{obj.id}_{lname}_{date_str}.pdf")
 
     print_pdf.label = "🖨️ " + _("Print Personnel Record PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
+    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;",}
 
     def print_pac_pdf(self, request, obj):
         date_str = timezone.localtime().strftime("%Y-%m-%d")
@@ -290,7 +290,7 @@ class PersonAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModel
         return render_pdf_response("people/person_action_code_notice_pdf.html", {"p": obj}, request, f"HR-P_PAC_INFO_{obj.id}_{lname}_{date_str}.pdf")
 
     print_pac_pdf.label = "🖨️ " + _("Print Personal Access Code Info PDF (ext.)")
-    print_pac_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
+    print_pac_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;",}
 
     @admin.action(description=_("Print selected as roster PDF"))
     def export_selected_pdf(self, request, queryset):
@@ -459,7 +459,7 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
             f"B_{rsname}_{lname}-{date_str}.pdf"
         )
     print_appointment_regular.label = "🧾 " + _("Print appointment (non-confirmation) PDF")
-    print_appointment_regular.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
+    print_appointment_regular.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
 
     def print_appointment_ad_interim(self, request, obj):
         rsname = slugify(obj.role.short_name)[:10]
@@ -471,7 +471,7 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
             f"B_interim_{rsname}_{lname}-{date_str}.pdf"
         )
     print_appointment_ad_interim.label = "💥 " + _("Print appointment (ad interim) PDF")
-    print_appointment_ad_interim.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
+    print_appointment_ad_interim.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
 
     def print_confirmation(self, request, obj):
         rsname = slugify(obj.role.short_name)[:10]
@@ -506,7 +506,7 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         )
 
     print_confirmation.label = "☑️ " + _("Print confirmation (post-confirmation) PDF")
-    print_confirmation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
+    print_confirmation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
 
     def print_resignation(self, request, obj):
         rsname = slugify(obj.role.short_name)[:10]
@@ -518,7 +518,7 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
             f"R_{rsname}_{lname}-{date_str}.pdf"
         )
     print_resignation.label = "🏁 " + _("Print resignation PDF")
-    print_resignation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
+    print_resignation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
 
     # --- Visibility gates (buttons appear only when True) ---
     def get_change_actions(self, request, object_id, form_url):

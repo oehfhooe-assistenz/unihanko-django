@@ -28,6 +28,11 @@
   max-width: 100% !important;
 }
 
+.field-signatures_box .col-sm-7 {
+  flex: 0 0 100% !important;
+  max-width: 100% !important;
+}
+
 /* Global floating Help button in admin */
 #uh-help-fab{
   position: fixed; right: 20px; bottom: 60px;

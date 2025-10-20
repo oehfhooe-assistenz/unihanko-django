@@ -416,25 +416,25 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
             return
         self.message_user(request, _("Plan activated."), level=messages.SUCCESS)
     activate_plan.label = _("Activate")
-    activate_plan.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
+    activate_plan.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-bottom: 1rem;",}
 
     def suspend_plan(self, request, obj):
         obj.mark_suspended(note=_("Suspended from admin"))
         self.message_user(request, _("Plan suspended."), level=messages.SUCCESS)
     suspend_plan.label = _("Suspend")
-    suspend_plan.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
+    suspend_plan.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
 
     def finish_plan(self, request, obj):
         obj.mark_finished(note=_("Finished from admin"))
         self.message_user(request, _("Plan finished."), level=messages.SUCCESS)
     finish_plan.label = _("Finish")
-    finish_plan.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
+    finish_plan.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;",}
 
     def cancel_plan(self, request, obj):
         obj.mark_cancelled(note=_("Cancelled from admin"))
         self.message_user(request, _("Plan cancelled."), level=messages.SUCCESS)
     cancel_plan.label = _("Cancel")
-    cancel_plan.attrs = {"class": "btn btn-block btn-danger btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
+    cancel_plan.attrs = {"class": "btn btn-block btn-danger btn-sm", "style": "margin-bottom: 1rem;",}
 
     # === PDF actions (single + bulk) ===
     def print_pdf(self, request, obj):
@@ -444,7 +444,7 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
         ctx = {"pp": obj}
         return render_pdf_response("finances/paymentplan_pdf.html", ctx, request, f"FGEB-BELEG_{obj.plan_code}_{rsname}_{lname}-{date_str}.pdf")
     print_pdf.label = "🖨️ " + _("Print Receipt PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
+    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;",}
 
     @admin.action(description=_("Export selected to PDF"))
     def export_selected_pdf(self, request, queryset):
@@ -617,7 +617,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         ctx = {"fy": obj}
         return render_pdf_response("finances/fiscalyear_pdf.html", ctx, request, f"WJFY-STATUS_{obj.display_code()}-{date_str}.pdf")
     print_pdf.label = "🖨️ " + _("Print receipt PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
+    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;",}
 
     @admin.action(description=_("Print selected as overview PDF"))
     def export_selected_pdf(self, request, queryset):
@@ -703,7 +703,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         obj.save(update_fields=["is_locked"])
         self.message_user(request, _("Fiscal year locked."), level=messages.SUCCESS)
     lock_year.label = _("Lock year")
-    lock_year.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
+    lock_year.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
 
     def unlock_year(self, request, obj):
         if not self._is_manager(request):
@@ -716,4 +716,4 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         obj.save(update_fields=["is_locked"])
         self.message_user(request, _("Fiscal year unlocked."), level=messages.SUCCESS)
     unlock_year.label = _("Unlock year")
-    unlock_year.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-top:10px; margin-bottom: 10px;",}
+    unlock_year.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-bottom: 1rem;",}
