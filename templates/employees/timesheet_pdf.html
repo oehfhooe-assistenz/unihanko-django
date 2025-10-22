@@ -1,0 +1,108 @@
+{% extends "pdf/base.html" %}
+{% load i18n static %}
+
+{% block pdf_title %}{% trans "Time Journal for" %} {{ ts.month }} — {{ ts.year }}{% endblock %}
+{% block header_title %}{% trans "Timesheet" %}{% endblock %}
+{% block header_subtitle %}{{ ts.month }} | {{ ts.year }} — {{ person.first_name }} {{ person.last_name }}{% endblock %}
+{% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %}
+
+{% block content %}
+<h2 style="margin:0 0 8px 0;">
+  {% trans "Time Journal for" %} <span>{{ person.first_name }} {{ person.last_name }}</span>
+</h2>
+<h3 style="margin:10px 0 6px 0;">
+  {{ role.name }} — <span style="color: var(--brand);">{{ ts.month }} </span> | <span style="color: var(--brand);">{{ ts.year }}</span>
+</h3>
+
+<section style="border-left: 3px solid var(--brand); padding: 1mm 1mm 1mm 2mm;">
+  <h4>{% trans "PTO overview for" %} {{ leave_year_label }} — {{ person.first_name }} {{ person.last_name }}</h4>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 20%;">{% trans "Entitlement" %}</th>
+        <th style="width: 20%;">{% trans "Carry-in" %}</th>
+        <th style="width: 20%;">{% trans "Manual adjustment" %}</th>
+        <th style="width: 20%;">{% trans "Taken" %}</th>
+        <th style="width: 20%;">{% trans "Remaining" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="width: 20%;">{{ leave_year.entitlement_minutes }} min</td>
+        <td style="width: 20%;">{{ leave_year.carry_in_minutes }} min</td>
+        <td style="width: 20%;">{{ leave_year.manual_adjust_minutes }} min</td>
+        <td style="width: 20%;">{{ leave_year.taken_minutes }} min</td>
+        <td style="width: 20%;">{{ leave_year.remaining_minutes }} min</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section style="margin-top: 2mm; margin-bottom: 2mm;">
+<h3 style="margin:10px 0 6px 0;">{% trans "Time Entries" %}</h3>
+<table>
+  <thead>
+    <tr>
+      <th style="width: 25%;">{% trans "Date" %}</th>
+      <th style="text-align: center; width: 15%;">{% trans "Kind/Type" %}</th>
+      <th style="width: 15%; text-align: right;">{% trans "Minutes" %}</th>
+      <th style="width: 15%; text-align: right;">{% trans "From" %}</th>
+      <th style="width: 15%; text-align: right;">{% trans "To" %}</th>
+      <th style="width: 15%;">{% trans "Comment" %}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for te in entries %}
+      <tr>
+        <td style="width: 25%;">{{ te.date|date:"j. F Y" }}</td>
+        <td style="text-align: center; width: 15%;"><b>{{ te.get_kind_display }}</b></td>
+        <td style="text-align:right; width: 15%;">{{ te.minutes }} min</td>
+        <td style="width: 15%; text-align: right;">{{ te.start_time|default:"—" }}</td>
+        <td style="width: 15%; text-align: right;">{{ te.end_time|default:"—" }}</td>
+        <td style="width: 15%; text-overflow: ellipsis;">{{ te.comment|default:"—" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6"><em>{% trans "No entries." %}</em></td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</section>
+
+<section style="border-left: 3px solid var(--brand); padding: 1mm 1mm 1mm 2mm;">
+  <h4>{% trans "Time saldo as per journal" %}</h4>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 20%;">{% trans "Opening saldo" %}</th>
+        <th style="width: 20%;">{% trans "Expected time (public holidays accounted for)" %}</th>
+        <th style="width: 20%;">{% trans "Worked time" %}</th>
+        <th style="width: 20%;">{% trans "Credit time (Sick or Leave)" %}</th>
+        <th style="width: 20%;">{% trans "Closing saldo" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="width: 20%;">{{ ts.opening_saldo_minutes }} min</td>
+        <td style="width: 20%;">{{ ts.expected_minutes }} min</td>
+        <td style="width: 20%;">{{ ts.worked_minutes }} min</td>
+        <td style="width: 20%;">{{ ts.credit_minutes }} min</td>
+        <td style="width: 20%;">{{ ts.closing_saldo_minutes }} min</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+{% block styles %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'hankosign/hs_seal.css' %}">
+{% endblock %}
+
+{% include "hankosign/_attestation_seal.html" with signatures=signatures %}
+
+<div style="color: (--muted)">
+<h4 style="margin:14px 0 6px 0; text-align: center; font-size: 10px;">{% trans "Important notice" %}</h4>
+<p style="font-size:6px; text-align: center;">
+    {% trans "This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited." %}
+</p>
+</div>
+{% endblock %}

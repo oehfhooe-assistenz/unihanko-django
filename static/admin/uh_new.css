@@ -47,3 +47,11 @@
 
 /* global nuke (optional): hide related action icons everywhere */
 .related-widget-wrapper .related-widget-wrapper-link { display:none !important; }
+
+tbody tr:has(td.field-status_text span.js-state) { background: inherit !important; }
+tbody tr:has(td.field-status_text span.js-state[data-state="final"])     { border-left: 8px solid #198754; }
+tbody tr:has(td.field-status_text span.js-state[data-state="wiref"])     { border-left: 8px solid #0dcaf0; }
+tbody tr:has(td.field-status_text span.js-state[data-state="submitted"]) { border-left: 8px solid #ffc107; }
+tbody tr:has(td.field-status_text span.js-state[data-state="locked"])    { border-left: 8px solid #6c757d; }
+tbody tr:has(td.field-active_text .js-state[data-state="ok"])  { border-left: 8px solid #2dd587; }
+tbody tr:has(td.field-active_text .js-state[data-state="off"]) { border-left: 8px solid #6d1717; }

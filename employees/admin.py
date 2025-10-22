@@ -1,6 +1,5 @@
 from django.contrib import admin, messages
 from django.utils import timezone
-from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.shortcuts import redirect
 
@@ -37,7 +36,7 @@ from .models import (
 )
 
 from django.core.exceptions import PermissionDenied
-from hankosign.utils import record_signature, get_action, has_sig, sig_time, state_snapshot
+from hankosign.utils import record_signature, get_action, state_snapshot
 
 # =========================
 # Import–Export resources
@@ -241,7 +240,7 @@ class EmployeeLeaveYearInline(admin.TabularInline):
         qs = super().get_queryset(request)
         return qs.order_by("-label_year")
 
-
+from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for_boolean
 @admin.register(Employee)
 class EmployeeAdmin(
     ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
@@ -251,7 +250,7 @@ class EmployeeAdmin(
         "person_role",
         "weekly_hours",
         "saldo_display",
-        "active_badge",
+        "active_text",
         "updated_at",
     )
     list_filter = ("is_active",)
@@ -261,17 +260,19 @@ class EmployeeAdmin(
         "person_role__role__name",
     )
     autocomplete_fields = ("person_role",)
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = ("daily_expected", "created_at", "updated_at")
     inlines = [EmploymentDocumentInline, EmployeeLeaveYearInline]
     actions = ("export_selected_pdf",)
 
     fieldsets = (
         (_("Assignment"), {"fields": ("person_role", "is_active")}),
-        (_("Work terms"), {"fields": ("weekly_hours", "saldo_minutes")}),
+        (_("Work terms"), {"fields": ("weekly_hours", "saldo_minutes", "daily_expected")}),
         (_("PTO terms"), {"fields": ("annual_leave_days_base", "annual_leave_days_extra", "leave_reset_override")}),
+        (_("Personal data"), {"fields": ("insurance_no", "dob",)}),
         (_("Miscellaneous"), {"fields": ("notes",)}),
         (_("Timestamps"), {"fields": (("created_at"), ("updated_at"),)}),
     )
+
 
     @admin.display(description=_("Saldo"))
     def saldo_display(self, obj):
@@ -282,45 +283,57 @@ class EmployeeAdmin(
         mm = mins_abs % 60
         return f"{sign}{hh:02d}:{mm:02d}"
 
+
     @admin.display(description=_("Active"))
-    def active_badge(self, obj):
-        if obj.is_active:
-            return format_html('<span class="badge" style="background:#10b981;color:#fff;">{}</span>', _("Active"))
-        return format_html('<span class="badge" style="background:#6b7280;color:#fff;">{}</span>', _("Inactive"))
+    def active_text(self, obj):
+
+        # renders plain text + data-state="ok/off"
+        return boolean_status_span(
+            bool(obj.is_active),
+            true_label=_("Active"),
+            false_label=_("Inactive"),
+            true_code="ok",
+            false_code="off",
+        )
+    
+    @admin.display(description=_("Daily expected minutes"))
+    def daily_expected(self, obj):
+        return obj.daily_expected_minutes or None
+
+
+    def get_changelist_row_attrs(self, request, obj):
+        # left border, etc., comes from your global CSS/JS using data-state attr
+        return row_state_attr_for_boolean(bool(getattr(obj, "is_active", False)))
+
 
     def has_delete_permission(self, request, obj=None):
         return False
 
-    @admin.action(description=_("Print selected as Employee roster PDF"))
-    def export_selected_pdf(self, request, queryset):
-        rows = queryset.select_related("person_role__person", "person_role__role").order_by(
-            "person_role__person__last_name", "person_role__person__first_name"
-        )
-        ctx = {"rows": rows, "org": OrgInfo.get_solo()}
-        return render_pdf_response("employee/employee_list_pdf.html", ctx, request, "employees_selected.pdf")
 
-    change_actions = ("print_pdf",)
+    change_actions = ("print_employee_pdf",)
 
-    def print_pdf(self, request, obj):
+    def print_employee_pdf(self, request, obj):
         ctx = {"emp": obj, "org": OrgInfo.get_solo()}
-        return render_pdf_response("employee/employee_pdf.html", ctx, request, f"employee_{obj.id}.pdf")
+        return render_pdf_response("employees/employee_pdf.html", ctx, request, f"employee_{obj.id}.pdf")
+    print_employee_pdf.label = _("🧾 Print Employee PDF")
+    print_employee_pdf.attrs = {"class": "btn btn-block btn-info btn-sm", "style": "margin-bottom: 1rem;",}
 
-    print_pdf.label = _("🧾 Print Employee PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
 
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
         if obj and not request.user.is_superuser:
             ro += ["person_role", ]
         return ro
-    
+
+
     def get_inline_instances(self, request, obj=None):
         instances = super().get_inline_instances(request, obj)
         if not self._is_manager(request):
             # hide the PTO inline from editors
             instances = [i for i in instances if not isinstance(i, EmployeeLeaveYearInline)]
         return instances
-    
+
+
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
         # Ensure the current label year exists
@@ -338,7 +351,7 @@ class EmploymentDocumentAdmin(
     ConcurrentModelAdmin, ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
 ):
     resource_classes = [EmploymentDocumentResource]
-    list_display = ("code", "employee", "kind_badge", "title", "period_display", "is_active", "updated_at")
+    list_display = ("code", "employee", "kind_text", "title", "period_display", "status_text", "updated_at")
     list_filter = ("kind", "is_active", "start_date", "end_date")
     search_fields = (
         "code",
@@ -348,28 +361,26 @@ class EmploymentDocumentAdmin(
         "employee__person_role__role__name",
     )
     autocomplete_fields = ("employee",)
-    readonly_fields = ("code", "created_at", "updated_at",)
+    readonly_fields = ("code", "created_at", "updated_at", "signatures_box",)
 
     fieldsets = (
-        (_("Link"), {"fields": ("employee",)}),
-        (_("Document"), {"fields": ("kind", "title", "start_date", "end_date", "is_active", "pdf_file", "details")}),
+        (_("Scope"), {"fields": ("employee",)}),
+        (_("Document"), {"fields": ("kind", "title", "start_date", "end_date", "is_active", "relevant_third_party", "pdf_file", "details")}),
+        (_("HankoSign Workflow"), {"fields": ("signatures_box",)}),
         (_("System"), {"fields": ("code", "version", "created_at", "updated_at")}),
     )
 
     @admin.display(description=_("Kind"))
-    def kind_badge(self, obj):
-        colors = {
-            obj.Kind.DV: "#2563eb",
-            obj.Kind.ZV: "#10b981",
-            obj.Kind.AA: "#f59e0b",
-            obj.Kind.KM: "#ef4444",
-            obj.Kind.ZZ: "#6b7280",
-        }
-        return format_html(
-            '<span class="badge" style="background:{};color:#fff;">{}</span>',
-            colors.get(obj.kind, "#6b7280"),
-            obj.get_kind_display(),
-        )
+    def kind_text(self, obj):
+        return obj.get_kind_display()
+
+
+    @admin.display(description=_("Status"))
+    def status_text(self, obj):
+        # default stages are WIREF/CHAIR; override here if you want different tiers for docs
+        from hankosign.utils import object_status_span
+        return object_status_span(obj, final_stage="CHAIR", tier1_stage="WIREF")
+
 
     @admin.display(description=_("Period"))
     def period_display(self, obj):
@@ -377,19 +388,102 @@ class EmploymentDocumentAdmin(
         e = obj.end_date.strftime("%Y-%m-%d") if obj.end_date else "…"
         return f"{s} → {e}"
 
+
+    @admin.display(description=_("Signatures"))
+    def signatures_box(self, obj):
+        from hankosign.utils import render_signatures_box
+        return render_signatures_box(obj)
+
+
     def has_delete_permission(self, request, obj=None):
         return False
 
-    change_actions = ("print_receipt", "print_leave_request")
+
+    def get_readonly_fields(self, request, obj=None):
+        base = list(super().get_readonly_fields(request, obj))
+        is_mgr = self._is_manager(request)
+
+        # always read-only for these once created (scope)
+        scope_fields = ["employee", "kind"]
+
+        if obj:  # edit view
+            for f in scope_fields:
+                if f not in base:
+                    base.append(f)
+
+            from hankosign.utils import state_snapshot
+            st = state_snapshot(obj)
+            if st["submitted"] and not is_mgr:
+                # lock the rest after submit for non-managers
+                more = ["title", "start_date", "end_date", "pdf_file", "relevant_third_party", "details"]
+                for f in more:
+                    if f not in base:
+                        base.append(f)
+        return base
+
+
+    change_actions = ("submit_doc", "withdraw_doc", "approve_wiref_doc", "approve_chair_doc", "reject_wiref_doc", "reject_chair_doc", "print_receipt", "print_leaverequest_receipt", "print_sicknote_receipt")
 
     def get_change_actions(self, request, object_id, form_url):
         actions = list(super().get_change_actions(request, object_id, form_url))
         obj = self.get_object(request, object_id)
         if not obj:
             return actions
-        if obj.kind != obj.Kind.AA and "print_leave_request" in actions:
-            actions.remove("print_leave_request")
+
+        # Only for flow-enabled kinds
+        flow_kinds = {obj.Kind.AA, obj.Kind.KM, obj.Kind.ZV}
+        if obj.kind not in flow_kinds:
+            # strip all if not flow-enabled (DV/ZZ etc.)
+            return [a for a in actions if a not in self.change_actions]
+
+        def drop(name):
+            if name in actions:
+                actions.remove(name)
+
+        from hankosign.utils import state_snapshot
+        st = state_snapshot(obj)
+        approved = st["approved"]
+        chair_ok = ("CHAIR" in approved) or st.get("final")
+        wiref_ok = "WIREF" in approved
+        submitted = st["submitted"]
+
+        if chair_ok:
+            for n in ("submit_doc","withdraw_doc","approve_wiref_doc","approve_chair_doc","reject_wiref_doc","reject_chair_doc"):
+                drop(n)
+            return actions
+
+        if wiref_ok:
+            drop("submit_doc")
+            drop("withdraw_doc")
+            drop("approve_wiref_doc")
+            # keep chair approve/reject
+            return actions
+
+        if submitted and not wiref_ok:
+            drop("submit_doc")
+            # keep withdraw + wiref approve/reject
+            drop("approve_chair_doc")
+            drop("reject_chair_doc")
+            return actions
+
+        if obj.kind != obj.Kind.AA:
+            drop("print_leaverequest_receipt")
+
+        if obj.kind == obj.Kind.AA:
+            drop("print_receipt")
+
+        if obj.kind != obj.Kind.KM:
+            drop("print_sicknote_receipt")
+
+        if obj.kind == obj.Kind.KM:
+            drop("print_receipt")
+
+        # draft
+        for n in ("withdraw_doc","approve_wiref_doc","approve_chair_doc","reject_wiref_doc","reject_chair_doc"):
+            drop(n)
         return actions
+
+# actions
 
     def print_receipt(self, request, obj):
         ctx = {"doc": obj, "org": OrgInfo.get_solo()}
@@ -399,27 +493,171 @@ class EmploymentDocumentAdmin(
             request,
             f"{obj.kind}_{obj.code or obj.id}.pdf",
         )
+    print_receipt.label = "🧾 " + _("Print document receipt PDF")
+    print_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;",}
 
-    print_receipt.label = "🧾 " + _("Print document receipt")
-    print_receipt.attrs = {"class": "btn btn-block btn-secondary btn-sm"}
 
-    def print_leave_request(self, request, obj):
+    def print_leaverequest_receipt(self, request, obj):
+        from decimal import Decimal, ROUND_HALF_UP
+        from hankosign.utils import seal_signatures_context
+        from django.utils.text import slugify
+        # defensive guard (in case someone hits the URL directly)
+        if obj.kind != obj.Kind.AA:
+            from django.contrib import messages
+            messages.warning(request, _("Leave request is only available for AA documents."))
+            return
+        emp = (
+            Employee.objects.select_related("person_role__person", "person_role__role").get(pk=obj.employee_id)
+        )
+        signatures = seal_signatures_context(obj)
+        # Coalesce None -> 0 for arithmetic
+        daily_minutes = emp.daily_expected_minutes or 0
+        duration_days_incl = getattr(obj, "duration_weekdays_inclusive", None) or 0
+
+        # Minutes total for the leave period
+        leave_amount_minutes = int(daily_minutes) * int(duration_days_incl)
+
+        # Hours (Decimal) with friendly rounding for PDFs
+        def to_hours(minutes: int) -> Decimal:
+            return (Decimal(minutes) / Decimal(60)).quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
+
+        leave_amount_hours = to_hours(leave_amount_minutes)
+        daily_expected_hours = to_hours(int(daily_minutes)) if daily_minutes else Decimal("0.00")
+        ctx = {"doc": obj, "org": OrgInfo.get_solo(), "emp": emp, "person": emp.person_role.person, "role": emp.person_role.role, "leave_amount_m": leave_amount_minutes, "leave_amount_h": leave_amount_hours, "daily_expected_h": daily_expected_hours, "signatures": signatures}
+        
+        slug_code = slugify(obj.code)
+        return render_pdf_response("employees/leaverequest_receipt_pdf.html", ctx, request, filename=f"UA_{obj.code}.pdf",)
+    print_leaverequest_receipt.label = "🧾 " + _("Print leave request receipt PDF")
+    print_leaverequest_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;",}
+
+    def print_sicknote_receipt(self, request, obj):
+        # defensive guard (in case someone hits the URL directly)
+        if obj.kind != obj.Kind.KM:
+            from django.contrib import messages
+            messages.warning(request, _("Leave request is only available for KM documents."))
+            return
+
         ctx = {"doc": obj, "org": OrgInfo.get_solo()}
         s = obj.start_date.strftime("%Y-%m-%d") if obj.start_date else ""
         e = obj.end_date.strftime("%Y-%m-%d") if obj.end_date else ""
         title = f"Urlaubsantrag {s}–{e}" if s and e else f"Urlaubsantrag_{obj.code or obj.id}"
-        return render_pdf_response("employee/docs/leave_request_pdf.html", ctx, request, f"{title}.pdf")
+        return render_pdf_response("employees/sicknote_receipt_pdf.html", ctx, request, f"{title}.pdf")
+    print_sicknote_receipt.label = "🧾 " + _("Print sick note receipt PDF")
+    print_sicknote_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;",}
 
-    print_leave_request.label = "🏖️ " + _("Print leave request PDF")
-    print_leave_request.attrs = {"class": "btn btn-block btn-warning btn-sm"}
+
+    def submit_doc(self, request, obj):
+        from hankosign.utils import state_snapshot, get_action, record_signature
+        st = state_snapshot(obj)
+        if st["submitted"]:
+            messages.info(request, _("Already submitted.")); return
+        action = get_action("SUBMIT:ASS@employees.employmentdocument")
+        if not action: messages.error(request, _("Submission action is not configured.")); return
+        try:
+            record_signature(request.user, action, obj, note=_("Document submitted"))
+        except PermissionDenied as e:
+            messages.error(request, str(e)); return
+        messages.success(request, _("Submitted."))
+    submit_doc.label = _("Submit")
+    submit_doc.attrs = {"class": "btn btn-block btn-warning btn-sm","style": "margin-bottom: 1rem;",}
+
+
+    def withdraw_doc(self, request, obj):
+        from hankosign.utils import state_snapshot, get_action, record_signature
+        st = state_snapshot(obj)
+        if not st["submitted"]:
+            messages.info(request, _("Not submitted.")); return
+        if "WIREF" in st["approved"] or "CHAIR" in st["approved"]:
+            messages.warning(request, _("Cannot withdraw after approvals.")); return
+        action = get_action("WITHDRAW:ASS@employees.employmentdocument")
+        if not action: messages.error(request, _("Withdraw action is not configured.")); return
+        try:
+            record_signature(request.user, action, obj, note=_("Submission withdrawn"))
+        except PermissionDenied as e:
+            messages.error(request, str(e)); return
+        messages.success(request, _("Withdrawn."))
+    withdraw_doc.label = _("Withdraw submission")
+    withdraw_doc.attrs = {"class": "btn btn-block btn-secondary btn-sm","style": "margin-bottom: 1rem;",}
+
+    def approve_wiref_doc(self, request, obj):
+        from hankosign.utils import state_snapshot, get_action, record_signature
+        st = state_snapshot(obj)
+        if not st["submitted"]:
+            messages.warning(request, _("Submit first.")); return
+        if "WIREF" in st["approved"]:
+            messages.info(request, _("Already approved (WiRef).")); return
+        action = get_action("APPROVE:WIREF@employees.employmentdocument")
+        if not action: messages.error(request, _("WiRef approval action is not configured.")); return
+        try:
+            record_signature(request.user, action, obj, note=_("Approved (WiRef)"))
+        except PermissionDenied as e:
+            messages.error(request, str(e)); return
+        messages.success(request, _("Approved (WiRef)."))
+    approve_wiref_doc.label = _("Approve (WiRef)")
+    approve_wiref_doc.attrs = {"class": "btn btn-block btn-success btn-sm","style": "margin-bottom: 1rem;",}
+
+
+    def approve_chair_doc(self, request, obj):
+        from hankosign.utils import state_snapshot, get_action, record_signature
+        st = state_snapshot(obj)
+        if not st["submitted"]:
+            messages.warning(request, _("Submit first.")); return
+        if "CHAIR" in st["approved"]:
+            messages.info(request, _("Already approved (Chair).")); return
+        action = get_action("APPROVE:CHAIR@employees.employmentdocument")
+        if not action: messages.error(request, _("Chair approval action is not configured.")); return
+        try:
+            record_signature(request.user, action, obj, note=_("Approved (Chair)"))
+        except PermissionDenied as e:
+            messages.error(request, str(e)); return
+        messages.success(request, _("Approved (Chair)."))
+    approve_chair_doc.label = _("Approve (Chair)")
+    approve_chair_doc.attrs = {"class": "btn btn-block btn-success btn-sm","style": "margin-bottom: 1rem;",}
+
+
+    def reject_wiref_doc(self, request, obj):
+        from hankosign.utils import state_snapshot, get_action, record_signature
+        st = state_snapshot(obj)
+        if not st["submitted"]:
+            messages.warning(request, _("Nothing to reject (not submitted).")); return
+        if "CHAIR" in st["approved"]:
+            messages.warning(request, _("Already final; cannot reject.")); return
+        action = get_action("REJECT:WIREF@employees.employmentdocument")
+        if not action: messages.error(request, _("WiRef rejection action is not configured.")); return
+        try:
+            record_signature(request.user, action, obj, note=_("Rejected (WiRef)"))
+        except PermissionDenied as e:
+            messages.error(request, str(e)); return
+        messages.success(request, _("Rejected (WiRef)."))
+    reject_wiref_doc.label = _("Reject (WiRef)")
+    reject_wiref_doc.attrs = {"class": "btn btn-block btn-danger btn-sm","style": "margin-bottom: 1rem;",}
+
+
+    def reject_chair_doc(self, request, obj):
+        from hankosign.utils import state_snapshot, get_action, record_signature
+        st = state_snapshot(obj)
+        if not st["submitted"]:
+            messages.warning(request, _("Nothing to reject (not submitted).")); return
+        if "CHAIR" in st["approved"]:
+            messages.warning(request, _("Already final; cannot reject.")); return
+        action = get_action("REJECT:CHAIR@employees.employmentdocument")
+        if not action: messages.error(request, _("Chair rejection action is not configured.")); return
+        try:
+            record_signature(request.user, action, obj, note=_("Rejected (Chair)"))
+        except PermissionDenied as e:
+            messages.error(request, str(e)); return
+        messages.success(request, _("Rejected (Chair)."))
+    reject_chair_doc.label = _("Reject (Chair)")
+    reject_chair_doc.attrs = {"class": "btn btn-block btn-danger btn-sm","style": "margin-bottom: 1rem;",}
 
 
 # =========================
 # Timesheet Admin
 # =========================
 
+
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Subquery, F, Q, BooleanField, ExpressionWrapper
 from hankosign.models import Signature
 
 class TimeSheetStateFilter(admin.SimpleListFilter):
@@ -440,39 +678,66 @@ class TimeSheetStateFilter(admin.SimpleListFilter):
             return qs
 
         ct = ContentType.objects.get_for_model(TimeSheet)
-        sub = Signature.objects.filter(
-            content_type=ct,
-            object_id=OuterRef("pk"),
-            verb="SUBMIT",
-            stage="ASS",
+
+        # Latest SUBMIT and WITHDRAW times (per object)
+        last_submit_at = Subquery(
+            Signature.objects.filter(
+                content_type=ct,
+                object_id=OuterRef("pk"),
+                verb="SUBMIT",
+                stage="ASS",
+            ).order_by("-at", "-id").values("at")[:1]
         )
-        wi = Signature.objects.filter(
-            content_type=ct,
-            object_id=OuterRef("pk"),
-            verb="APPROVE",
-            stage="WIREF",
-        )
-        ch = Signature.objects.filter(
-            content_type=ct,
-            object_id=OuterRef("pk"),
-            verb="APPROVE",
-            stage="CHAIR",
+        last_withdraw_at = Subquery(
+            Signature.objects.filter(
+                content_type=ct,
+                object_id=OuterRef("pk"),
+                verb="WITHDRAW",
+                stage="ASS",
+            ).order_by("-at", "-id").values("at")[:1]
         )
 
+        # Approvals existence
+        has_wiref = Exists(Signature.objects.filter(
+            content_type=ct, object_id=OuterRef("pk"),
+            verb="APPROVE", stage="WIREF"
+        ))
+        has_chair = Exists(Signature.objects.filter(
+            content_type=ct, object_id=OuterRef("pk"),
+            verb="APPROVE", stage="CHAIR"
+        ))
+
         qs = qs.annotate(
-            _has_submit=Exists(sub),
-            _has_wiref=Exists(wi),
-            _has_chair=Exists(ch),
+            _last_submit_at=last_submit_at,
+            _last_withdraw_at=last_withdraw_at,
+            _has_wiref=has_wiref,
+            _has_chair=has_chair,
+        ).annotate(
+            # Submitted iff there is a SUBMIT and (no WITHDRAW or SUBMIT > WITHDRAW)
+            _is_submitted=ExpressionWrapper(
+                Q(_last_submit_at__isnull=False) & (
+                    Q(_last_withdraw_at__isnull=True) | Q(_last_submit_at__gt=F("_last_withdraw_at"))
+                ),
+                output_field=BooleanField(),
+            ),
         )
 
         if v == "draft":
-            return qs.filter(_has_submit=False)
+            # not submitted and no approvals
+            return qs.filter(_is_submitted=False, _has_wiref=False, _has_chair=False)
+
         if v == "submitted":
-            return qs.filter(_has_submit=True, _has_wiref=False, _has_chair=False)
+            # submitted, but no approvals yet
+            return qs.filter(_is_submitted=True, _has_wiref=False, _has_chair=False)
+
         if v == "approved_wiref":
+            # wiref approved, but not final
             return qs.filter(_has_wiref=True, _has_chair=False)
+
         if v == "approved_all":
+            # final chair approval present
             return qs.filter(_has_chair=True)
+
         return qs
 
 
@@ -484,7 +749,7 @@ class TimeSheetAdmin(
     list_display = (
         "employee",
         "period_label",
-        "status_badge",
+        "status_text",
         "minutes_summary",
         "updated_at",
     )
@@ -536,68 +801,99 @@ class TimeSheetAdmin(
         request = getattr(self, "_req", None)   # <— pick up request
         is_locked = self._is_locked(request, obj)
 
+        # ensure PTO year exists (unchanged)
         emp = obj.employee
         anchor = _date(obj.year, obj.month, min(15, 28))
         label_year = EmployeeLeaveYear.pto_label_year_for(emp, anchor)
         EmployeeLeaveYear.ensure_for(emp, label_year)
 
+        # month bounds
         month_start = _date(obj.year, obj.month, 1)
-        lead = (month_start.weekday() - 0) % 7  # Monday=0
-        grid_start = month_start - timedelta(days=lead)
-
-        # Bucket entries per day, but only show selected kinds
+        if obj.month == 12:
+            next_month_start = _date(obj.year + 1, 1, 1)
+        else:
+            next_month_start = _date(obj.year, obj.month + 1, 1)
+        
+        # Bucket entries per day, filtered by kind (unchanged)
         entries_by_day = {}
         qs = obj.entries.all().order_by("date", "id")
         for e in qs:
             if e.kind in show_kinds:
                 entries_by_day.setdefault(e.date, []).append(e)
 
+        # active holidays in this month
         hols = {d for d in obj._active_holidays()
                 if d.year == obj.year and d.month == obj.month}
 
-        cells = []
-        d = grid_start
-        for _ in range(42):
-            evs = entries_by_day.get(d, [])
-            items = [{
-                "id": e.id,
-                "kind": e.kind,
-                "kind_display": e.get_kind_display(),
-                "minutes": int(e.minutes or 0),
-                "comment": e.comment or "",
-            } for e in evs]
+         # --- build ONLY weekday cells (Mon–Fri) with leading spacers ---
+        cells: list[dict] = []
 
-            kind_class = "empty"
-            if d in hols:
-                kind_class = "holiday"
-            elif evs:
-                from collections import Counter
-                top = Counter([e.kind for e in evs]).most_common(1)[0][0]
-                kind_class = {
-                    "WORK": "work",
-                    "LEAVE": "leave",
-                    "SICK": "sick",
-                    "OTHER": "other",
-                    "PUBHOL": "holiday",
-                }.get(top, "other")
+        # 1) find the first weekday *inside this month*
+        first_weekday_date = month_start
+        while first_weekday_date < next_month_start and first_weekday_date.weekday() >= 5:
+            # skip Sat(5)/Sun(6)
+            first_weekday_date += timedelta(days=1)
 
-            cells.append({
-                "date": d,
-                "in_month": (d.month == obj.month),
-                "is_weekend": d.weekday() >= 5,
-                "is_today": d == _date.today(),
-                "is_holiday": d in hols,
-                "items": items,
-                "kind_class": kind_class,
-            })
+        # 2) how many leading spacers? (Mon=0..Fri=4)
+        if first_weekday_date >= next_month_start:
+            start_col = 0  # degenerate month (all weekend) – shouldn't happen, but safe
+        else:
+            start_col = first_weekday_date.weekday()  # 0..6, but here guaranteed 0..4
+
+        for _ in range(start_col):
+            cells.append({"spacer": True})
+
+        # 3) add all Mon–Fri days as cells
+        weekday_count = 0
+        d = first_weekday_date
+        while d < next_month_start:
+            if d.weekday() < 5:  # Mon..Fri
+                evs = entries_by_day.get(d, [])
+                items = [{
+                    "id": e.id,
+                    "kind": e.kind,
+                    "kind_display": e.get_kind_display(),
+                    "minutes": int(e.minutes or 0),
+                    "comment": e.comment or "",
+                } for e in evs]
+
+                kind_class = "empty"
+                if d in hols:
+                    kind_class = "holiday"
+                elif evs:
+                    from collections import Counter
+                    top = Counter([e.kind for e in evs]).most_common(1)[0][0]
+                    kind_class = {
+                        "WORK": "work",
+                        "LEAVE": "leave",
+                        "SICK": "sick",
+                        "OTHER": "other",
+                        "PUBHOL": "holiday",
+                    }.get(top, "other")
+
+                cells.append({
+                    "spacer": False,
+                    "date": d,
+                    "in_month": True,
+                    "is_today": d == _date.today(),
+                    "is_holiday": d in hols,
+                    "items": items,
+                    "kind_class": kind_class,
+                })
+                weekday_count += 1
             d += timedelta(days=1)
 
+        # 4) trailing spacers so the last row fills to 5 columns
+        remainder = (start_col + weekday_count) % 5
+        if remainder:
+            for _ in range(5 - remainder):
+                cells.append({"spacer": True})
+
+        # Labels: Mon–Fri only (compact, locale-agnostic)
+        weekday_labels = ["M", "T", "W", "T", "F"]
+
         month_label = date_format(month_start, "F Y", use_l10n=True)
-        base_monday = _date(2024, 1, 1)  # a Monday
-        weekday_labels = [
-            date_format(base_monday + timedelta(days=i), "D", use_l10n=True)[:1]
-            for i in range(7)
-        ]
+
         ctx = {
             "cal_type": cal_type,
             "title": title,
@@ -606,12 +902,12 @@ class TimeSheetAdmin(
             "cells": cells,
             "timesheet_id": obj.pk,
             "is_locked": is_locked,
-            # IMPORTANT: pass allow_kinds to constrain the modal form choices
             "add_url_base": f'{reverse("admin:employees_timeentry_add")}?allow_kinds={allow_kinds}',
             "ts_change_url": reverse("admin:employees_timesheet_change", args=[obj.pk]),
         }
         html = render_to_string("admin/employees/timesheet_calendar.html", ctx)
         return mark_safe(html)
+
     
     def _is_locked(self, request, obj):
         if not obj:
@@ -631,18 +927,10 @@ class TimeSheetAdmin(
         return f"{obj.year}-{obj.month:02d}"
     
 
-    # temporary update, I would like to do this with bootstrap's table-cols or "universal" ribbons instead of monolithic per-module-badges
     @admin.display(description=_("Status"))
-    def status_badge(self, obj):
-        st = state_snapshot(obj)
-        approved = st["approved"]
-        if st["final"] or "CHAIR" in approved:
-            return format_html('<span class="badge" style="background:#16a34a;color:#fff;">{}</span>', _("Final"))
-        if "WIREF" in approved:
-            return format_html('<span class="badge" style="background:#0ea5e9;color:#fff;">{}</span>', _("Approved (WiRef)"))
-        if st["submitted"]:
-            return format_html('<span class="badge" style="background:#f59e0b;color:#fff;">{}</span>', _("Submitted"))
-        return format_html('<span class="badge" style="background:#6b7280;color:#fff;">{}</span>', _("Draft"))
+    def status_text(self, obj):
+        from hankosign.utils import object_status_span
+        return object_status_span(obj)   # emits <span class="js-state" data-state="...">Label</span>
 
 
     @admin.display(description=_("Minutes"))
@@ -717,11 +1005,10 @@ class TimeSheetAdmin(
         t = int((obj.worked_minutes or 0) + (obj.credit_minutes or 0))
         e = int(obj.expected_minutes or 0)
         d = t - e
-        return format_html(
-            "<pre style='margin:.5rem 0; font-size:12px;'>"
-            "total: {} min\nexpected: {} min\ndelta: {} min</pre>",
-            t, e, d
-        )
+        ctx = {"total": t, "expected": e, "delta": d}
+        html = render_to_string("admin/employees/timesheet_totals.html", ctx)
+        return mark_safe(html)
+
 
 
     @admin.display(description=_("Signatures"))
@@ -733,7 +1020,7 @@ class TimeSheetAdmin(
         return False
 
 
-    change_actions = ("submit_timesheet", "withdraw_timesheet", "approve_wiref", "approve_chair", "reject_wiref", "reject_chair")
+    change_actions = ("submit_timesheet", "withdraw_timesheet", "approve_wiref", "approve_chair", "reject_wiref", "reject_chair", "lock_timesheet", "unlock_timesheet", "print_timesheet",)
 
     def get_change_actions(self, request, object_id, form_url):
         actions = list(super().get_change_actions(request, object_id, form_url))
@@ -747,16 +1034,26 @@ class TimeSheetAdmin(
 
         st = state_snapshot(obj)
         approved = st["approved"]
+        explicit_locked = st["explicit_locked"]
         chair_ok = "CHAIR" in approved or st["final"]
         wiref_ok = "WIREF" in approved
         submitted = st["submitted"]
+
+        # Lock/Unlock visibility
+        if explicit_locked:
+            drop("lock_timesheet")
+        else:
+            drop("unlock_timesheet")
+        # (Optionally: only show lock if chair_ok, i.e. final milestone reached)
+        if not chair_ok:
+            drop("lock_timesheet")
 
         if chair_ok:
             for n in ("submit_timesheet","withdraw_timesheet","approve_wiref","approve_chair","reject_wiref","reject_chair"):
                 drop(n)
             return actions
 
-        if wiref_ok and not chair_ok:
+        if wiref_ok:
             drop("submit_timesheet")
             drop("withdraw_timesheet")
             drop("approve_wiref")
@@ -775,28 +1072,40 @@ class TimeSheetAdmin(
             drop(n)
         return actions
 
+    
+    from datetime import date as _date
+    def print_timesheet(self, request, obj):
+        from hankosign.utils import seal_signatures_context
+        emp = (
+            Employee.objects.select_related("person_role__person", "person_role__role").get(pk=obj.employee_id)
+        )
+        anchor = _date(obj.year, obj.month, min(28, 15))  # mid-month anchor
+        ly_label = EmployeeLeaveYear.pto_label_year_for(emp, anchor)
+        ly = EmployeeLeaveYear.ensure_for(emp, ly_label)
+        entries = obj.entries.order_by("date", "id")
 
+        # Build data for the seal
+        signatures = seal_signatures_context(obj)
 
-    def print_pdf(self, request, obj):
-        ctx = {"ts": obj, "org": OrgInfo.get_solo()}
+        ctx = {
+            "ts": obj,
+            "org": OrgInfo.get_solo(),
+            "employee": emp,
+            "person": emp.person_role.person,
+            "role": emp.person_role.role,
+            "leave_year": ly,
+            "leave_year_label": ly_label,
+            "entries": entries,
+            "signatures": signatures,
+        }
         return render_pdf_response(
-            "employee/timesheet_pdf.html",
+            "employees/timesheet_pdf.html",
             ctx,
             request,
-            f"timesheet_{obj.employee_id}_{obj.year}-{obj.month:02d}.pdf",
+            f"JOURNAL_{emp.person_role.person.last_name}_{obj.year}-{obj.month:02d}.pdf",
         )
-
-    print_pdf.label = "🖨️ " + _("Print Timesheet PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm","style": "margin-bottom: 1rem;",}
-
-
-    @admin.action(description=_("Print selected as Timesheet overview PDF"))
-    def export_selected_pdf(self, request, queryset):
-        rows = queryset.select_related("employee__person_role__person", "employee__person_role__role").order_by(
-            "-year", "-month"
-        )
-        ctx = {"rows": rows, "org": OrgInfo.get_solo()}
-        return render_pdf_response("employee/timesheets_list_pdf.html", ctx, request, "timesheets_selected.pdf")
+    print_timesheet.label = "🖨️ " + _("Print Timesheet PDF")
+    print_timesheet.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;",}
 
 
     # --- workflow transitions ---
@@ -824,7 +1133,6 @@ class TimeSheetAdmin(
             return
 
         messages.success(request, _("Timesheet submitted."))
-
     submit_timesheet.label = _("Submit")
     submit_timesheet.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
 
@@ -854,7 +1162,6 @@ class TimeSheetAdmin(
             return
 
         messages.success(request, _("Submission withdrawn."))
-
     withdraw_timesheet.label = _("Withdraw submission")
     withdraw_timesheet.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;",}
 
@@ -884,7 +1191,6 @@ class TimeSheetAdmin(
             return
 
         messages.success(request, _("Approved by WiRef."))
-
     approve_wiref.label = _("Approve (WiRef)")
     approve_wiref.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-bottom: 1rem;",}
 
@@ -914,7 +1220,6 @@ class TimeSheetAdmin(
             return
 
         messages.success(request, _("Approved by Chair."))
-
     approve_chair.label = _("Approve (Chair)")
     approve_chair.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-bottom: 1rem;",}
 
@@ -943,7 +1248,6 @@ class TimeSheetAdmin(
             return
 
         messages.success(request, _("Rejected by WiRef."))
-
     reject_wiref.label = _("Reject (WiRef)")
     reject_wiref.attrs = {"class": "btn btn-block btn-danger btn-sm", "style": "margin-bottom: 1rem;",}
 
@@ -973,9 +1277,54 @@ class TimeSheetAdmin(
             return
 
         messages.success(request, _("Rejected by Chair."))
-
     reject_chair.label = _("Reject (Chair)")
     reject_chair.attrs = {"class": "btn btn-block btn-danger btn-sm", "style": "margin-bottom: 1rem;",}
+
+
+    # LOCK Timesheet (CHAIR or WIREF)
+    def lock_timesheet(self, request, obj):
+        st = state_snapshot(obj)
+        if st["explicit_locked"]:
+            messages.info(request, _("Already locked."))
+            return
+        if not ("CHAIR" in st["approved"] or st["final"]):
+            messages.warning(request, _("Locking is only available after final approval."))
+            return
+
+        action = get_action("LOCK:-@employees.timesheet")
+        if not action:
+            messages.error(request, _("Lock action is not configured."))
+            return
+
+        try:
+            record_signature(request.user, action, obj, note=_("Timesheet locked"))
+        except PermissionDenied as e:
+            messages.error(request, str(e)); return
+
+        messages.success(request, _("Locked."))
+    lock_timesheet.label = _("Lock")
+    lock_timesheet.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;"}
+
+
+    def unlock_timesheet(self, request, obj):
+        st = state_snapshot(obj)
+        if not st["explicit_locked"]:
+            messages.info(request, _("Not locked."))
+            return
+
+        action = get_action("UNLOCK:-@employees.timesheet")
+        if not action:
+            messages.error(request, _("Unlock action is not configured."))
+            return
+
+        try:
+            record_signature(request.user, action, obj, note=_("Timesheet unlocked"))
+        except PermissionDenied as e:
+            messages.error(request, str(e)); return
+
+        messages.success(request, _("Unlocked."))
+    unlock_timesheet.label = _("Unlock")
+    unlock_timesheet.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;"}
 
 
     def get_readonly_fields(self, request, obj=None):

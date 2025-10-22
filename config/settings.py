@@ -216,6 +216,7 @@ JAZZMIN_SETTINGS = {
         "people.HistoricalRoleTransitionReason",
         "finances.HistoricalFiscalYear",
         "finances.HistoricalPaymentPlan",
+        "hankosign.Signature",
         "employees.HistoricalEmployee",
         "employees.HistoricalEmploymentDocument",
         "employees.HistoricalHolidayCalendar",

@@ -1,0 +1,79 @@
+/* inserts_standard.css — minimal, theme-safe info inserts */
+
+:root {
+  --ins-bg:            color-mix(in srgb, Canvas 96%, transparent);
+  --ins-fg:            CanvasText;
+  --ins-border:        color-mix(in srgb, Highlight 35%, CanvasText 20%);
+  --ins-accent:        color-mix(in srgb, Highlight 45%, CanvasText 10%);
+  --ins-muted:         color-mix(in srgb, CanvasText 60%, transparent);
+  --ins-radius:        12px;
+  --ins-pad:           0.75rem 0.9rem;
+  --ins-gap:           0.5rem;
+  --ins-code-bg:       color-mix(in srgb, CanvasText 5%, Canvas 95%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ins-bg:     color-mix(in srgb, Canvas 92%, transparent);
+    --ins-border: color-mix(in srgb, Highlight 60%, CanvasText 25%);
+    --ins-accent: color-mix(in srgb, Highlight 65%, CanvasText 15%);
+    --ins-code-bg: color-mix(in srgb, CanvasText 12%, Canvas 88%);
+  }
+}
+
+.insert {
+  background: var(--ins-bg);
+  color: var(--ins-fg);
+  border: 1px solid var(--ins-border);
+  border-left: 4px solid var(--ins-accent);
+  border-radius: var(--ins-radius);
+  padding: var(--ins-pad);
+  margin: 0.5rem 0;
+  display: block;
+}
+
+.insert *:last-child { margin-bottom: 0; }
+
+.insert__title {
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  line-height: 1.2;
+}
+
+.insert__meta {
+  font-size: 0.875rem;
+  color: var(--ins-muted);
+  margin: 0 0 0.25rem 0;
+}
+
+.insert__body { 
+  display: grid;
+  gap: var(--ins-gap);
+  font-size: 0.95rem;
+}
+
+/* Optional variants (minimal color nudge, still theme-safe) */
+.insert--info    { --ins-accent: color-mix(in srgb, deepskyblue 55%, var(--ins-accent)); }
+.insert--success { --ins-accent: color-mix(in srgb, mediumseagreen 55%, var(--ins-accent)); }
+.insert--warn    { --ins-accent: color-mix(in srgb, goldenrod 55%, var(--ins-accent)); }
+.insert--danger  { --ins-accent: color-mix(in srgb, crimson 55%, var(--ins-accent)); }
+
+/* Small utilities */
+.insert code, .insert pre {
+  background: var(--ins-code-bg);
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+}
+.insert pre {
+  padding: 0.5rem 0.6rem;
+  overflow: auto;
+}
+
+/* Motion-respectful, subtle hover (if used on clickable blocks) */
+@media (prefers-reduced-motion: no-preference) {
+  .insert.is-hoverable { transition: border-color .15s ease, box-shadow .15s ease; }
+  .insert.is-hoverable:hover {
+    border-color: var(--ins-accent);
+    box-shadow: 0 1px 0.5rem color-mix(in srgb, var(--ins-accent) 18%, transparent);
+  }
+}

@@ -1,90 +1,145 @@
+/* Card shells */
 .ts-card-wrk{background:var(--uh-surface,#2b3642);border:1px solid var(--uh-border,#334155);border-radius:12px;padding:24px}
-.ts-card-pto{background:var(--uh-surface,#2c2424);border:2px solid var(--uh-border,#D3D3D3);border-radius:12px;padding:24px}
-.ts-title{font-size:1.25rem;font-weight:600;margin:0 0 12px}
-.ts-weekday-row{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:6px 0 8px}
-.ts-weekday-row>div{text-align:center;font-weight:600;opacity:.85}
-.ts-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-.ts-cell{display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-start;min-height:76px;padding:8px 10px;border-radius:10px;text-decoration:none;color:inherit;border:1px solid var(--uh-border,#334155);background:var(--uh-tile,#1f2937)}
-.ts-cell:hover{outline:2px solid #f39c12;outline-offset:0}
-.ts-daynum{font-weight:700;opacity:.9}
-.ts-total{margin-top:auto;font-size:12px;color:#ff8a3d}
-.ts-out{opacity:.35;background:transparent;border-style:dashed}
-.ts-work{border-width: 2px;border-color:#1f6241;}
-.ts-leave{border-width: 2px; border-style:dashed; border-color:#745b0f}
-.ts-sick{border-width: 2px; border-style:dotted; border-color:purple;}
-.ts-other{border-width: 2px; border-style:dashed; border-color:whitesmoke;}
-.ts-holiday{border-width: 2px; border-style: double; background: #5a1f1f; border-color:white;}
-.ts-weekend.ts-cell{filter:grayscale()}
-.ts-weekend { opacity: .75; }
-.ts-weekend .ts-dayhead .ts-daynum { font-style: italic;}
-.ts-today{box-shadow:0 0 0 2px #f39c12 inset}
-.ts-legend{display:flex;gap:8px;margin-top:12px}
-.chip{display:inline-block;padding:4px 8px;font-size:12px;}
-.chip-work{background:#163c2a}.chip-leave{background:#4a380a}.chip-sick{background:purple}.chip-holiday{background:#5a1f1f}.chip-other{background:slategray}
+.ts-card-pto{background:var(--uh-surface,#2c2424);border:1px solid var(--uh-border,#3b3b3b);border-radius:12px;padding:24px}
 
-/* Head row inside each cell */
-.ts-cell .ts-dayhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem}
-.ts-cell .ts-add{
+/* Title */
+.ts-title{font-size:1.25rem;font-weight:600;margin:0 0 12px}
+.ts-title .ts-meta{margin-left:.5rem;font-size:.8rem;opacity:.65}
+
+/* Week headers (Mon–Fri) */
+.ts-weekday-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:6px 0 8px}
+.ts-weekday-row>div{text-align:center;font-weight:600;opacity:.85}
+
+/* Month grid (Mon–Fri only) */
+.ts-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+
+/* Day tiles */
+.ts-cell{
+  display:flex;flex-direction:column;
+  align-items:stretch;               /* <— stretch children horizontally */
+  justify-content:flex-start;
+  min-height:92px;
+  padding:10px;
+  border-radius:10px;
+  text-decoration:none;color:inherit;
+  border:1px solid var(--uh-border,#334155);
+  background:var(--uh-tile,#1f2937);
+}
+.ts-cell:hover{outline:2px solid rgba(243,156,18,.85);outline-offset:0}
+.ts-spacer{visibility:hidden;border:none !important;background:transparent}
+
+/* visual accents per dominant kind */
+.ts-work  {border-width:2px;border-color:rgba(45,213,135,.45)}
+.ts-leave {border-width:2px;border-style:dashed;border-color:rgba(229,200,95,.45)}
+.ts-sick  {border-width:2px;border-style:dotted;border-color:rgba(255,115,115,.45)}
+.ts-other {border-width:2px;border-style:dashed;border-color:rgba(148,163,184,.35)}
+.ts-holiday{border-width:2px;border-style:double;border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.02)}
+.ts-today{box-shadow:0 0 0 2px rgba(243,156,18,.85) inset}
+
+/* Day header inside tile */
+.ts-dayhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
+.ts-daynum{font-weight:700;opacity:.9}
+
+/* Add button */
+.ts-add{
   display:inline-flex;align-items:center;justify-content:center;
   width:1.45rem;height:1.45rem;border:1px solid rgba(255,255,255,.15);
-  border-radius:.4rem;text-decoration:none;opacity:.8;font-weight:600;line-height:1
+  border-radius:.45rem;text-decoration:none;opacity:.85;font-weight:700;line-height:1
 }
-.ts-cell .ts-add:hover{opacity:1}
+.ts-add:hover{opacity:1}
+.ts-add-disabled{opacity:.35;cursor:not-allowed}
 
-/* Chips container – let the row grow with content */
+/* Chips list — stack vertically, grow with content */
 .ts-chips{
-  display:flex;
-  flex-direction:column;
-  gap:.35rem;
-  margin:0;
-  padding:0;
-  list-style:none;
-  /* remove the old max-height/overflow rules */
+  display:flex;flex-direction:column;gap:.4rem;
+  margin:0;padding:0;list-style:none;
+  align-self:stretch;   /* <— ensure full tile width */
 }
 
-/* Each chip wraps onto multiple lines */
+/* Each chip (li) */
+.ts-chips .chip{
+  display:block;margin:0;padding:0;background:transparent;width:100%;
+}
+
+/* Clickable chip surface */
 .ts-chips .chip a{
-  display:block;
-  padding:.35rem .5rem;
+  display:block;width:100%;
+  padding:.5rem .6rem;
   border-radius:.6rem;
   border:1px solid rgba(255,255,255,.12);
   text-decoration:none;
-
-  /* turn OFF single-line/ellipsis */
-  white-space:normal;              /* was: nowrap */
-  overflow:visible;                /* was: hidden/ellipsis */
-  text-overflow:clip;
-
-  /* allow breaks anywhere so long comments don’t overflow */
-  overflow-wrap:anywhere;          /* a.k.a. word-break: break-word */
-  line-height:1.25;
+  white-space:normal;overflow:visible;text-overflow:clip;
+  overflow-wrap:anywhere;line-height:1.25;
 }
 
-/* keep the little “+” button from shifting when chips wrap */
-.ts-cell .ts-dayhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem}
-.ts-cell .ts-add{width:1.45rem;height:1.45rem;border:1px solid rgba(255,255,255,.15);border-radius:.4rem;
-  display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-weight:600;opacity:.8}
-.ts-cell .ts-add:hover{opacity:1}
+/* Comment text inside chip (optional second line) */
+.cmt{display:block;margin-top:.15rem;opacity:.9;overflow:hidden;text-overflow:ellipsis}
 
-/* Kind colors (dark theme friendly) */
-.ts-chips .chip.k-work a{background:#163a29}
-.ts-chips .chip.k-leave a{background:#3b2a10}
-.ts-chips .chip.k-sick a{background:#3b1919}
-.ts-chips .chip.k-holiday a{background:#28303a}
-.ts-chips .chip.k-other a{background:whitesmoke}
-
-/* PTO box layout */
-.pto-grid{
-  display:grid;
-  grid-template-columns: auto 1fr;
-  gap: 6px 12px;
-  margin-top: 6px;
+/* ---------- Theme-agnostic chip colors ----------
+   Built from hue variables with alpha overlays so they read well
+   on light/dark palettes. Override the --chip-*-h vars per theme if needed.
+*/
+:root{
+  --chip-work-h:150;    /* greenish */
+  --chip-leave-h:40;    /* amber */
+  --chip-sick-h:0;      /* red */
+  --chip-holiday-h:220; /* slate/blue */
+  --chip-other-h:210;   /* grayish */
 }
-.pto-notes{ margin-top:10px; font-size:.95rem; opacity:.95 }
-.pto-notes .note{ opacity:.9 }
-.pto-neg, .pto-notes .neg{ color:#b91c1c; font-weight:600 }
 
-/* Generic infobox rows reused by PTO & Worktime */
+/* Shared surface + readable text */
+.ts-chips .chip a{
+  color:rgba(255,255,255,.92);
+  background:rgba(255,255,255,.03);
+}
+
+/* Work */
+.ts-chips .chip.k-work a{
+  background:hsla(var(--chip-work-h),35%,22%,.85);
+  border-color:hsla(var(--chip-work-h),45%,45%,.35);
+}
+
+/* Leave */
+.ts-chips .chip.k-leave a{
+  background:hsla(var(--chip-leave-h),45%,23%,.85);
+  border-color:hsla(var(--chip-leave-h),55%,48%,.35);
+  color:rgba(255,255,255,.94);
+}
+
+/* Sick */
+.ts-chips .chip.k-sick a{
+  background:hsla(var(--chip-sick-h),45%,22%,.82);
+  border-color:hsla(var(--chip-sick-h),60%,55%,.30);
+}
+
+/* Public Holiday */
+.ts-chips .chip.k-holiday a{
+  background:hsla(var(--chip-holiday-h),30%,22%,.85);
+  border-color:hsla(var(--chip-holiday-h),35%,60%,.30);
+}
+
+/* Other */
+.ts-chips .chip.k-other a{
+  background:hsla(var(--chip-other-h),15%,26%,.78);
+  border-color:hsla(var(--chip-other-h),10%,70%,.28);
+}
+
+/* Legend chips (small pills) */
+.ts-legend{display:flex;gap:8px;margin-top:12px}
+.chip{display:inline-block;padding:4px 8px;font-size:12px;border-radius:.5rem}
+.chip-work{background:hsla(var(--chip-work-h),35%,22%,.9)}
+.chip-leave{background:hsla(var(--chip-leave-h),45%,23%,.9)}
+.chip-sick{background:hsla(var(--chip-sick-h),45%,22%,.9)}
+.chip-holiday{background:hsla(var(--chip-holiday-h),30%,22%,.9)}
+.chip-other{background:hsla(var(--chip-other-h),15%,26%,.9)}
+.chip,.chip *{color:rgba(255,255,255,.9)}
+
+/* PTO & worktime info blocks (unchanged, tidied) */
+.pto-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin-top:6px}
+.pto-notes{margin-top:10px;font-size:.95rem;opacity:.95}
+.pto-notes .note{opacity:.9}
+.pto-neg,.pto-notes .neg{color:#b91c1c;font-weight:600}
+
 .ts-infobox .row{display:flex;justify-content:space-between;gap:12px;margin:.25rem 0}
 .ts-infobox .lbl{opacity:.9}
 .ts-infobox .val{font-weight:600}
@@ -93,8 +148,3 @@
 .ts-infobox .note.neg{color:#ef4444}
 .ts-infobox .note.pos{color:#10b981}
 .ts-infobox .note.muted{opacity:.7}
-
-.cmt {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}

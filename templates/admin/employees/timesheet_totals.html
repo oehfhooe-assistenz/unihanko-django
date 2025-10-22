@@ -1,0 +1,14 @@
+{# admin/employees/timesheet_totals.html #}
+{% load i18n static %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'admin/inserts_standard.css' %}">
+
+<div class="insert insert--info">
+  <div class="insert__title">{% trans "Totals" %}</div>
+  <div class="insert__meta">{{ month_label|default:'' }}</div>
+  <div class="insert__body">
+    <pre>{% trans "Total" %}: {{ total }} min
+{%trans "Expected" %}: {{ expected }} min
+Δ {{ delta }} min</pre>
+  </div>
+</div>

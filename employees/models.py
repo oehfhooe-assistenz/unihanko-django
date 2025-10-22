@@ -252,13 +252,17 @@ class Employee(models.Model):
     )
 
     # Optional overrides for employment window
-    start_override = models.DateField(_("Employment start (override)"), null=True, blank=True)
-    end_override   = models.DateField(_("Employment end (override)"),   null=True, blank=True)
+    start_override = models.DateField(_("Employment start (override)"), null=True, blank=True, help_text=_("Start of employment. Override in case of misalignment with assigned Role."))
+    end_override   = models.DateField(_("Employment end (override)"),   null=True, blank=True, help_text=_("End of employment. Override in case of misalignment with assigned Role."))
     is_active = models.BooleanField(_("Active"), default=True)
 
     annual_leave_days_base = models.PositiveSmallIntegerField(_("Annual leave days (base)"), default=25, help_text=_("Base days per PTO year (for a 5-day-week; legal standard: 25)"))
     annual_leave_days_extra = models.PositiveSmallIntegerField(_("Extra leave days"), default=0, help_text=_("Additional annual days (e.g. disability, agreements)."))
     leave_reset_override = models.DateField(_("PTO reset date override"), null=True, blank=True, help_text=_("If empty, PTO year resets on Jan 1. If set, PTO year starts each year on this month/day."))
+
+    insurance_no = models.CharField(_("Social Insurance number"), null=True, max_length=40, blank=True, help_text=_("Austrian or international social insurance no."))
+
+    dob = models.DateField(_("Date of birth"), blank=True, null=True, help_text=_("Date of birth"))
 
     notes = models.TextField(_("Notes"), blank=True)
 
@@ -308,6 +312,7 @@ class Employee(models.Model):
     def daily_expected_minutes(self) -> int:
         # 5-day week assumption
         return int(Decimal(self.weekly_minutes) / Decimal(5))
+    
 
     def saldo_as_hhmm(self) -> str:
         return minutes_to_hhmm(self.saldo_minutes)
@@ -433,18 +438,20 @@ class EmploymentDocument(models.Model):
     employee = models.ForeignKey(
         Employee, on_delete=models.PROTECT, related_name="documents", verbose_name=_("Employee")
     )
-    kind = models.CharField(_("Kind"), max_length=2, choices=Kind.choices)
+    kind = models.CharField(_("Kind"), max_length=2, choices=Kind.choices, help_text=_("Type of document."))
 
-    title = models.CharField(_("Title/Subject"), max_length=160, blank=True)
-    details = models.TextField(_("Details / body"), blank=True)
+    title = models.CharField(_("Title/Subject"), max_length=160, blank=True, help_text=_("Title of document (e.g. leave request from ... to)."))
+    details = models.TextField(_("Details / body"), blank=True, help_text=_("Detailed description or verbatim of the document."))
 
     # Optional date window (e.g. leave/sick span)
-    start_date = models.DateField(_("Start"), null=True, blank=True)
-    end_date   = models.DateField(_("End"),   null=True, blank=True)
+    start_date = models.DateField(_("Start"), null=True, blank=True, help_text=_("Start date (e.g. of the sick note, the leave request). Leave blank if none."))
+    end_date   = models.DateField(_("End"),   null=True, blank=True, help_text=_("Start date (e.g. of the sick note, the leave request). Leave blank if none or without set end."))
 
     # Document lifecycle
-    is_active = models.BooleanField(_("Active"), default=True)
-    pdf_file  = models.FileField(_("PDF file (optional)"), upload_to="employee/docs/%Y/%m/", null=True, blank=True)
+    is_active = models.BooleanField(_("Active"), default=True, help_text=_("Set if the document is still active."))
+    pdf_file  = models.FileField(_("PDF file"), upload_to="employee/docs/%Y/%m/", null=True, blank=True, help_text=_("Optional PDF file (e.g. the contract or agreement)."))
+
+    relevant_third_party = models.CharField(_("Relevant third party"), max_length=160, blank=True, help_text=_("Name or identifier of relevant third party (e.g. health insurance, accounting firm, ...). Used for PDF receipts. Optional."))
 
     # Read-only internal code (KIND_createdate_person_lastname or fallback to id)
     code = models.CharField(_("Code"), max_length=80, unique=True, blank=True, help_text=_("Auto-generated."))
@@ -494,12 +501,44 @@ class EmploymentDocument(models.Model):
             code = f"{base}-{seq}"
         return code
 
+
     def save(self, *args, **kwargs):
         if not self.code:
             self.code = self._generate_code()
         super().save(*args, **kwargs)
 
 
+    @property
+    def duration_days(self) -> int | None:
+        """Exclusive span: end - start in days. Returns None if incomplete."""
+        if not self.start_date or not self.end_date:
+            return None
+        return (self.end_date - self.start_date).days
+
+
+    @property
+    def duration_days_inclusive(self) -> int | None:
+        if not self.start_date or not self.end_date:
+            return None
+        return (self.end_date - self.start_date).days + 1
+    
+
+    @property
+    def duration_weekdays(self) -> int | None:
+        from core.utils.weekday_helper import weekdays_between
+        """exclusive span"""
+        if not self.start_date or not self.end_date:
+            return None
+        return weekdays_between(self.start_date, self.end_date, inclusive=False)
+
+
+    @property
+    def duration_weekdays_inclusive(self) -> int | None:
+        from core.utils.weekday_helper import weekdays_between
+        """exclusive span"""
+        if not self.start_date or not self.end_date:
+            return None
+        return weekdays_between(self.start_date, self.end_date, inclusive=True)
 # ------------------------------
 # Timesheets
 # ------------------------------
@@ -634,7 +673,7 @@ class TimeSheet(models.Model):
         if not creating:
             self.recompute_aggregates(commit=True)
 
-
+from hankosign.utils import state_snapshot
 class TimeEntry(models.Model):
     class Kind(models.TextChoices):
         WORK = "WORK", _("Work")
@@ -683,6 +722,11 @@ class TimeEntry(models.Model):
     def clean(self):
         super().clean()
         errors = {}
+
+        # ⬇️ NEW: prevent any add/change when parent is locked
+        ts = self.timesheet if self.timesheet_id else None
+        if ts and state_snapshot(ts)["explicit_locked"]:
+            errors["timesheet"] = _("Timesheet is locked; entries cannot be modified.")
 
         # ---- normalize seconds so HH:MM works cleanly
         if self.start_time:

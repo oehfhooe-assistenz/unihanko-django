@@ -260,3 +260,135 @@ def state_snapshot(obj) -> dict:
         "locked": locked,
         "explicit_locked": explicit_locked,
     }
+
+
+from django.utils.translation import gettext_lazy as _
+
+def object_status(obj, *, final_stage="CHAIR", tier1_stage="WIREF"):
+    """
+    Return a normalized status for any HankoSign-driven object.
+
+    Priority (highest → lowest):
+      locked > final-approved > final-rejected > tier1-rejected > tier1-approved > submitted > draft
+
+    Args:
+      final_stage: stage name that means the 'final' approver (default "CHAIR")
+      tier1_stage: stage name for the first approver tier (default "WIREF")
+
+    Returns:
+      dict(code=str, label=str)
+
+    Codes (stable for CSS/data-state):
+      draft | submitted | approved-tier1 | final | rejected-tier1 | rejected-final | locked
+    """
+    st = state_snapshot(obj)
+
+    approved = st.get("approved", set()) or set()
+    rejected = st.get("rejected", set()) or set()
+
+    # 1) explicit lock always wins
+    if st.get("explicit_locked"):
+        return {"code": "locked", "label": _("Locked")}
+
+    # 2) final approve / reject
+    if final_stage in approved or st.get("final"):
+        return {"code": "final", "label": _("Final")}
+    if final_stage in rejected:
+        return {"code": "rejected-final", "label": _("Rejected (Final)")}
+
+    # 3) tier1 approve / reject
+    if tier1_stage in rejected:
+        return {"code": "rejected-tier1", "label": _("Rejected (WiRef)")}
+    if tier1_stage in approved:
+        return {"code": "approved-tier1", "label": _("Approved (WiRef)")}
+
+    # 4) submitted vs draft
+    if st.get("submitted"):
+        return {"code": "submitted", "label": _("Submitted")}
+
+    return {"code": "draft", "label": _("Draft")}
+
+
+def object_status_span(obj, *, final_stage="CHAIR", tier1_stage="WIREF"):
+    """
+    Convenience for admin list columns: emits the <span> your CSS targets.
+    """
+    s = object_status(obj, final_stage=final_stage, tier1_stage=tier1_stage)
+    # NOTE: keep 'js-state' and 'data-state' stable across modules
+    from django.utils.html import format_html
+    return format_html(
+        '<span class="js-state" data-state="{}">{}</span>',
+        s["code"], s["label"]
+    )
+
+
+# ---------- Attestation Seal helpers (PDF) ----------
+
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+
+# Human label for each verb/stage you currently use
+_ACTION_LABELS = {
+    ("SUBMIT",   "ASS"):   _("Submit"),
+    ("WITHDRAW", "ASS"):   _("Withdraw"),
+    ("APPROVE",  "WIREF"): _("Approve (WiRef)"),
+    ("REJECT",   "WIREF"): _("Reject (WiRef)"),
+    ("APPROVE",  "CHAIR"): _("Approve (Chair)"),
+    ("REJECT",   "CHAIR"): _("Reject (Chair)"),
+    ("LOCK",     ""):      _("Lock"),
+    ("UNLOCK",   ""):      _("Unlock"),
+}
+
+def action_display(sig: Signature) -> str:
+    """Return the human label for a signature's action."""
+    stage = (sig.stage or "").upper()
+    return _ACTION_LABELS.get((sig.verb.upper(), stage),
+                              f"{sig.verb.title()} ({stage or '-'})")
+
+def _short_sig_id(sig: Signature) -> str:
+    """
+    Produce a stable short token for display.
+    Prefer Signature.signature_id (if present), else fall back to DB id.
+    We take the last 8 hex chars and format XXXX-XXXX.
+    """
+    base = (getattr(sig, "signature_id", None) or str(sig.id) or "").replace("-", "")
+    # ensure we have hex-ish chars; fallback to whole string if very short
+    s = "".join(ch for ch in base if ch.isalnum()).upper()
+    if len(s) < 8:
+        return s or "—"
+    tail = s[-8:]
+    return f"{tail[:4]}-{tail[4:]}"
+
+
+def seal_signatures_context(obj, *, tz=None) -> list[dict]:
+    """
+    Return a list of signatures for the HankoSign Attestation Seal.
+    Each item has: who, action, when, sig_id_short.
+    """
+    if not obj or not getattr(obj, "pk", None):
+        return []
+
+    ct = ContentType.objects.get_for_model(obj.__class__)
+    rows = (
+        Signature.objects
+        .filter(content_type=ct, object_id=str(obj.pk))
+        .select_related("signatory", "signatory__person_role", "signatory__person_role__person", "action")
+        .order_by("at", "id")
+    )
+
+    out = []
+    for s in rows:
+        who = getattr(s.signatory, "display_name", None) or _("(unknown)")
+        verb = (s.verb or "").upper()
+        stage = (s.stage or "").upper()
+        action_label = f"{verb}/{stage or '-'}"
+        when_str = timezone.localtime(s.at, tz or timezone.get_current_timezone()).strftime("%Y-%m-%d %H:%M") if s.at else "—"
+        sig_id_short = (s.signature_id or str(s.id) or "")[:12]
+        out.append({
+            "who": who,
+            "action": action_label,
+            "when": when_str,
+            "sig_id_short": sig_id_short,
+        })
+    return out
+

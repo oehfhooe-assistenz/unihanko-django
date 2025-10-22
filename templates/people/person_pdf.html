@@ -97,14 +97,11 @@ border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { pos
 <p class="text-muted">{% trans "No assignments." %}</p>
 {% endif %}
 
-<h3 style="margin:10px 0 6px 0;">{% trans "Important notice" %}</h3>
-<div>
-    <small>
-      {% blocktrans trimmed %}
-      This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited.
-      If accompanied by a valid electronic signature, this document may constitute a temporary certification of affiliation with the students’ union under HSG 2014.
-      {% endblocktrans %}
-    </small>
+<div style="color: (--muted)">
+<h4 style="margin:14px 0 6px 0; text-align: center; font-size: 10px;">{% trans "Important notice" %}</h4>
+<p style="font-size:6px; text-align: center;">
+    {% trans "This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited. If accompanied by a valid electronic signature, this document may constitute a temporary certification of affiliation with the students’ union under HSG 2014." %}
+</p>
 </div>
 
 <h3 style="margin:12px 0 6px 0;">{% trans "Signature" %}</h3>

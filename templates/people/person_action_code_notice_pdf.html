@@ -65,13 +65,10 @@ border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { pos
     </div>
 </section>
 
-<h3 style="margin:0 0 4mm 0;">{% trans "Important notice" %}</h3>
-<div>
-    <small>
-      {% blocktrans trimmed %}
-      This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited.
-      {% endblocktrans %}
-    </small>
+<div style="color: (--muted)">
+<h4 style="margin:14px 0 6px 0; text-align: center; font-size: 10px;">{% trans "Important notice" %}</h4>
+<p style="font-size:6px; text-align: center;">
+    {% trans "This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited." %}
+</p>
 </div>
-
 {% endblock %}

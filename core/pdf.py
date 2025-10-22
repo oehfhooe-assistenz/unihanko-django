@@ -3,6 +3,9 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
 from weasyprint import HTML
+from urllib.parse import quote
+from django.utils.http import http_date
+import time
 
 def render_pdf_response(template, context, request, filename, download=False, print_ref=None):
     # enrich context (available in base.html)
@@ -18,5 +21,12 @@ def render_pdf_response(template, context, request, filename, download=False, pr
 
     resp = HttpResponse(pdf, content_type="application/pdf")
     disp = "attachment" if download else "inline"
-    resp["Content-Disposition"] = f'{disp}; filename="{filename}"'
+    # RFC 6266 / 5987: add filename* for UTF-8 and better browser support
+    safe = filename.replace('"', '')  # keep it boring
+    resp["Content-Disposition"] = (
+        f'{disp}; filename="{safe}"; filename*=UTF-8\'\'{quote(safe)}'
+    )
+    resp["X-Content-Type-Options"] = "nosniff"
+    resp["Cache-Control"] = "private, max-age=10, must-revalidate"
+    resp["Expires"] = http_date(time.time() + 180) 
     return resp

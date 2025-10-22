@@ -1,0 +1,65 @@
+/* Scoped styles — safe for PDF, light/dark friendly */
+.hs-seal {
+  display: grid;
+  grid-template-columns: 30mm 1fr;
+  gap: 2mm 4mm;
+  padding: 3mm;
+  border: 1px solid var(--uh-border, #d1d5db);
+  border-radius: 6px;
+  background: var(--uh-surface, #ffffff);
+  color: var(--uh-ink, #111827);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  page-break-inside: avoid;
+  margin-top: 2mm;
+}
+
+.hs-seal__left { display: flex; align-items: start; justify-content: center; }
+.hs-seal__logo {
+  width: 20mm; height: 20mm;
+}
+
+.hs-seal__right { display: block; }
+.hs-seal__title {
+  font-size: 8pt; font-weight: 600; margin: 0 0 1mm 0;
+}
+
+.hs-seal__table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--uh-border, #d1d5db);
+  border-radius: 4px; /* some PDF renderers ignore radius on tables, that's fine */
+  background: var(--uh-tile, #ffffff);
+  font-size: 6pt !important;
+}
+.hs-seal__table thead th {
+  text-align: left; font-weight: 600; padding: 1mm 1mm;
+  border-bottom: 1px solid var(--uh-border, #d1d5db);
+  background: color-mix(in oklab, var(--uh-ink, #111827) 6%, transparent);
+  font-size: 6pt !important;
+}
+.hs-seal__table td {
+  padding: 2mm 1mm; vertical-align: top; border-top: 1px solid #e5e7eb;
+  font-size: 6pt !important;
+}
+.hs-seal__table tbody tr:first-child td { border-top: 0; }
+
+.hs-col-signatory { width: 32%; }
+.hs-col-action    { width: 24%; }
+.hs-col-when      { width: 24%; white-space: nowrap; }
+.hs-col-id        { width: 20%; white-space: nowrap; text-align: left; }
+
+.hs-id   { font-family: "DejaVu Sans Mono", monospace; }
+.hs-hash { font-family: "DejaVu Sans Mono", monospace;
+           color: color-mix(in oklab, var(--uh-ink, #111827) 60%, transparent); }
+
+.hs-seal__empty {
+  padding: 3mm 0; font-size: 6pt; opacity: .75;
+}
+
+.hs-seal__disclaimer {
+  margin-top: 1.5mm;
+  font-size: 5pt;
+  line-height: 1.1;
+  color: color-mix(in oklab, var(--uh-ink, #111827) 70%, transparent);
+}
+
