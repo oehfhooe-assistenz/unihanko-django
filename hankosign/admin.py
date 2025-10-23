@@ -33,7 +33,7 @@ class ActionAdmin(admin.ModelAdmin):
 
 @admin.register(Policy)
 class PolicyAdmin(admin.ModelAdmin):
-    list_display = ("role", "action", "require_distinct_signer", "updated_at")
+    list_display = ("role", "action", "require_distinct_signer", "is_repeatable", "updated_at")
     list_filter = ("is_repeatable", "require_distinct_signer", "action__verb", "action__stage", "action__scope")
     search_fields = ("role__name", "action__human_label")
     readonly_fields = ("created_at", "updated_at")

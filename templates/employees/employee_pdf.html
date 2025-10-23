@@ -1,0 +1,119 @@
+{% extends "pdf/base.html" %} {% load i18n %} 
+{% block extra_styles %} .sig-section { margin-top: 12mm; page-break-inside: avoid; } .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; } .sig-box { height: 28mm; border: 1px dashed #9aa3af;
+border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { position: absolute; top: 4px; left: 6px; font-size: 10px; color: #9aa3af; } .sig-meta { margin-top: 6px; font-size: 11px; color: #6b7280; } 
+{% endblock %}
+{% block pdf_title %}{% trans "Employee" %} — {{ emp.person_role.person.last_name }}, {{ emp.person_role.person.first_name }}{% endblock %}
+{% block header_title %}{% trans "Standardised Employee Information" %}{% endblock %} 
+{% block header_subtitle %}{{ emp.person_role.person.uuid }}{% endblock %}
+{% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %} 
+{% block content %}
+<h2 style="margin:0 0 8px 0;">{% trans "Employee Record" %}</h2>
+<table>
+    <tbody>
+        <tr>
+            <th style="width:160px;">{% trans "First name" %}</th>
+            <td>{{ emp.person_role.person.first_name }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Last name" %}</th>
+            <td>{{ emp.person_role.person.last_name }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Role" %}</th>
+            <td>{{ emp.person_role.role }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Gender" %}</th>
+            <td>{{ emp.person_role.person.get_gender_display }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Date of birth" %}</th>
+            <td>{{ emp.dob|date:"j. F Y"|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Insurance no." %}</th>
+            <td>{{ emp.insurance_no|default:"—" }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Email(s)" %}</th>
+            <td>
+                {% if emp.person_role.person.email %}{{ emp.person_role.person.email }}{% else %}—{% endif %} {% if emp.person_role.person.student_email %}
+                <br>{{ emp.person_role.person.student_email }}{% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>{% trans "Created at" %}</th>
+            <td>{{ emp.created_at }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Updated at" %}</th>
+            <td>{{ emp.updated_at }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "UniHanko ID" %}</th>
+            <td>{{ emp.person_role.person.uuid }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "UniHanko Account" %}</th>
+            <td>{{ emp.person_role.person.user|default:"—" }}</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3 style="margin:10px 0 6px 0;">{% trans "Employee Notes" %}</h3>
+<div>
+    <p>{{ emp.notes|default:_("No notes.") }}</p>
+</div>
+
+<section style="border-left: 3px solid var(--rule); padding: 1mm 1mm 1mm 2mm;">
+  <h4>{% trans "Contract Information" %}</h4>
+<table>
+<tr>
+<th style="width: 30%;">{% trans "Start of employment" %}</th>
+<td style="width: 70%;">{{ emp.effective_start|date:"j. F Y"|default:"—" }}</td>
+</tr>
+<tr>
+<th style="width: 30%;">{% trans "End of employment" %}</th>
+<td style="width: 70%;">{{ emp.effective_end|date:"j. F Y"|default:"—" }}</td>
+</tr>
+<tr>
+<th style="width: 30%;">{% trans "Weekly hours" %}</th>
+<td style="width: 70%;">{{ emp.weekly_hours }}</td>
+</tr>
+<tr>
+<th style="width: 30%;">{% trans "Current saldo (as per printout)" %}</th>
+<td style="width: 70%;">{{ emp.saldo_as_hhmm|default:"—" }}</td>
+</tr>
+<tr>
+<th style="width: 30%;">{% trans "Annual base PTO entitlement" %}</th>
+<td style="width: 70%; text-overflow: ellipsis;">{{ emp.annual_leave_days_base }} d</td>
+</tr>
+<tr>
+<th style="width: 30%;">{% trans "Annual special PTO entitlement" %}</th>
+<td style="width: 70%;">{{ emp.annual_leave_days_extra }} d</td>
+</tr>
+</table>
+</section>
+
+<div style="color: (--muted)">
+<h4 style="margin:14px 0 6px 0; text-align: center; font-size: 10px;">{% trans "Important notice" %}</h4>
+<p style="font-size:6px; text-align: center;">
+    {% trans "This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited. If accompanied by a valid electronic signature, this document may constitute a temporary certification of employment with the students’ union." %}
+</p>
+</div>
+
+<h3 style="margin:12px 0 6px 0;">{% trans "Qualified Signature" %}</h3>
+<div class="sig-section">
+    <div class="sig-grid">
+        <div>
+            <div class="sig-box">
+                <span style="font-size:1px;color:#fff">SIG_MAIN_ANCHOR</span>
+                <div class="hint">{% trans "Place electronic signature here" %}</div>
+            </div>
+            <div class="sig-meta">
+                {% trans "Signer" %}: {{ request.user.email }} {{ request.user.username }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

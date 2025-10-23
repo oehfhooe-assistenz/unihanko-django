@@ -314,8 +314,8 @@ class EmployeeAdmin(
 
     def print_employee_pdf(self, request, obj):
         ctx = {"emp": obj, "org": OrgInfo.get_solo()}
-        return render_pdf_response("employees/employee_pdf.html", ctx, request, f"employee_{obj.id}.pdf")
-    print_employee_pdf.label = _("🧾 Print Employee PDF")
+        return render_pdf_response("employees/employee_pdf.html", ctx, request, f"EMP_{obj.id}.pdf")
+    print_employee_pdf.label = "🖨️ " + _(" Print Employee PDF")
     print_employee_pdf.attrs = {"class": "btn btn-block btn-info btn-sm", "style": "margin-bottom: 1rem;",}
 
 
@@ -346,10 +346,48 @@ class EmployeeAdmin(
 # EmploymentDocument Admin
 # =========================
 
+# admin.py
+from django import forms
+from django.utils.translation import gettext_lazy as _
+from .models import EmploymentDocument
+
+class EmploymentDocumentAdminForm(forms.ModelForm):
+    class Meta:
+        model = EmploymentDocument
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Determine kind from POST data first, else instance
+        kind = (self.data.get("kind") or getattr(self.instance, "kind", None))
+        if kind in (EmploymentDocument.Kind.KM, EmploymentDocument.Kind.AA):
+            # mark as required so admin shows the red asterisk and client-side required
+            if "start_date" in self.fields:
+                self.fields["start_date"].required = True
+            if "end_date" in self.fields:
+                self.fields["end_date"].required = True
+
+    def clean(self):
+        cleaned = super().clean()
+        kind = cleaned.get("kind")
+        s = cleaned.get("start_date")
+        e = cleaned.get("end_date")
+
+        if kind in (EmploymentDocument.Kind.KM, EmploymentDocument.Kind.AA):
+            if not s:
+                self.add_error("start_date", _("Required for this document type."))
+            if not e:
+                self.add_error("end_date", _("Required for this document type."))
+        if s and e and e < s:
+            self.add_error("end_date", _("End date cannot be before start date."))
+        return cleaned
+
+
 @admin.register(EmploymentDocument)
 class EmploymentDocumentAdmin(
     ConcurrentModelAdmin, ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
 ):
+    form = EmploymentDocumentAdminForm
     resource_classes = [EmploymentDocumentResource]
     list_display = ("code", "employee", "kind_text", "title", "period_display", "status_text", "updated_at")
     list_filter = ("kind", "is_active", "start_date", "end_date")
@@ -430,16 +468,33 @@ class EmploymentDocumentAdmin(
         if not obj:
             return actions
 
-        # Only for flow-enabled kinds
+        # ---- Print action gating FIRST (so it applies even if we return early) ----
+        print_actions = {
+            "print_receipt",
+            "print_leaverequest_receipt",
+            "print_sicknote_receipt",
+        }
+        allowed_by_kind = {
+            obj.Kind.AA: {"print_leaverequest_receipt"},
+            obj.Kind.KM: {"print_sicknote_receipt"},
+            obj.Kind.ZV: {"print_receipt"},              # if ZV is flow-enabled but generic
+        }.get(obj.kind, {"print_receipt"})               # default for other kinds
+
+        actions = [a for a in actions if (a not in print_actions) or (a in allowed_by_kind)]
+
+        # ---- If kind isn't flow-enabled, keep ONLY print actions already allowed above ----
         flow_kinds = {obj.Kind.AA, obj.Kind.KM, obj.Kind.ZV}
         if obj.kind not in flow_kinds:
-            # strip all if not flow-enabled (DV/ZZ etc.)
-            return [a for a in actions if a not in self.change_actions]
+            # At this point, only allowed print action(s) remain; drop everything else.
+            return [a for a in actions if a in allowed_by_kind]
 
-        def drop(name):
-            if name in actions:
-                actions.remove(name)
+        # ---- Helper to drop any number of actions ----
+        def drop(*names):
+            for name in names:
+                if name in actions:
+                    actions.remove(name)
 
+        # ---- State-based gating (unchanged logic, but now print gating already applied) ----
         from hankosign.utils import state_snapshot
         st = state_snapshot(obj)
         approved = st["approved"]
@@ -448,59 +503,44 @@ class EmploymentDocumentAdmin(
         submitted = st["submitted"]
 
         if chair_ok:
-            for n in ("submit_doc","withdraw_doc","approve_wiref_doc","approve_chair_doc","reject_wiref_doc","reject_chair_doc"):
-                drop(n)
+            drop("submit_doc", "withdraw_doc", "approve_wiref_doc", "approve_chair_doc", "reject_wiref_doc", "reject_chair_doc")
             return actions
 
         if wiref_ok:
-            drop("submit_doc")
-            drop("withdraw_doc")
-            drop("approve_wiref_doc")
-            # keep chair approve/reject
+            drop("submit_doc", "withdraw_doc", "approve_wiref_doc")
             return actions
 
         if submitted and not wiref_ok:
-            drop("submit_doc")
-            # keep withdraw + wiref approve/reject
-            drop("approve_chair_doc")
-            drop("reject_chair_doc")
+            drop("submit_doc", "approve_chair_doc", "reject_chair_doc")
             return actions
 
-        if obj.kind != obj.Kind.AA:
-            drop("print_leaverequest_receipt")
-
-        if obj.kind == obj.Kind.AA:
-            drop("print_receipt")
-
-        if obj.kind != obj.Kind.KM:
-            drop("print_sicknote_receipt")
-
-        if obj.kind == obj.Kind.KM:
-            drop("print_receipt")
-
         # draft
-        for n in ("withdraw_doc","approve_wiref_doc","approve_chair_doc","reject_wiref_doc","reject_chair_doc"):
-            drop(n)
+        drop("withdraw_doc", "approve_wiref_doc", "approve_chair_doc", "reject_wiref_doc", "reject_chair_doc")
         return actions
+
 
 # actions
 
     def print_receipt(self, request, obj):
-        ctx = {"doc": obj, "org": OrgInfo.get_solo()}
+        from hankosign.utils import seal_signatures_context
+        emp = (
+            Employee.objects.select_related("person_role__person", "person_role__role").get(pk=obj.employee_id)
+        )
+        signatures = seal_signatures_context(obj)
+        ctx = {"doc": obj, "org": OrgInfo.get_solo(), "emp": emp, "person": emp.person_role.person, "role": emp.person_role.role, "signatures": signatures}
         return render_pdf_response(
-            "employee/docs/document_receipt_pdf.html",
+            "employees/document_receipt_pdf.html",
             ctx,
             request,
-            f"{obj.kind}_{obj.code or obj.id}.pdf",
+            filename=f"EDOC__{obj.code}.pdf",
         )
-    print_receipt.label = "🧾 " + _("Print document receipt PDF")
+    print_receipt.label = "🖨️ " + _("Print document receipt PDF")
     print_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;",}
 
 
     def print_leaverequest_receipt(self, request, obj):
         from decimal import Decimal, ROUND_HALF_UP
         from hankosign.utils import seal_signatures_context
-        from django.utils.text import slugify
         # defensive guard (in case someone hits the URL directly)
         if obj.kind != obj.Kind.AA:
             from django.contrib import messages
@@ -525,24 +565,26 @@ class EmploymentDocumentAdmin(
         daily_expected_hours = to_hours(int(daily_minutes)) if daily_minutes else Decimal("0.00")
         ctx = {"doc": obj, "org": OrgInfo.get_solo(), "emp": emp, "person": emp.person_role.person, "role": emp.person_role.role, "leave_amount_m": leave_amount_minutes, "leave_amount_h": leave_amount_hours, "daily_expected_h": daily_expected_hours, "signatures": signatures}
         
-        slug_code = slugify(obj.code)
         return render_pdf_response("employees/leaverequest_receipt_pdf.html", ctx, request, filename=f"UA_{obj.code}.pdf",)
-    print_leaverequest_receipt.label = "🧾 " + _("Print leave request receipt PDF")
+    print_leaverequest_receipt.label = "🖨️ " + _("Print leave request receipt PDF")
     print_leaverequest_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;",}
 
+
     def print_sicknote_receipt(self, request, obj):
+        from hankosign.utils import seal_signatures_context
         # defensive guard (in case someone hits the URL directly)
         if obj.kind != obj.Kind.KM:
             from django.contrib import messages
             messages.warning(request, _("Leave request is only available for KM documents."))
             return
-
-        ctx = {"doc": obj, "org": OrgInfo.get_solo()}
-        s = obj.start_date.strftime("%Y-%m-%d") if obj.start_date else ""
-        e = obj.end_date.strftime("%Y-%m-%d") if obj.end_date else ""
-        title = f"Urlaubsantrag {s}–{e}" if s and e else f"Urlaubsantrag_{obj.code or obj.id}"
-        return render_pdf_response("employees/sicknote_receipt_pdf.html", ctx, request, f"{title}.pdf")
-    print_sicknote_receipt.label = "🧾 " + _("Print sick note receipt PDF")
+        emp = (
+            Employee.objects.select_related("person_role__person", "person_role__role").get(pk=obj.employee_id)
+        )
+        signatures = seal_signatures_context(obj)
+        duration_days_incl = getattr(obj, "duration_weekdays_inclusive", None) or 0
+        ctx = {"doc": obj, "org": OrgInfo.get_solo(), "emp": emp, "person": emp.person_role.person, "role": emp.person_role.role, "signatures": signatures}
+        return render_pdf_response("employees/sicknote_receipt_pdf.html", ctx, request, filename=f"KM_{obj.code}.pdf")
+    print_sicknote_receipt.label = "🖨️ " + _("Print sick note receipt PDF")
     print_sicknote_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;",}
 
 

@@ -5,21 +5,22 @@
 border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { position: absolute; top: 4px; left: 6px; font-size: 10px; color: #9aa3af; } .sig-meta { margin-top: 6px; font-size: 11px; color: #6b7280; } 
 {% endblock %}
 
-{% block pdf_title %}{{ doc.code }} — {% trans "Leave request receipt" %}{% endblock %}
-{% block header_title %}{% trans "Leave request receipt" %}{% endblock %} 
+{% block pdf_title %}{{ doc.code }} — {% trans "Sick note receipt" %}{% endblock %}
+{% block header_title %}{% trans "Sick note receipt" %}{% endblock %} 
 {% block header_subtitle %}{{ person.first_name }} {{ person.last_name }} | {{ doc.start_date|date:"j. F Y"|default:"—" }} — {{ doc.end_date|date:"j. F Y"|default:"—" }}{% endblock %}
 {% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %} 
 {% block content %}
 <h2 style="margin:0 0 8px 0;">
-  {% trans "Leave request receipt: " %} <span>{{ person.first_name }} {{ person.last_name }}</span>
+  {% trans "Sick note receipt: " %} <span>{{ person.first_name }} {{ person.last_name }}</span>
 </h2>
 <h3 style="margin:10px 0 6px 0;">
   {{ role.name }} — <span style="color: var(--brand);">{{ doc.start_date|date:"j. F Y"|default:"—" }} </span> | <span style="color: var(--brand);">{{ doc.end_date|date:"j. F Y"|default:"—" }}</span>
 </h3>
 
 
-<h4 style="text-align: center;">{% trans "Leave has been requested from" %} <span>{{ doc.start_date|date:"j. F Y"|default:"—" }}</span> {% trans "to" %} <span>{{ doc.end_date|date:"j. F Y"|default:"—" }}</span>.
-<br>{% trans "The employee has confirmed sufficient paid leave is available for the requested period." %}</h4>
+<h4 style="text-align: center;">{% trans "Medical leave has been submitted from" %} <span>{{ doc.start_date|date:"j. F Y"|default:"—" }}</span> {% trans "to" %} <span>{{ doc.end_date|date:"j. F Y"|default:"—" }}</span>.
+<br>{% trans "This internal receipt may serve as supporting documentation for third parties." %}
+<br>{% trans "It does not exempt the employee from notifying their health insurance provider as required." %}</h4>
 <section style="border-left: 3px solid var(--brand); padding: 1mm 1mm 1mm 2mm;">
 <table>
 <tr>
@@ -31,12 +32,12 @@ border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { pos
 <td style="width: 40%;">{{ doc.duration_weekdays_inclusive|default:"—" }} d</td>
 </tr>
 <tr>
-<th style="width: 60%;">{% trans "Nominal expected workday" %}</th>
-<td style="width: 40%;">{{ emp.daily_expected_minutes }} min | {{ daily_expected_h|default:"—" }} h</td>
+<th style="width: 60%;">{% trans "Date of birth" %}</th>
+<td style="width: 40%;">{{ emp.dob|date:"j. F Y"|default:"—" }}</td>
 </tr>
 <tr>
-<th style="width: 60%;">{% trans "Leave duration (weekdays, nominal, per request)" %}</th>
-<td style="width: 40%;">{{ leave_amount_m|default:"—" }} min | {{ leave_amount_h|default:"—" }} h</td>
+<th style="width: 60%;">{% trans "Social insurance no." %}</th>
+<td style="width: 40%;">{{ emp.insurance_no|default:"—" }}</td>
 </tr>
 </table>
 </section>
@@ -51,6 +52,10 @@ border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { pos
 <tr>
 <th style="width: 30%;">{% trans "Document title (internal)" %}</th>
 <td style="width: 70%;">{{ doc.title }}</td>
+</tr>
+<tr>
+<th style="width: 30%;">{% trans "Document for submission to" %}</th>
+<td style="width: 70%;">{{ doc.relevant_third_party }}</td>
 </tr>
 <tr>
 <th style="width: 30%;">{% trans "Document notes (internal)" %}</th>
@@ -90,16 +95,9 @@ border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { pos
         <span style="font-size:1px;color:#fff">SIG_B_ANCHOR</span>
         <div class="hint">{% trans "Place electronic signature here" %}</div>
       </div>
-      <div class="sig-meta">{% trans "Signer" %}: {% trans "WiRef" %}</div>
+      <div class="sig-meta">{% trans "Signer" %}: {% trans "WiRef or Chair" %}</div>
     </div>
 
-    <div class="sig-item">
-      <div class="sig-box">
-        <span style="font-size:1px;color:#fff">SIG_C_ANCHOR</span>
-        <div class="hint">{% trans "Place electronic signature here" %}</div>
-      </div>
-      <div class="sig-meta">{% trans "Signer" %}: {% trans "Chair" %}</div>
-    </div>
   </div>
 </div>
 

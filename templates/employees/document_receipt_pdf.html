@@ -5,40 +5,23 @@
 border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { position: absolute; top: 4px; left: 6px; font-size: 10px; color: #9aa3af; } .sig-meta { margin-top: 6px; font-size: 11px; color: #6b7280; } 
 {% endblock %}
 
-{% block pdf_title %}{{ doc.code }} — {% trans "Leave request receipt" %}{% endblock %}
-{% block header_title %}{% trans "Leave request receipt" %}{% endblock %} 
-{% block header_subtitle %}{{ person.first_name }} {{ person.last_name }} | {{ doc.start_date|date:"j. F Y"|default:"—" }} — {{ doc.end_date|date:"j. F Y"|default:"—" }}{% endblock %}
+{% block pdf_title %}{{ doc.code }} — {% trans "Employee document receipt" %}{% endblock %}
+{% block header_title %}{% trans "Employee document receipt" %}{% endblock %} 
+{% block header_subtitle %}{{ person.first_name }} {{ person.last_name }} {% if doc.start_date %} | {{ doc.start_date|date:"j. F Y"|default:"—" }} — {% endif %}{% if doc.end_date %}{{ doc.end_date|date:"j. F Y"|default:"—" }}{% endif %}{% endblock %}
 {% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %} 
 {% block content %}
 <h2 style="margin:0 0 8px 0;">
-  {% trans "Leave request receipt: " %} <span>{{ person.first_name }} {{ person.last_name }}</span>
+  {% trans "Employee document receipt: " %} <span>{{ person.first_name }} {{ person.last_name }}</span>
 </h2>
 <h3 style="margin:10px 0 6px 0;">
-  {{ role.name }} — <span style="color: var(--brand);">{{ doc.start_date|date:"j. F Y"|default:"—" }} </span> | <span style="color: var(--brand);">{{ doc.end_date|date:"j. F Y"|default:"—" }}</span>
+  {{ role.name }}
 </h3>
 
 
-<h4 style="text-align: center;">{% trans "Leave has been requested from" %} <span>{{ doc.start_date|date:"j. F Y"|default:"—" }}</span> {% trans "to" %} <span>{{ doc.end_date|date:"j. F Y"|default:"—" }}</span>.
-<br>{% trans "The employee has confirmed sufficient paid leave is available for the requested period." %}</h4>
+<h4>{% trans "Document Title | Subject: " %} <span style="color: (--ink);">{{ doc.title }}</span></h4>
+<br>
 <section style="border-left: 3px solid var(--brand); padding: 1mm 1mm 1mm 2mm;">
-<table>
-<tr>
-<th style="width: 60%;">{% trans "Number of days (nominal, per request)" %}</th>
-<td style="width: 40%;">{{ doc.duration_days_inclusive|default:"—" }} d</td>
-</tr>
-<tr>
-<th style="width: 60%;">{% trans "Number of weekdays (nominal, per request)" %}</th>
-<td style="width: 40%;">{{ doc.duration_weekdays_inclusive|default:"—" }} d</td>
-</tr>
-<tr>
-<th style="width: 60%;">{% trans "Nominal expected workday" %}</th>
-<td style="width: 40%;">{{ emp.daily_expected_minutes }} min | {{ daily_expected_h|default:"—" }} h</td>
-</tr>
-<tr>
-<th style="width: 60%;">{% trans "Leave duration (weekdays, nominal, per request)" %}</th>
-<td style="width: 40%;">{{ leave_amount_m|default:"—" }} min | {{ leave_amount_h|default:"—" }} h</td>
-</tr>
-</table>
+<span style="text-align: justify; color: (--brand);"><h4>{% trans "Matter: " %}</h4></span> <p style="text-align: justify;">{{ doc.details }}</p>
 </section>
 <br>
 <section style="border-left: 3px solid var(--rule); padding: 1mm 1mm 1mm 2mm;">
@@ -49,12 +32,22 @@ border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { pos
 <td style="width: 70%;">{{ doc.code }}; {{ doc.kind }} | {{ doc.get_kind_display }}</td>
 </tr>
 <tr>
-<th style="width: 30%;">{% trans "Document title (internal)" %}</th>
-<td style="width: 70%;">{{ doc.title }}</td>
+<th style="width: 30%;">{% trans "Document for submission to" %}</th>
+<td style="width: 70%;">{{ doc.relevant_third_party }}</td>
+</tr>
+{% if doc.pdf_upload %}
+<tr>
+<th style="width: 30%;">{% trans "Relevant PDF attachment(s)" %}</th>
+<td style="width: 70%;"><a href="{{ doc.pdf_upload.url }}">{{ doc.pdf_upload.name }}</a></td>
+</tr>
+{% endif %}
+<tr>
+<th style="width: 30%;">{% trans "Document matter start date" %}</th>
+<td style="width: 70%;">{{ doc.start_date|date:"j. F Y"|default:"—" }}</td>
 </tr>
 <tr>
-<th style="width: 30%;">{% trans "Document notes (internal)" %}</th>
-<td style="width: 70%; text-overflow: ellipsis;">{{ doc.details }}</td>
+<th style="width: 30%;">{% trans "Document matter end date" %}</th>
+<td style="width: 70%;">{{ doc.end_date|date:"j. F Y"|default:"—" }}</td>
 </tr>
 <tr>
 <th style="width: 30%;">{% trans "Created at" %}</th>
