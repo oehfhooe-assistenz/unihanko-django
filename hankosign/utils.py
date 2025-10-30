@@ -8,7 +8,9 @@ from django.utils.translation import gettext_lazy as _
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.db.models import Max
-
+from datetime import timedelta
+from django.utils import timezone
+from django.db.models import Q
 from .models import Action, Policy, Signatory, Signature
 
 User = get_user_model()
@@ -120,6 +122,22 @@ def record_signature(
         if exists:
             from django.core.exceptions import PermissionDenied
             raise PermissionDenied(_("This action has already been performed."))
+
+    # Soft dedupe window: same signatory, same verb/stage/object within N seconds
+    window = timezone.now() - timedelta(seconds=10)
+    recent = Signature.objects.filter(
+        content_type=ct, object_id=str(obj.pk),
+        verb=action.verb, stage=action.stage,
+        signatory=sig,
+        at__gte=window,
+    ).exists()
+    if recent:
+        # swallow as a no-op; return the latest row for convenience
+        return (Signature.objects
+                .filter(content_type=ct, object_id=str(obj.pk),
+                        verb=action.verb, stage=action.stage, signatory=sig)
+                .order_by("-at", "-id")
+                .first())
 
     return Signature.objects.create(
         signatory=sig,

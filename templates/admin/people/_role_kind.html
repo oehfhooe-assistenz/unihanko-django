@@ -1,0 +1,8 @@
+{% load i18n %}
+{% if is_system %}
+  <span aria-hidden="true">🤖</span>
+  <span class="sr-only">{% trans "System role:" %}</span>
+  {{ label }}
+{% else %}
+  {{ label }}
+{% endif %}

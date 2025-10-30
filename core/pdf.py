@@ -7,7 +7,7 @@ from urllib.parse import quote
 from django.utils.http import http_date
 import time
 
-def render_pdf_response(template, context, request, filename, download=False, print_ref=None):
+def render_pdf_response(template, context, request, filename, download=True, print_ref=None):
     # enrich context (available in base.html)
     ctx = {
         **(context or {}),

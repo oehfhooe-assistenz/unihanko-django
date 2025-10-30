@@ -7,6 +7,7 @@ from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 from django.core.exceptions import ValidationError
+from concurrency.fields import AutoIncVersionField
 import re
 
 
@@ -77,12 +78,12 @@ class Person(models.Model):
 
     # --- Lifecycle / flags ---------------------------------------------------
     is_active   = models.BooleanField(_("Active"), default=True)
-    archived_at = models.DateTimeField(_("Archived at"), null=True, blank=True)
 
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
 
     history = HistoricalRecords()
+    version = AutoIncVersionField()
 
     class Meta:
         ordering = ["last_name", "first_name"]
@@ -104,14 +105,6 @@ class Person(models.Model):
     def __str__(self):
         return f"{self.last_name}, {self.first_name}"
 
-    @property
-    def is_archived(self) -> bool:
-        return self.archived_at is not None
-
-    @property
-    def is_effectively_active(self) -> bool:
-        """Useful flag for filters: active and not archived."""
-        return self.is_active and not self.is_archived
     
     # Access code helpers
     _ACCESS_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -180,98 +173,113 @@ class Role(models.Model):
     kind = models.CharField(_("Role type"), max_length=16, choices=Kind.choices, default=Kind.OTHER, db_index=True, help_text=_("Type of role within the (legal) personnel structure."))
     notes = models.TextField(_("Notes"), blank=True)
     is_stipend_reimbursed = models.BooleanField(_("Reimbursed via stipend"), default=False, help_text=_("Whether this role is ordinarily reimbursed via stipend [FuGeb]"))
-
+    is_system = models.BooleanField(_("System role"), default=False, help_text=_("Internal/admin role. Ignores stipend/ECTS expectations and is treated separately in policies."))
     default_monthly_amount = models.DecimalField(_("Default monthly stipend"), max_digits=10, decimal_places=2, blank=True, null=True, help_text=_("default monthly pay (if eligible) per Statutes"))
 
     history = HistoricalRecords()
+    version = AutoIncVersionField()
 
     class Meta:
         ordering = ["name"]
         verbose_name = _("Role")
         verbose_name_plural = _("Roles")
+        constraints = [
+            models.CheckConstraint(
+                name="ck_system_kind_other",
+                check=~models.Q(is_system=True) | models.Q(kind="OTHER"),
+            )
+        ]
+
+
+    @property
+    def kind_label(self) -> str:
+        # Show “Other/System” when OTHER + system
+        if self.kind == self.Kind.OTHER and self.is_system:
+            return _("Other/System")
+        return self.get_kind_display()
+
+
+    # Optional: a handy predicate for money logic
+    @property
+    def is_financially_relevant(self) -> bool:
+        return bool(self.is_stipend_reimbursed and not self.is_system)
+
 
     def __str__(self):
         return self.name
 
+
+    def clean(self):
+        super().clean()
+        errors = {}
+
+        if self.is_system and self.kind != self.Kind.OTHER:
+            errors.setdefault("kind", []).append(_("System roles must use “Other” kind."))
+
+        # Optional “relax expectations” hard stops:
+        if self.is_system:
+            if self.is_stipend_reimbursed:
+                errors.setdefault("is_stipend_reimbursed", []).append(_("System roles cannot be stipend-reimbursed."))
+            if self.default_monthly_amount:
+                errors.setdefault("default_monthly_amount", []).append(_("Leave default monthly amount empty for system roles."))
+            if self.ects_cap:
+                errors.setdefault("ects_cap", []).append(_("ECTS cap must be 0 for system roles."))
+
+        if errors:
+            raise ValidationError(errors)
+
 class RoleTransitionReason(models.Model):
     """
     Dictionary of reasons for starting/ending/changing an assignment.
-    Codes are R_00 ... R_99.
+    Codes are Ixx, Oxx, Cxx or (distinct) X99
     """
     code = models.CharField(
         _("Code"),
-        max_length=4,                 # e.g. R_00
+        max_length=4,                    # fits I01, O01, C99
         unique=True,
-        blank=True,                   # allow blank on create → we auto-generate
+        help_text=_("Stable code like I01, O01, C99 OR X99 (to be reserved for 'Other')."),
         validators=[RegexValidator(
-            regex=r"^R_\d{2}$",
-            message=_("Code must look like R_00 … R_99."),
+            regex=r"^(?:[IOC]\d{2}|X99)$",
+            flags=re.I,
+            message=_("Use I## / O## / C## or X99 for Other."),
         )],
-        help_text=_("Leave empty to auto-generate the next free code (R_00…R_99)."),
     )
-    name = models.CharField(_("Name"), max_length=120)   # e.g. "Eintritt"
+    name = models.CharField(_("Name"), max_length=120, help_text=_("German label/name for the reason given (e.g. Eintritt, Austritt, ...)."))
+    name_en = models.CharField(_("Name (EN)"), max_length=120, blank=True, help_text=_("Optional English label/name for the reason given."))  # optional EN
     active = models.BooleanField(_("Active"), default=True)
 
+
     class Meta:
-        ordering = ["code"]  # zero-padded → lexicographic == numeric
+        ordering = ["code"]
         verbose_name = _("Reason")
         verbose_name_plural = _("Reasons")
 
+
+
     def __str__(self):
-        return f"{self.code or '—'} — {self.name}"
+        return f"{self.code} — {self.display_name}"
 
-    # ---------- helpers ----------
-    @staticmethod
-    def _existing_codes_set():
-        return set(RoleTransitionReason.objects.values_list("code", flat=True))
 
-    @staticmethod
-    def _format_code(n: int) -> str:
-        return f"R_{n:02d}"
+    @property
+    def display_name(self) -> str:
+        from django.utils.translation import get_language
+        lang = (get_language() or "en").lower()
+        if lang.startswith("en"):
+            return self.name_en or self.name
+        return self.name
 
-    @classmethod
-    def next_free_code(cls) -> str:
-        used = cls._existing_codes_set()
-        for n in range(100):                  # R_00 … R_99
-            c = cls._format_code(n)
-            if c not in used:
-                return c
-        raise ValidationError(_("You have reached the maximum of 100 reasons (R_00…R_99)."))
 
-    # ---------- validations ----------
     def clean(self):
         super().clean()
-        # If user typed a code on CREATE (no pk yet), check contiguity
-        if not self.pk and self.code:
-            # normalize uppercase
+        # normalize uppercase, keep simple
+        if self.code:
             self.code = self.code.upper()
-            if not RegexValidator.regex.pattern if False else None:  # (no-op, keeps IDE quiet)
-                pass
-            # we already have RegexValidator on the field, but guard parse:
-            try:
-                n = int(self.code.split("_")[1])
-            except Exception as exc:
-                raise ValidationError({"code": _("Invalid code format.")}) from exc
 
-            # contiguity: all lower numbers must exist
-            existing = self._existing_codes_set()
-            missing = [self._format_code(i) for i in range(n) if self._format_code(i) not in existing]
-            if missing:
-                raise ValidationError({
-                    "code": _("Cannot create %(code)s because missing previous codes: %(missing)s") % {
-                        "code": self.code,
-                        "missing": ", ".join(missing),
-                    }
-                })
 
     def save(self, *args, **kwargs):
-        # Auto-generate code if blank
-        if not self.code:
-            self.code = self.next_free_code()
-        else:
+        if self.code:
             self.code = self.code.upper()
         super().save(*args, **kwargs)
-
 
 
 class PersonRole(models.Model):
@@ -310,6 +318,7 @@ class PersonRole(models.Model):
     notes = models.TextField(_("Notes"), blank=True)
 
     history = HistoricalRecords()
+    version = AutoIncVersionField()
 
     class Meta:
         ordering = ["-start_date", "-id"]
@@ -342,12 +351,6 @@ class PersonRole(models.Model):
             ),
             # NEW: start_reason != end_reason when both set
             models.CheckConstraint(
-                check=(models.Q(start_reason__isnull=True) |
-                       models.Q(end_reason__isnull=True) |
-                       ~models.Q(start_reason_id=models.F("end_reason_id"))),
-                name="ck_reasons_not_equal",
-            ),
-            models.CheckConstraint(
                 check=models.Q(confirm_date__isnull=True) | models.Q(confirm_date__gte=models.F("start_date")),
                 name="ck_confirm_after_start",
             )
@@ -362,22 +365,61 @@ class PersonRole(models.Model):
     @property
     def is_active(self) -> bool:
         return self.end_date is None
+    
 
     # Optional server-side form validation niceties (admin will show nicer errors)
     def clean(self):
+        I_OR_X = re.compile(r'^(?:I\d{2}|X99)$', re.I)
+        O_OR_X = re.compile(r'^(?:O\d{2}|X99)$', re.I)
         super().clean()
         if self.confirm_ref:
             self.confirm_ref = self.confirm_ref.upper()
+
         errors = {}
 
+        if self.role and getattr(self.role, "is_system", False):
+            # System roles shouldn't carry confirmation paperwork
+            if self.confirm_date or self.confirm_ref:
+                errors.setdefault("confirm_date", []).append(_("Confirmation isn’t used for system roles."))
+                errors.setdefault("confirm_ref", []).append(_("Confirmation isn’t used for system roles."))
+                self.confirm_date = None
+                self.confirm_ref = None
+
+            # Optional: disallow effective_* dates for clarity
+            if self.effective_start or self.effective_end:
+                errors.setdefault("effective_start", []).append(_("Use start/end only for system roles (no effective dates)."))
+                errors.setdefault("effective_end", []).append(_("Use start/end only for system roles (no effective dates)."))
+
+        # --- start_reason format ---
+        if self.start_reason:
+            sc = (self.start_reason.code or "").upper()
+            if not I_OR_X.fullmatch(sc):
+                errors.setdefault("start_reason", []).append(_("Pick a start reason (I##) or X99 (Other)."))
+
+        # --- end_reason format ---
+        if self.end_reason:
+            ec = (self.end_reason.code or "").upper()
+            if not O_OR_X.fullmatch(ec):
+                errors.setdefault("end_reason", []).append(_("Pick an end reason (O##) or X99 (Other)."))
+
+        # --- coupling end_date <-> end_reason ---
         if self.end_date and not self.end_reason:
-            errors["end_reason"] = _("End reason is required when an end date is set.")
+            errors.setdefault("end_reason", []).append(_("Reason is required when an end date is set."))
         if not self.end_date and self.end_reason:
-            errors["end_reason"] = _("Remove end reason unless you set an end date.")
-        if self.start_reason_id and self.end_reason_id and self.start_reason_id == self.end_reason_id:
-            errors["end_reason"] = _("Start and end reason cannot be the same.")
+            errors.setdefault("end_reason", []).append(_("Remove end reason unless you set an end date."))
+
+        # --- start != end (except both X99) ---
+        if self.start_reason_id and self.end_reason_id:
+            sc = (self.start_reason.code or "").upper()
+            ec = (self.end_reason.code or "").upper()
+            if sc != "X99" and ec != "X99" and self.start_reason_id == self.end_reason_id:
+                errors.setdefault("end_reason", []).append(
+                    _("Start and end reason cannot be the same (except X99).")
+                )
+
+        # --- confirm ref requires date ---
         if self.confirm_ref and not self.confirm_date:
-            errors["confirm_date"] = _("Provide a confirmation date when adding a reference.")
+            errors.setdefault("confirm_date", []).append(_("Provide a confirmation date when adding a reference."))
+
         if errors:
-            from django.core.exceptions import ValidationError
             raise ValidationError(errors)

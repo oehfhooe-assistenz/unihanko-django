@@ -14,6 +14,7 @@ from django.utils.safestring import mark_safe
 from .models import FiscalYear, PaymentPlan, default_start, auto_end_from_start, stored_code_from_dates
 from core.pdf import render_pdf_response
 from core.admin_mixins import ImportExportGuardMixin
+from core.utils.authz import is_finances_manager
 
 
 # =============== Import–Export ===============
@@ -176,7 +177,7 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
 
     # --- helpers ------------------------------------------------------------
     def _is_manager(self, request) -> bool:
-        return request.user.groups.filter(name="module:finances:manager").exists()
+        return is_finances_manager(request.user)
 
     # --- list / filters / search -------------------------------------------
     list_display = (
@@ -545,7 +546,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
 
     # --- helpers ------------------------------------------------------------
     def _is_manager(self, request) -> bool:
-        return request.user.groups.filter(name="module:finances:manager").exists()
+        return is_finances_manager(request.user)
 
     # --- list / filters / search -------------------------------------------
     list_display = ("display_code", "start", "end", "status_badges", "updated_at")

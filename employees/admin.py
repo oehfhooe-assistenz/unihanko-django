@@ -25,6 +25,8 @@ from concurrency.admin import ConcurrentModelAdmin
 from django import forms
 from django.contrib.admin.widgets import AdminTimeWidget
 from hankosign.utils import render_signatures_box
+from core.utils.authz import is_employees_manager
+from core.admin_mixins import FriendlyConcurrencyMixin
 
 from .models import (
     Employee,
@@ -122,10 +124,9 @@ class HolidayCalendarResource(resources.ModelResource):
 
 class ManagerGateMixin:
     """Gate certain UI actions to managers only."""
-    manager_group_name = "module:employees:manager"
 
     def _is_manager(self, request) -> bool:
-        return request.user.groups.filter(name=self.manager_group_name).exists()
+        return is_employees_manager(request.user)
 
 
 # =========================

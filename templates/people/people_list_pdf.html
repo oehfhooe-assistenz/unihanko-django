@@ -29,7 +29,7 @@
                 {% firstof p.email "—" %}{% if p.email and p.student_email %}, {% endif %} {% if p.student_email %}{{ p.student_email }}{% endif %}
             </td>
 
-            <td>{% if p.is_effectively_active %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
+            <td>{% if p.is_active %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
 
             <td>
                 {% with shown=0 %} {% for a in p.role_assignments.all %} {% if not a.end_date %}

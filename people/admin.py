@@ -1,8 +1,7 @@
 # people/admin.py
-import json
 from django.contrib import admin, messages
 from django.utils import timezone
-from django.utils.html import format_html, escapejs
+from django.utils.html import escapejs
 from django.utils.translation import gettext_lazy as _
 from django.utils.text import format_lazy, slugify
 from django.utils.functional import lazy
@@ -16,6 +15,16 @@ from organisation.models import OrgInfo
 from .models import Person, Role, PersonRole, RoleTransitionReason
 from core.pdf import render_pdf_response
 from core.admin_mixins import ImportExportGuardMixin
+from concurrency.admin import ConcurrentModelAdmin
+from hankosign.utils import render_signatures_box, state_snapshot, get_action, record_signature
+from django.core.exceptions import PermissionDenied
+from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for_boolean
+from django.db.models.functions import Coalesce
+from django.db.models import DateField
+from django.utils.safestring import mark_safe
+from django.template.loader import render_to_string
+from core.utils.authz import is_people_manager
+from django.utils.html import format_html
 
 
 # =========================
@@ -34,7 +43,6 @@ class PersonResource(resources.ModelResource):
             "matric_no",
             "gender",
             "is_active",
-            "archived_at",
             "created_at",
             "updated_at",
         )
@@ -48,7 +56,6 @@ class PersonResource(resources.ModelResource):
             "matric_no",
             "gender",
             "is_active",
-            "archived_at",
             "created_at",
             "updated_at",
         )
@@ -57,15 +64,15 @@ class PersonResource(resources.ModelResource):
 class RoleResource(resources.ModelResource):
     class Meta:
         model = Role
-        fields = ("id", "name", "short_name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind", "default_monthly_amount", "notes")
-        export_order = ("id", "name", "short_name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind", "default_monthly_amount", "notes")
+        fields = ("id", "name", "short_name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind", "default_monthly_amount", "is_system", "notes")
+        export_order = ("id", "name", "short_name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind", "default_monthly_amount", "is_system", "notes")
 
 
 class RoleTransitionReasonResource(resources.ModelResource):
     class Meta:
         model = RoleTransitionReason
-        fields = ("id", "code", "name", "active")
-        export_order = ("id", "code", "name", "active")
+        fields = ("id", "code", "name", "name_en", "active")
+        export_order = ("id", "code", "name", "name_en", "active")
 
 
 class PersonRoleResource(resources.ModelResource):
@@ -157,6 +164,7 @@ class ActiveFilter(admin.SimpleListFilter):
 class PersonRoleInline(admin.StackedInline):
     model = PersonRole
     extra = 0
+    readonly_fields = ("signatures_box",)
     fieldsets = (
         (_("Assignment Details"), {
             "classes": ("collapse",),
@@ -165,7 +173,9 @@ class PersonRoleInline(admin.StackedInline):
                 ("start_date"), ("effective_start"), ("start_reason"),
                 ("end_date"), ("effective_end"), ("end_reason"),
                 ("confirm_date"), ("confirm_ref"),
+                "signatures_box",
                 "notes",
+                "version",
             ),
         }),
     )
@@ -173,17 +183,52 @@ class PersonRoleInline(admin.StackedInline):
     can_delete = False
     show_change_link = True
 
+    @admin.display(description=_("Signatures"))
+    def signatures_box(self, obj):
+        if not obj or not getattr(obj, "pk", None):
+            return _("— save first to see signatures —")
+        return render_signatures_box(obj.person)
+    
+    def _parent_locked(self, request, obj=None):
+        try:
+            person = obj if isinstance(obj, Person) else getattr(obj, "person", None)
+            if not person:
+                return False
+            st = state_snapshot(person)
+            # managers bypass
+            pa = self.admin_site._registry[Person]
+            if pa._is_manager(request):
+                return False
+            return bool(st["locked"])
+        except Exception:
+            return False
+        
+    def has_add_permission(self, request, obj):
+        if self._parent_locked(request, obj):
+            return False
+        return super().has_add_permission(request, obj)
+
+    def has_change_permission(self, request, obj=None):
+        if self._parent_locked(request, obj):
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if self._parent_locked(request, obj):
+            return False
+        return super().has_delete_permission(request, obj)
+
 
 # =========================
 # Person Admin
 # =========================
 @admin.register(Person)
-class PersonAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [PersonResource]
 
     # Helper: who counts as a "manager" for people?
     def _is_manager(self, request) -> bool:
-        return request.user.groups.filter(name="module:personnel:manager").exists()
+        return is_people_manager(request.user)
 
     list_display = (
         "last_name",
@@ -192,17 +237,17 @@ class PersonAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModel
         "student_email",
         "matric_no",
         "gender",
-        "is_active",
         "user",
-        "archived_badge",
+        "active_text",
+        "status_text",
         "active_roles",
     )
     list_filter = (ActiveAssignmentFilter, "gender", "is_active")
     search_fields = ("first_name", "last_name", "email", "student_email", "matric_no")
     autocomplete_fields = ("user",)
-    readonly_fields = ("uuid", "personal_access_code", "created_at", "updated_at")
+    readonly_fields = ("uuid", "personal_access_code", "created_at", "updated_at", "signatures_box")
     inlines = [PersonRoleInline]
-    actions = ("archive_selected", "unarchive_selected", "export_selected_pdf")
+    actions = ("lock_selected", "unlock_selected", "export_selected_pdf")
 
     fieldsets = (
         (_("Identity"), {
@@ -221,26 +266,50 @@ class PersonAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModel
             "fields": ("personal_access_code",),
         }),
         (_("Status"), {
-            "fields": (("is_active"), ("archived_at"),),
+            "fields": (("is_active"),),
         }),
-        (_("Timestamps"), {
-            "fields": (("created_at"), ("updated_at"),),
+        (_("HankoSign Workflow"), {"fields": ("signatures_box",)}),
+        (_("System"), {
+            "fields": (("version"), ("created_at"), ("updated_at"),),
         }),
     )
 
-    # Keep the list clean: hide archived by default
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.filter(archived_at__isnull=True)
 
-    @admin.display(description=_("Archived"))
-    def archived_badge(self, obj):
-        if not obj.archived_at:
-            return "—"
-        return format_html(
-            '<span style="padding:2px 8px;border-radius:10px;background:#6b7280;color:#fff;font-size:11px;">{}</span>',
-            _("Archived"),
+    @admin.display(description=_("Active"))
+    def active_text(self, obj):
+        # pure badge component; no inline colors
+        return boolean_status_span(
+            bool(obj.is_active),
+            true_label=_("Active"),
+            false_label=_("Inactive"),
+            true_code="ok",
+            false_code="off",
         )
+
+    @admin.display(description=_("Status"))
+    def status_text(self, obj):
+        st = state_snapshot(obj)  # or state_snapshot(obj.person) in PersonRole
+        locked = bool(st.get("explicit_locked"))
+        return boolean_status_span(
+            value=not locked,                 # True => ok/unlocked
+            true_label=_("Unlocked"),
+            false_label=_("Locked"),
+            true_code="ok",
+            false_code="locked",
+        )
+
+    def get_changelist_row_attrs(self, request, obj):
+        st = state_snapshot(obj)  # or state_snapshot(obj.person) in PersonRole
+        locked = bool(st.get("explicit_locked"))
+        return row_state_attr_for_boolean(
+            value=not locked,                 # True => ok
+            true_code="ok",
+            false_code="locked",
+        )
+
+    @admin.display(description=_("Signatures"))
+    def signatures_box(self, obj):
+        return render_signatures_box(obj)
 
     @admin.display(description=_("Active roles"))
     def active_roles(self, obj):
@@ -255,94 +324,283 @@ class PersonAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModel
         # Policy: no hard deletes
         return False
 
-    @admin.action(description=_("Archive selected"))
-    def archive_selected(self, request, queryset):
-        updated = queryset.update(archived_at=timezone.now())
-        self.message_user(
-            request,
-            _("Archived %(count)d people.") % {"count": updated},
-            level=messages.SUCCESS,
-        )
-
-    @admin.action(description=_("Unarchive selected"))
-    def unarchive_selected(self, request, queryset):
-        updated = queryset.update(archived_at=None)
-        self.message_user(
-            request,
-            _("Unarchived %(count)d people.") % {"count": updated},
-            level=messages.SUCCESS,
-        )
 
     # === actions ===
-    change_actions = ("print_pdf", "print_pac_pdf", "regenerate_access_code", )
+    change_actions = ("print_pdf", "print_pac_pdf", "regenerate_access_code", "lock_person", "unlock_person",)
+
+    def _is_locked(self, request, obj):
+        if not obj:
+            return False
+        st = state_snapshot(obj)
+        # managers can always bypass editing, but “locked” still shows in UI
+        if self._is_manager(request):
+            return False
+        return bool(st["locked"])
+
+
+    def _lock_one(self, request, obj) -> bool:
+        st = state_snapshot(obj)
+        if st.get("explicit_locked"):
+            # already locked; not an error
+            return False
+        action = get_action("LOCK:-@people.person")
+        if not action:
+            raise PermissionDenied(_("Lock action is not configured."))
+        record_signature(request.user, action, obj, note=_("Personnel record locked"))
+        return True
+    
+
+    def _unlock_one(self, request, obj) -> bool:
+        st = state_snapshot(obj)
+        if not st.get("explicit_locked"):
+            # already unlocked; not an error
+            return False
+        action = get_action("UNLOCK:-@people.person")
+        if not action:
+            raise PermissionDenied(_("Unlock action is not configured."))
+        record_signature(request.user, action, obj, note=_("Personnel record unlocked"))
+        return True
+
+
+    def lock_person(self, request, obj):
+        try:
+            changed = self._lock_one(request, obj)
+        except PermissionDenied as e:
+            self.message_user(request, str(e), level=messages.ERROR); return
+        self.message_user(request, _("Locked.") if changed else _("Already locked."), level=messages.SUCCESS if changed else messages.INFO)
+    lock_person.label = _("Lock record")
+    lock_person.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;"}
+
+
+    def unlock_person(self, request, obj):
+        try:
+            changed = self._unlock_one(request, obj)
+        except PermissionDenied as e:
+            self.message_user(request, str(e), level=messages.ERROR); return
+        self.message_user(request, _("Unlocked.") if changed else _("Not locked."), level=messages.SUCCESS if changed else messages.INFO)
+    unlock_person.label = _("Unlock record")
+    unlock_person.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;"}
+
+
+    @admin.action(description=_("Lock selected"))
+    def lock_selected(self, request, queryset):
+        if not queryset.exists():
+            self.message_user(request, _("No rows selected."), level=messages.INFO); return
+        ok = already = fail = 0
+        try:
+            action = get_action("LOCK:-@people.person")
+            if not action:
+                self.message_user(request, _("Lock action is not configured."), level=messages.ERROR); return
+        except Exception:
+            self.message_user(request, _("Lock action is not configured."), level=messages.ERROR); return
+
+        for obj in queryset:
+            try:
+                st = state_snapshot(obj)
+                if st.get("explicit_locked"):
+                    already += 1
+                    continue
+                record_signature(request.user, action, obj, note=_("Personnel record locked (bulk)"))
+                ok += 1
+            except Exception:
+                fail += 1
+                continue
+
+        msg = []
+        if ok:      msg.append(_("locked %(n)d") % {"n": ok})
+        if already: msg.append(_("already locked %(n)d") % {"n": already})
+        if fail:    msg.append(_("failed %(n)d") % {"n": fail})
+        level = messages.SUCCESS if ok and not fail else (messages.WARNING if ok and fail else messages.INFO)
+        self.message_user(request, ", ".join(msg) + ".", level=level)
+
+
+    @admin.action(description=_("Unlock selected"))
+    def unlock_selected(self, request, queryset):
+        if not queryset.exists():
+            self.message_user(request, _("No rows selected."), level=messages.INFO); return
+        ok = already = fail = 0
+        try:
+            action = get_action("UNLOCK:-@people.person")
+            if not action:
+                self.message_user(request, _("Unlock action is not configured."), level=messages.ERROR); return
+        except Exception:
+            self.message_user(request, _("Unlock action is not configured."), level=messages.ERROR); return
+
+        for obj in queryset:
+            try:
+                st = state_snapshot(obj)
+                if not st.get("explicit_locked"):
+                    already += 1
+                    continue
+                record_signature(request.user, action, obj, note=_("Personnel record unlocked (bulk)"))
+                ok += 1
+            except Exception:
+                fail += 1
+                continue
+
+        msg = []
+        if ok:      msg.append(_("unlocked %(n)d") % {"n": ok})
+        if already: msg.append(_("already unlocked %(n)d") % {"n": already})
+        if fail:    msg.append(_("failed %(n)d") % {"n": fail})
+        level = messages.SUCCESS if ok and not fail else (messages.WARNING if ok and fail else messages.INFO)
+        self.message_user(request, ", ".join(msg) + ".", level=level)
+
 
     def print_pdf(self, request, obj):
+        action = get_action("RELEASE:-@people.person")
+        if not action:
+            self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
+        try:
+            record_signature(request.user, action, obj, note=_("Printed personnel dossier PDF"))
+        except PermissionDenied as e:
+            self.message_user(request, str(e), level=messages.ERROR); return
+
         date_str = timezone.localtime().strftime("%Y-%m-%d")
         lname = slugify(obj.last_name)[:40]
-        return render_pdf_response("people/person_pdf.html", {"p": obj, "org": OrgInfo.get_solo(),}, request, f"HR-P_AKT_{obj.id}_{lname}_{date_str}.pdf")
-
+        return render_pdf_response("people/person_pdf.html",
+            {"p": obj, "org": OrgInfo.get_solo()},
+            request, f"HR-P_AKT_{obj.id}_{lname}_{date_str}.pdf")
     print_pdf.label = "🖨️ " + _("Print Personnel Record PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;",}
+    print_pdf.attrs = {"class": "btn btn-block btn-info btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object",}
+
 
     def print_pac_pdf(self, request, obj):
+        from hankosign.utils import seal_signatures_context
+        if not self._is_manager(request):
+            self.message_user(request, _("Managers only."), level=messages.WARNING); return
+        action = get_action("RELEASE:-@people.person")
+        if not action:
+            self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
+        try:
+            record_signature(request.user, action, obj, note=_("Printed PAC info PDF"))
+        except PermissionDenied as e:
+            self.message_user(request, str(e), level=messages.ERROR); return
+
         date_str = timezone.localtime().strftime("%Y-%m-%d")
         lname = slugify(obj.last_name)[:40]
-        return render_pdf_response("people/person_action_code_notice_pdf.html", {"p": obj}, request, f"HR-P_PAC_INFO_{obj.id}_{lname}_{date_str}.pdf")
-
+        signatures = seal_signatures_context(obj)   # seal ON this Person
+        return render_pdf_response("people/person_action_code_notice_pdf.html",
+            {"p": obj, "signatures": signatures},
+            request, f"HR-P_PAC_INFO_{obj.id}_{lname}_{date_str}.pdf")
     print_pac_pdf.label = "🖨️ " + _("Print Personal Access Code Info PDF (ext.)")
-    print_pac_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;",}
+    print_pac_pdf.attrs = {"class": "btn btn-block btn-info btn-sm", "style": "margin-bottom: 1rem;",}
+
 
     @admin.action(description=_("Print selected as roster PDF"))
     def export_selected_pdf(self, request, queryset):
+        action = get_action("RELEASE:-@people.person")
+        if not action:
+            self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
+        for p in queryset:
+            try:
+                record_signature(request.user, action, p, note=_("Included in roster PDF export"))
+            except Exception:
+                # Don’t hard-fail the whole export; you still get the audit trail per-success
+                pass
         date_str = timezone.localtime().strftime("%Y-%m-%d")
         rows = queryset.order_by("last_name", "first_name")
         return render_pdf_response("people/people_list_pdf.html", {"rows": rows}, request, f"HR-P_SELECT_{date_str}.pdf")
-    
-    # --- Manager-only object action -----------------------------------------
+
+
     def regenerate_access_code(self, request, obj):
         if not self._is_manager(request):
             self.message_user(request, _("You don’t have permission to regenerate access codes."), level=messages.WARNING)
             return
+        action = get_action("RELEASE:-@people.person")
+        if not action:
+            self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
+        try:
+            record_signature(request.user, action, obj, note=_("Regenerated access code"))
+        except PermissionDenied as e:
+            self.message_user(request, str(e), level=messages.ERROR); return
+
         new_code = obj.regenerate_access_code()
-        # Only show the new code; avoid logging the old one.
-        self.message_user(
-            request,
-            _("New access code generated: %(code)s") % {"code": new_code},
-            level=messages.SUCCESS,
-        )
+        self.message_user(request, _("New access code generated: %(code)s") % {"code": new_code}, level=messages.SUCCESS)
     _REGEN_MESSAGE = _("Regenerate the access code for this person? The old code will stop working.")
     lazy_escapejs = lazy(escapejs, str)
     regenerate_access_code.label = "🔐 " + _("Regenerate access code")
     regenerate_access_code.attrs = {
-        "class": "btn btn-block btn-warning btn-sm",
+        "class": "btn btn-block btn-info btn-sm",
         # Simple JS confirm; keeps UX tight without extra templates
         "onclick": format_lazy("return confirm('{0}');", lazy_escapejs(_REGEN_MESSAGE)),
-        "style": "margin-top:10px; margin-bottom: 10px;",
+        "style": "margin-bottom: 1rem;",
     }
 
-    # Hide the button for non-managers
+
     def get_change_actions(self, request, object_id, form_url):
         actions = list(super().get_change_actions(request, object_id, form_url))
+        obj = self.get_object(request, object_id)
+        def drop(n):
+            if n in actions: actions.remove(n)
         if not self._is_manager(request):
-            if "regenerate_access_code" in actions:
-                actions.remove("regenerate_access_code")
+            drop("regenerate_access_code")
+            drop("print_pac_pdf")
+            drop("lock_person")
+            drop("unlock_person")
+        if obj:
+            st = state_snapshot(obj)
+            if st["explicit_locked"]:
+                drop("lock_person")
+            else:
+                drop("unlock_person")
         return actions
+
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if not self._is_manager(request):
+            actions.pop("lock_selected", None)
+            actions.pop("unlock_selected", None)
+        return actions
+
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        if obj and self._is_locked(request, obj):
+            # freeze everything except the action area
+            for f in ("first_name","last_name","email","student_email","matric_no","gender","notes","user","is_active"):
+                if f not in ro:
+                    ro.append(f)
+        return ro
+
+
 
 # =========================
 # Role Admin
 # =========================
 @admin.register(Role)
-class RoleAdmin(ImportExportGuardMixin, ImportExportModelAdmin, SimpleHistoryAdmin):
+class RoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [RoleResource]
-    list_display = ("name", "short_name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind")
+    list_display = ("name", "short_name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind_text", "is_system")
     search_fields = ("name",)
-    list_filter = ("is_elected","is_stipend_reimbursed", "kind")
+    list_filter = ("is_elected","is_stipend_reimbursed", "kind", "is_system")
+
+    @admin.display(description=_("Role type"), ordering="kind")
+    def kind_text(self, obj):
+        html = render_to_string(
+            "admin/people/_role_kind.html",
+            {"is_system": obj.is_system, "label": obj.kind_label},
+        )
+        return mark_safe(html)
+    
+    def get_fieldsets(self, request, obj=None):
+        return (
+            (_("Basics"), {
+                "fields": ("name", "short_name", "notes"),
+            }),
+            (_("Type & Flags"), {
+                "fields": ("kind", "is_system", "is_elected", "is_stipend_reimbursed"),
+            }),
+            (_("Academic/Finance defaults"), {
+                "fields": ("ects_cap", "default_monthly_amount"),
+            }),
+        )
 
     def has_delete_permission(self, request, obj=None):
         return False
 
     def get_model_perms(self, request):
-        if request.user.groups.filter(name="module:personnel:manager").exists():
+        if is_people_manager(request.user):
             return super().get_model_perms(request)
         return {}
 
@@ -353,15 +611,19 @@ class RoleAdmin(ImportExportGuardMixin, ImportExportModelAdmin, SimpleHistoryAdm
 @admin.register(RoleTransitionReason)
 class ReasonAdmin(ImportExportGuardMixin, ImportExportModelAdmin):
     resource_classes = [RoleTransitionReasonResource]
-    list_display = ("code", "name", "active")
+    list_display = ("code", "name_localized", "active")
     list_filter = ("active",)
-    search_fields = ("code", "name")
+    search_fields = ("code", "name", "name_en")
 
     def get_readonly_fields(self, request, obj=None):
         # Once created, keep code immutable (prevents renumbering chaos)
         if obj:
-            return ("code",)
+            return ("code", "name",)
         return ()
+
+    @admin.display(description=_("Name (localized)"))
+    def name_localized(self, obj):
+        return obj.display_name
 
     def get_model_perms(self, request):
         if request.user.groups.filter(name="module:personnel:manager").exists():
@@ -380,22 +642,49 @@ from finances.models import FiscalYear
 # PersonRole Admin
 # =========================
 @admin.register(PersonRole)
-class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [PersonRoleResource]
     list_display = (
         "person",
         "role",
-        "start_date", "end_date",
-        "effective_start", "effective_end",
-        "confirm_date",
+        "start_merged",
         "start_reason",
+        "confirm_date",
+        "end_merged",
         "end_reason",
-        "short_notes",
+        "active_text",
+        "status_text",
     )
     list_filter = (ActiveFilter, "role", "start_reason", "end_reason", "start_date", "end_date", "confirm_date")
     search_fields = ("person__last_name", "person__first_name", "role__name", "confirm_ref", "notes")
     autocomplete_fields = ("person", "role", "start_reason", "end_reason")
+    readonly_fields = ("signatures_box",)
     actions = ["offboard_today"]
+
+    fieldsets = (
+        (_("Assignment"), {
+            "fields": (
+                "person", "role",
+                "start_date", "end_date",
+                "effective_start", "effective_end",
+            ),
+        }),
+        (_("Reasons"), {
+            "fields": ("start_reason", "end_reason"),
+        }),
+        (_("Confirmation (heads only)"), {
+            "fields": ("confirm_date", "confirm_ref"),
+        }),
+        (_("Notes"), {
+            "fields": ("notes",),
+        }),
+        (_("HankoSign Workflow"), {
+            "fields": ("signatures_box",),
+        }),
+        (_("System"), {
+            "fields": ("version",),   # if you want it visible
+        }),
+    )
 
     change_actions = ("print_appointment_regular", "print_appointment_ad_interim", "print_confirmation", "print_resignation",)
 
@@ -414,18 +703,112 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
                 pass
         return qs, distinct
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(
+            start_display=Coalesce("effective_start", "start_date", output_field=DateField()),
+            end_display=Coalesce("effective_end", "end_date", output_field=DateField()),
+        )
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+    def _is_locked(self, request, obj):
+        if not obj:
+            return False
+        from hankosign.utils import state_snapshot
+        st = state_snapshot(obj.person)
+        if is_people_manager(request.user):
+            return False
+        return bool(st["locked"])
+
+
+    @admin.display(description=_("Active"))
+    def active_text(self, obj):
+        # True when end_date is None
+        return boolean_status_span(
+            obj.is_active,
+            true_label=_("Active"),
+            false_label=_("Ended"),
+            true_code="ok",
+            false_code="off",
+        )
+
+
+    @admin.display(description=_("Start"), ordering="start_display")
+    def start_merged(self, obj):
+        d = obj.effective_start or obj.start_date
+        html = render_to_string(
+            "admin/people/_date_cell.html",
+            {
+                "date": d,
+                "is_effective": bool(obj.effective_start),
+                "label": _("start date"),
+            },
+        )
+        return mark_safe(html)
+    
+
+    @admin.display(description=_("End"), ordering="end_display")
+    def end_merged(self, obj):
+        d = obj.effective_end or obj.end_date
+        html = render_to_string(
+            "admin/people/_date_cell.html",
+            {
+                "date": d,
+                "is_effective": bool(obj.effective_end),
+                "label": _("end date"),
+            },
+        )
+        return mark_safe(html)
+
+
+    @admin.display(description=_("Status (Person)"))
+    def status_text(self, obj):
+        st = state_snapshot(obj.person)  # IMPORTANT: read parent person
+        locked = bool(st.get("explicit_locked"))
+        return boolean_status_span(
+            value=not locked,
+            true_label=_("Unlocked"),
+            false_label=_("Locked"),
+            true_code="ok",
+            false_code="locked",
+        )
+
+
+    def get_changelist_row_attrs(self, request, obj):
+        st = state_snapshot(obj.person)   # IMPORTANT: read parent person
+        locked = bool(st.get("explicit_locked"))
+        return row_state_attr_for_boolean(value=not locked, true_code="ok", false_code="locked")
+
+
+    @admin.display(description=_("Signatures"))
+    def signatures_box(self, obj):
+        if not obj:
+            return _("— save first to see signatures —")
+        from hankosign.utils import render_signatures_box
+        return render_signatures_box(obj.person)
+
 
     @admin.display(description=_("Notes"))
     def short_notes(self, obj):
         return (obj.notes[:60] + "…") if obj.notes and len(obj.notes) > 60 else (obj.notes or "—")
 
+
     @admin.action(description=_("Offboard selected (end today, set default reason if empty)"))
     def offboard_today(self, request, queryset):
-        # If you seed R_01 = "Austritt", this will be used as a default when end_reason is missing
-        default_end = RoleTransitionReason.objects.filter(code="R_01", active=True).first()
+        # If you seed O01 = "Austritt" (fallback X99), this will be used as a default when end_reason is missing
+        default_end = ( RoleTransitionReason.objects.filter(code="O01", active=True).first()
+            or RoleTransitionReason.objects.filter(code="X99", active=True).first()
+        )
+        if not default_end:
+            self.message_user(
+                request,
+                _("Cannot offboard: default end reason O01 is missing. Seed reasons first."),
+                level=messages.ERROR,
+            )
+            return
         q = queryset.filter(end_date__isnull=True)
         updated = 0
         today = timezone.localdate()
@@ -449,7 +832,22 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
             }
         return render_pdf_response(template, ctx, request, filename)
 
+
+    def _deny_and_back(self, request, obj):
+        self.message_user(request, _("Managers only."), level=messages.WARNING)
+        return HttpResponseRedirect(reverse("admin:people_personrole_change", args=[obj.pk]))
+
+
     def print_appointment_regular(self, request, obj):
+        if not is_people_manager(request.user):
+            return self._deny_and_back(request, obj)
+        action = get_action("RELEASE:-@people.person")
+        if not action:
+            self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
+        try:
+            record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment/resignation/…"})
+        except PermissionDenied as e:
+            self.message_user(request, str(e), level=messages.ERROR); return
         rsname = slugify(obj.role.short_name)[:10]
         lname = slugify(obj.person.last_name)[:20]
         date_str = timezone.localtime().strftime("%Y-%m-%d")
@@ -462,6 +860,15 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
     print_appointment_regular.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
 
     def print_appointment_ad_interim(self, request, obj):
+        if not is_people_manager(request.user):
+            return self._deny_and_back(request, obj)
+        action = get_action("RELEASE:-@people.person")
+        if not action:
+            self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
+        try:
+            record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment/resignation/…"})
+        except PermissionDenied as e:
+            self.message_user(request, str(e), level=messages.ERROR); return
         rsname = slugify(obj.role.short_name)[:10]
         lname = slugify(obj.person.last_name)[:20]
         date_str = timezone.localtime().strftime("%Y-%m-%d")
@@ -473,7 +880,17 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
     print_appointment_ad_interim.label = "💥 " + _("Print appointment (ad interim) PDF")
     print_appointment_ad_interim.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
 
+
     def print_confirmation(self, request, obj):
+        if not is_people_manager(request.user):
+            return self._deny_and_back(request, obj)
+        action = get_action("RELEASE:-@people.person")
+        if not action:
+            self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
+        try:
+            record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment/resignation/…"})
+        except PermissionDenied as e:
+            self.message_user(request, str(e), level=messages.ERROR); return
         rsname = slugify(obj.role.short_name)[:10]
         lname = slugify(obj.person.last_name)[:20]
         date_str = timezone.localtime().strftime("%Y-%m-%d")
@@ -502,13 +919,22 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         return self._render_cert(
             request, obj,
             "people/certs/appointment_confirmation.html",
-            f"B_Beschluss_{obj.confirm_ref or ""}_{rsname}_{lname}-{date_str}.pdf"
+            f"B_Beschluss_{obj.confirm_ref or ''}_{rsname}_{lname}-{date_str}.pdf"
         )
-
     print_confirmation.label = "☑️ " + _("Print confirmation (post-confirmation) PDF")
     print_confirmation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
 
+
     def print_resignation(self, request, obj):
+        if not is_people_manager(request.user):
+            return self._deny_and_back(request, obj)
+        action = get_action("RELEASE:-@people.person")
+        if not action:
+            self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
+        try:
+            record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment/resignation/…"})
+        except PermissionDenied as e:
+            self.message_user(request, str(e), level=messages.ERROR); return
         rsname = slugify(obj.role.short_name)[:10]
         lname = slugify(obj.person.last_name)[:20]
         date_str = timezone.localtime().strftime("%Y-%m-%d")
@@ -520,6 +946,7 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
     print_resignation.label = "🏁 " + _("Print resignation PDF")
     print_resignation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
 
+
     # --- Visibility gates (buttons appear only when True) ---
     def get_change_actions(self, request, object_id, form_url):
         actions = list(super().get_change_actions(request, object_id, form_url))
@@ -528,6 +955,15 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         def drop(name):
             if name in actions:
                 actions.remove(name)
+
+        # Managers only: printing certificates
+        is_mgr = is_people_manager(request.user)
+        if not is_mgr:
+            drop("print_appointment_regular")
+            drop("print_appointment_ad_interim")
+            drop("print_confirmation")
+            drop("print_resignation")
+            return actions  # bail early; nothing else matters for editors
 
         # regular: clerks & other roles
         if not (obj and getattr(obj.role, "kind", None) in {obj.role.Kind.DEPT_CLERK, obj.role.Kind.OTHER}):
@@ -544,3 +980,35 @@ class PersonRoleAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
 
         return actions
 
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        if obj and self._is_locked(request, obj):
+            for f in ("person","role","start_date","end_date","effective_start","effective_end",
+                    "start_reason","end_reason","confirm_date","confirm_ref","notes"):
+                if f not in ro: ro.append(f)
+        return ro
+    
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "person" and not is_people_manager(request.user):
+            # Build a list of unlocked Person IDs (Python-side check via state_snapshot)
+            people = Person.objects.only("id")  # keep it light
+            allowed_ids = []
+            for p in people:
+                try:
+                    if not state_snapshot(p).get("locked"):
+                        allowed_ids.append(p.id)
+                except Exception:
+                    # If snapshot fails, be conservative: exclude
+                    continue
+            kwargs["queryset"] = Person.objects.filter(pk__in=allowed_ids)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def save_model(self, request, obj, form, change):
+        # Final server-side safety net
+        if not is_people_manager(request.user):
+            st = state_snapshot(obj.person)
+            if st.get("locked"):
+                from django.core.exceptions import PermissionDenied
+                raise PermissionDenied(_("This person is locked; you can’t add or modify assignments."))
+        super().save_model(request, obj, form, change)
