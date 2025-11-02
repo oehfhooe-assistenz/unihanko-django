@@ -56,7 +56,7 @@ def get_action(action_ref: Union[str, Action]) -> Optional[Action]:
     except Exception:
         return None
 
-
+from django.db.models import Q, Case, When, IntegerField
 def can_act(
     user: User,
     action_ref: Union[str, Action],
@@ -80,12 +80,23 @@ def can_act(
         return False, _("Your signatory is not verified (specimen missing)."), sig, action, None
 
     role = sig.person_role.role
-    pol = Policy.objects.filter(role=role, action=action).first()
+    # Prefer exact FK hits over M2M (so old policies behave predictably)
+    qs = (Policy.objects
+          .filter(role=role)
+          .filter(Q(action=action) | Q(actions=action))
+          .annotate(_direct=Case(
+              When(action=action, then=1),
+              default=0,
+              output_field=IntegerField(),
+          ))
+          .order_by("-_direct", "-updated_at"))
+
+    pol = qs.first()
     if not pol:
         return False, _("You are not authorized to perform this action."), sig, action, None
 
     # Separation-of-duties check (if enabled)
-    if pol.require_distinct_signer:
+    if action.require_distinct_signer:
         ct = ContentType.objects.get_for_model(obj.__class__)
         # earlier signatures on the same object & same scope (any verb/stage)
         prior_any = Signature.objects.filter(
@@ -114,7 +125,7 @@ def record_signature(
     ct = ContentType.objects.get_for_model(obj.__class__)
 
     # For non-repeatable policies: REFUSE repeats
-    if not pol.is_repeatable:
+    if not action.is_repeatable:
         exists = Signature.objects.filter(
             content_type=ct, object_id=str(obj.pk),
             verb=action.verb, stage=action.stage,
@@ -149,7 +160,7 @@ def record_signature(
         scope_ct=action.scope,
         note=note or "",
         payload=payload or {},
-        is_repeatable=bool(pol.is_repeatable),  # snapshot
+        is_repeatable=bool(action.is_repeatable),  # snapshot
     )
 
 
@@ -355,6 +366,13 @@ _ACTION_LABELS = {
     ("REJECT",   "CHAIR"): _("Reject (Chair)"),
     ("LOCK",     ""):      _("Lock"),
     ("UNLOCK",   ""):      _("Unlock"),
+
+    # Finances module (PaymentPlan)
+    ("SUBMIT",   "WIREF"): _("Submit (WiRef)"),
+    ("WITHDRAW", "WIREF"): _("Withdraw (WiRef)"),
+    ("VERIFY",   "WIREF"): _("Verify banking"),
+    ("REJECT",   ""):      _("Cancel/Terminate"),
+    ("RELEASE",  ""):      _("Print/Release"),
 }
 
 def action_display(sig: Signature) -> str:
@@ -410,3 +428,57 @@ def seal_signatures_context(obj, *, tz=None) -> list[dict]:
         })
     return out
 
+# --- request-id (rid) helpers + idempotent sign ---
+from django.core.cache import cache
+from django.contrib.contenttypes.models import ContentType
+
+# Tiny JS you can reuse on DAO links to append a unique rid per click
+RID_JS = (
+    "this.href = this.href + (this.href.indexOf('?')>-1?'&':'?') + "
+    "'rid=' + (Date.now().toString(36) + Math.random().toString(36).slice(2));"
+)
+
+def get_rid(request) -> Optional[str]:
+    rid = (request.GET.get("rid") or "").strip()
+    return rid or None
+
+def _once_key(*, user_id: int, obj, action, rid: Optional[str]) -> str:
+    ct = ContentType.objects.get_for_model(obj.__class__)
+    base = f"{action.verb}:{action.stage or '-'}@{action.scope_id}"
+    return f"hs:once:{base}:{user_id}:{ct.id}:{obj.pk}:{rid or 'no-rid'}"
+
+def sign_once(
+    request,
+    action_ref: Union[str, Action],
+    obj,
+    *,
+    note: str = "",
+    payload=None,
+    window_seconds: int = 10,
+) -> Optional[Signature]:
+    """
+    Idempotent signer for GET-able actions.
+    - Uses a per-click rid + cache key to ensure a single insert.
+    - Falls back to your normal dedupe in record_signature.
+    Returns the Signature (if created) or the latest matching row (if swallowed).
+    """
+    # Resolve & authorize first
+    ok, reason, sig, action, pol = can_act(request.user, action_ref, obj)
+    if not ok:
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied(reason or "Not allowed.")
+
+    # Gate on (user, obj, action, rid)
+    key = _once_key(user_id=request.user.id, obj=obj, action=action, rid=get_rid(request))
+    if cache.add(key, 1, window_seconds):
+        # First hit within window → perform the real write
+        return record_signature(request.user, action, obj, note=note, payload=payload)
+
+    # Not first → no-op; hand back the latest row for convenience
+    ct = ContentType.objects.get_for_model(obj.__class__)
+    return (
+        Signature.objects
+        .filter(content_type=ct, object_id=str(obj.pk), verb=action.verb, stage=action.stage, signatory=sig)
+        .order_by("-at", "-id")
+        .first()
+    )

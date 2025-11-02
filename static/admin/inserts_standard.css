@@ -7,7 +7,7 @@
   --ins-accent:        color-mix(in srgb, Highlight 45%, CanvasText 10%);
   --ins-muted:         color-mix(in srgb, CanvasText 60%, transparent);
   --ins-radius:        12px;
-  --ins-pad:           0.75rem 0.9rem;
+  --ins-pad:           0.5rem 0.45rem;
   --ins-gap:           0.5rem;
   --ins-code-bg:       color-mix(in srgb, CanvasText 5%, Canvas 95%);
 }
@@ -28,7 +28,7 @@
   border-left: 4px solid var(--ins-accent);
   border-radius: var(--ins-radius);
   padding: var(--ins-pad);
-  margin: 0.5rem 0;
+  margin: 0.1rem 0;
   display: block;
 }
 

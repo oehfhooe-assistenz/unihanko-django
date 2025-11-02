@@ -1,0 +1,22 @@
+{% load i18n static %}
+<link rel="stylesheet" href="{% static 'admin/inserts_standard.css' %}">
+
+<div class="insert">
+  <div class="insert__title">{% trans "Bank reference (full)" %}</div>
+  <div class="insert__body">
+    <code style="display:block;padding:0.5rem;background:var(--ins-code-bg);border-radius:6px;">{{ ref_full }}</code>
+    <div class="insert__meta" style="margin-top:0.25rem;">
+      {% trans "Format: {reference} – {payee name} – {cost center}. Updated after saving. Used for exports." %}
+    </div>
+  </div>
+</div>
+
+<div class="insert" style="margin-top:0.75rem;">
+  <div class="insert__title">{% trans "Bank reference (≤140)" %}</div>
+  <div class="insert__body">
+    <code style="display:block;padding:0.5rem;background:var(--ins-code-bg);border-radius:6px;">{{ ref_short }}</code>
+    <div class="insert__meta" style="margin-top:0.25rem;">
+      {% trans "Max 140 chars. Falls back to initials if needed; truncates the left part. Updated after saving." %}
+    </div>
+  </div>
+</div>

@@ -1,3 +1,4 @@
+#hankosign/models.py
 from __future__ import annotations
 from django.db import models
 
@@ -46,6 +47,17 @@ class Action(models.Model):
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
 
+    is_repeatable = models.BooleanField(
+        _("Repeatable"),
+        default=False,
+        help_text=_("This action may be performed multiple times on the same object."),
+    )
+    require_distinct_signer = models.BooleanField(
+        _("Require distinct signer"),
+        default=False,
+        help_text=_("The same person cannot perform multiple gated stages on the same object."),
+    )
+
     history = HistoricalRecords()
 
     class Meta:
@@ -64,34 +76,63 @@ class Action(models.Model):
 
 class Policy(models.Model):
     role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name="hankosign_policies", verbose_name=_("Role"))
-    action = models.ForeignKey(Action, on_delete=models.PROTECT, related_name="policies", verbose_name=_("Action"))
+    
+    action = models.ForeignKey(Action, on_delete=models.PROTECT, related_name="policies", verbose_name=_("Action"), null=True, blank=True)
 
-    require_distinct_signer = models.BooleanField(
-        _("Require distinct signer from earlier stage"),
-        default=False,
-        help_text=_("If enabled, the same person cannot perform multiple gated stages on the same object."),
+    actions = models.ManyToManyField(
+        Action, related_name="policies_m2m", blank=True, verbose_name=_("Additional actions")
     )
 
-    is_repeatable = models.BooleanField(
-        _("Is repeatable"),
-        default=False,
-        help_text=_("If enabled, the action linked to this policy can be performed multiple times on the same object."),
-    )
     notes = models.CharField(_("Notes"), max_length=240, blank=True)
 
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
 
     history = HistoricalRecords()
-
+    _actions_ids_pending = None  # transient
     class Meta:
         verbose_name = _("Policy")
         verbose_name_plural = _("Policies")
         unique_together = (("role", "action"),)
-        indexes = [models.Index(fields=["role", "action"])]
+        indexes = [
+            models.Index(fields=["role", "action"]),
+            models.Index(fields=["role"]),  # helps when filtering policies by role
+        ]
+
+    def set_pending_actions(self, ids):
+        # call this from the admin form if you want belt+suspenders
+        self._actions_ids_pending = [int(x) for x in ids if x]
 
     def __str__(self) -> str:
-        return f"{self.role} → {self.action.action_code}"
+        if self.action_id:
+            return f"{self.role} → {self.action.action_code}"
+        return f"{self.role} → {self.actions.count()} actions"
+
+    def save(self, *args, **kwargs):
+        # run full validation; clean() will read _actions_ids_pending
+        self.full_clean()
+        super().save(*args, **kwargs)
+        # after we have a PK, if we had pending M2M, write them now
+        if self._actions_ids_pending is not None:
+            self.actions.set(self._actions_ids_pending)
+            self._actions_ids_pending = None
+
+    def clean(self):
+        super().clean()
+        has_fk = bool(self.action_id)
+        m2m_pending = getattr(self, "_actions_ids_pending", None)
+        has_m2m = bool(m2m_pending) or (self.pk and self.actions.exists())
+
+        # Only enforce after we either have an FK, or pending, or the instance already exists.
+        if not (has_fk or has_m2m):
+            if self.pk is None and m2m_pending is None:
+                # allow first save; admin/form will pass pending, scripts can set then save_m2m later
+                return
+        if has_fk and has_m2m:
+            raise ValidationError({"actions": _("Use either the legacy FK *or* the list, not both.")})
+        if not has_fk and not has_m2m:
+            raise ValidationError({"actions": _("Pick at least one Action (legacy FK or the list).")})
+
 
 
 def _default_base_key() -> str:

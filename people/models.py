@@ -9,6 +9,7 @@ from simple_history.models import HistoricalRecords
 from django.core.exceptions import ValidationError
 from concurrency.fields import AutoIncVersionField
 import re
+from django.utils import timezone
 
 
 class Person(models.Model):
@@ -319,6 +320,9 @@ class PersonRole(models.Model):
 
     history = HistoricalRecords()
     version = AutoIncVersionField()
+
+    created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
 
     class Meta:
         ordering = ["-start_date", "-id"]

@@ -1,0 +1,17 @@
+{% load i18n static %}
+<link rel="stylesheet" href="{% static 'admin/inserts_standard.css' %}">
+
+<div class="insert">
+  <div class="insert__title">{% trans "Monthly breakdown (30-day proration)" %}</div>
+  
+  {% if rows %}
+    <div class="insert__body">
+      <pre style="margin:0;font-size:0.9em;line-height:1.4;">{% for row in rows %}{{ row.year }}-{{ row.month|stringformat:"02d" }}: {{ row.days }}d × {{ row.fraction|floatformat:4 }}
+{% endfor %}</pre>
+    </div>
+  {% else %}
+    <div class="insert__meta">
+      {% trans "No coverage in this fiscal year." %}
+    </div>
+  {% endif %}
+</div>

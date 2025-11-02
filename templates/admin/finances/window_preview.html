@@ -1,0 +1,27 @@
+{% load i18n static %}
+<link rel="stylesheet" href="{% static 'admin/inserts_standard.css' %}">
+
+<div class="insert insert--info">
+  <div class="insert__title">{% trans "Resolved window (clamped to FY)" %}</div>
+  
+  {% if no_overlap %}
+    <div class="insert__body" style="color:#ef4444;">
+      {% trans "No overlap with fiscal year." %}
+    </div>
+  {% else %}
+    <div class="insert__body">
+      <div>
+        <strong>{% trans "Effective invoice (plan) window:" %}</strong>
+        <span style="color:var(--ins-accent);font-weight:600;">
+          {{ window_start|date:"Y-m-d" }} → {{ window_end|date:"Y-m-d" }}
+        </span>
+      </div>
+      <div style="font-size:0.9em;color:var(--ins-muted);">
+        {% trans "FY bounds:" %}
+        <span style="color:var(--ins-accent);">
+          {{ fy_start|date:"Y-m-d" }} → {{ fy_end|date:"Y-m-d" }}
+        </span>
+      </div>
+    </div>
+  {% endif %}
+</div>

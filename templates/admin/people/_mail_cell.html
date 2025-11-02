@@ -1,0 +1,14 @@
+{% load i18n static %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'admin/inserts_standard.css' %}">
+{% if mail %}
+<span class="insert insert--info">
+  {{ mail }}<br>
+  {% if s_mail %}
+    <small class="insert__meta">{{ s_mail }}</small>
+  {% endif %}
+
+{% else %}
+— 
+</span>
+{% endif %}

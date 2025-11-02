@@ -16,7 +16,7 @@ from .models import Person, Role, PersonRole, RoleTransitionReason
 from core.pdf import render_pdf_response
 from core.admin_mixins import ImportExportGuardMixin
 from concurrency.admin import ConcurrentModelAdmin
-from hankosign.utils import render_signatures_box, state_snapshot, get_action, record_signature
+from hankosign.utils import render_signatures_box, state_snapshot, get_action, record_signature, RID_JS, sign_once
 from django.core.exceptions import PermissionDenied
 from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for_boolean
 from django.db.models.functions import Coalesce
@@ -24,7 +24,6 @@ from django.db.models import DateField
 from django.utils.safestring import mark_safe
 from django.template.loader import render_to_string
 from core.utils.authz import is_people_manager
-from django.utils.html import format_html
 
 
 # =========================
@@ -233,25 +232,24 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
     list_display = (
         "last_name",
         "first_name",
-        "email",
-        "student_email",
-        "matric_no",
-        "gender",
-        "user",
-        "active_text",
-        "status_text",
+        "mail_merged",
+        "mat_no_display",
+        "acc_check",
+        "is_active",
         "active_roles",
+        "updated_at",
+        "active_text",
     )
     list_filter = (ActiveAssignmentFilter, "gender", "is_active")
     search_fields = ("first_name", "last_name", "email", "student_email", "matric_no")
     autocomplete_fields = ("user",)
-    readonly_fields = ("uuid", "personal_access_code", "created_at", "updated_at", "signatures_box")
+    readonly_fields = ("uuid", "personal_access_code", "created_at", "updated_at", "signatures_box", "mail_merged")
     inlines = [PersonRoleInline]
     actions = ("lock_selected", "unlock_selected", "export_selected_pdf")
 
     fieldsets = (
-        (_("Identity"), {
-            "fields": (("first_name"), ("last_name"), "uuid", "gender", "notes"),
+        (_("Identity & Status"), {
+            "fields": (("first_name"), ("last_name"), "uuid", "gender", "notes", "is_active"),
         }),
         (_("Contacts"), {
             "fields": (("email"), ("student_email"),),
@@ -265,38 +263,36 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
         (_("Personal access code"), {
             "fields": ("personal_access_code",),
         }),
-        (_("Status"), {
-            "fields": (("is_active"),),
-        }),
         (_("HankoSign Workflow"), {"fields": ("signatures_box",)}),
         (_("System"), {
             "fields": (("version"), ("created_at"), ("updated_at"),),
         }),
     )
 
+    @admin.display(description=_("MatNo"))
+    def mat_no_display(self, obj):
+        return obj.matric_no
 
-    @admin.display(description=_("Active"))
+    @admin.display(description=_("Django Account"))
+    def acc_check(self, obj):
+        accc = bool(obj.user)
+        if accc:
+            return "🔗"
+        else:
+            return "❌"
+
+    @admin.display(description=_("Locked"))
     def active_text(self, obj):
-        # pure badge component; no inline colors
-        return boolean_status_span(
-            bool(obj.is_active),
-            true_label=_("Active"),
-            false_label=_("Inactive"),
-            true_code="ok",
-            false_code="off",
-        )
-
-    @admin.display(description=_("Status"))
-    def status_text(self, obj):
-        st = state_snapshot(obj)  # or state_snapshot(obj.person) in PersonRole
+        st = state_snapshot(obj)
         locked = bool(st.get("explicit_locked"))
         return boolean_status_span(
-            value=not locked,                 # True => ok/unlocked
-            true_label=_("Unlocked"),
+            value=not locked,
+            true_label=_("Open"),
             false_label=_("Locked"),
             true_code="ok",
             false_code="locked",
         )
+
 
     def get_changelist_row_attrs(self, request, obj):
         st = state_snapshot(obj)  # or state_snapshot(obj.person) in PersonRole
@@ -323,6 +319,19 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
     def has_delete_permission(self, request, obj=None):
         # Policy: no hard deletes
         return False
+
+    @admin.display(description=_("E-Mail"), ordering="email")
+    def mail_merged(self, obj):
+        mail = obj.email
+        s_mail = obj.student_email
+        html = render_to_string(
+            "admin/people/_mail_cell.html",
+            {
+                "mail": mail,
+                "s_mail": s_mail,
+            },
+        )
+        return mark_safe(html)
 
 
     # === actions ===
@@ -451,7 +460,8 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
         if not action:
             self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
         try:
-            record_signature(request.user, action, obj, note=_("Printed personnel dossier PDF"))
+            #record_signature(request.user, action, obj, note=_("Printed personnel dossier PDF"))
+            sign_once(request, action, obj, note=_("Printed personnel dossier PDF"), window_seconds=10)
         except PermissionDenied as e:
             self.message_user(request, str(e), level=messages.ERROR); return
 
@@ -461,7 +471,7 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
             {"p": obj, "org": OrgInfo.get_solo()},
             request, f"HR-P_AKT_{obj.id}_{lname}_{date_str}.pdf")
     print_pdf.label = "🖨️ " + _("Print Personnel Record PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-info btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object",}
+    print_pdf.attrs = {"class": "btn btn-block btn-info btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     def print_pac_pdf(self, request, obj):
@@ -472,7 +482,8 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
         if not action:
             self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
         try:
-            record_signature(request.user, action, obj, note=_("Printed PAC info PDF"))
+            #record_signature(request.user, action, obj, note=_("Printed PAC info PDF"))
+            sign_once(request, action, obj, note=_("Printed PAC info PDF"), window_seconds=10)
         except PermissionDenied as e:
             self.message_user(request, str(e), level=messages.ERROR); return
 
@@ -483,7 +494,7 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
             {"p": obj, "signatures": signatures},
             request, f"HR-P_PAC_INFO_{obj.id}_{lname}_{date_str}.pdf")
     print_pac_pdf.label = "🖨️ " + _("Print Personal Access Code Info PDF (ext.)")
-    print_pac_pdf.attrs = {"class": "btn btn-block btn-info btn-sm", "style": "margin-bottom: 1rem;",}
+    print_pac_pdf.attrs = {"class": "btn btn-block btn-info btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     @admin.action(description=_("Print selected as roster PDF"))
@@ -652,9 +663,10 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
         "confirm_date",
         "end_merged",
         "end_reason",
+        "updated_at",
         "active_text",
-        "status_text",
     )
+    list_display_links = ("person",)
     list_filter = (ActiveFilter, "role", "start_reason", "end_reason", "start_date", "end_date", "confirm_date")
     search_fields = ("person__last_name", "person__first_name", "role__name", "confirm_ref", "notes")
     autocomplete_fields = ("person", "role", "start_reason", "end_reason")
@@ -682,7 +694,7 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
             "fields": ("signatures_box",),
         }),
         (_("System"), {
-            "fields": ("version",),   # if you want it visible
+            "fields": ("version", "created_at", "updated_at"),   # if you want it visible
         }),
     )
 
@@ -764,23 +776,13 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
         return mark_safe(html)
 
 
-    @admin.display(description=_("Status (Person)"))
-    def status_text(self, obj):
-        st = state_snapshot(obj.person)  # IMPORTANT: read parent person
-        locked = bool(st.get("explicit_locked"))
-        return boolean_status_span(
-            value=not locked,
-            true_label=_("Unlocked"),
-            false_label=_("Locked"),
-            true_code="ok",
-            false_code="locked",
-        )
-
-
     def get_changelist_row_attrs(self, request, obj):
-        st = state_snapshot(obj.person)   # IMPORTANT: read parent person
-        locked = bool(st.get("explicit_locked"))
-        return row_state_attr_for_boolean(value=not locked, true_code="ok", false_code="locked")
+        # Show assignment state (not parent lock)
+        return row_state_attr_for_boolean(
+            value=obj.is_active,
+            true_code="ok",
+            false_code="off",
+        )
 
 
     @admin.display(description=_("Signatures"))
@@ -845,7 +847,8 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
         if not action:
             self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
         try:
-            record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment/resignation/…"})
+            #record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (non-confirmation)"})
+            sign_once(request, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (non-confirmation)"}, window_seconds=10)
         except PermissionDenied as e:
             self.message_user(request, str(e), level=messages.ERROR); return
         rsname = slugify(obj.role.short_name)[:10]
@@ -857,7 +860,7 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
             f"B_{rsname}_{lname}-{date_str}.pdf"
         )
     print_appointment_regular.label = "🧾 " + _("Print appointment (non-confirmation) PDF")
-    print_appointment_regular.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
+    print_appointment_regular.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
     def print_appointment_ad_interim(self, request, obj):
         if not is_people_manager(request.user):
@@ -866,7 +869,8 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
         if not action:
             self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
         try:
-            record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment/resignation/…"})
+            #record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (ad interim)"})
+            sign_once(request, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (ad interim)"}, window_seconds=10)
         except PermissionDenied as e:
             self.message_user(request, str(e), level=messages.ERROR); return
         rsname = slugify(obj.role.short_name)[:10]
@@ -878,7 +882,7 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
             f"B_interim_{rsname}_{lname}-{date_str}.pdf"
         )
     print_appointment_ad_interim.label = "💥 " + _("Print appointment (ad interim) PDF")
-    print_appointment_ad_interim.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
+    print_appointment_ad_interim.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     def print_confirmation(self, request, obj):
@@ -888,7 +892,8 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
         if not action:
             self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
         try:
-            record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment/resignation/…"})
+            #record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (post-confirmation)"})
+            sign_once(request, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (post-confirmation)"}, window_seconds=10)
         except PermissionDenied as e:
             self.message_user(request, str(e), level=messages.ERROR); return
         rsname = slugify(obj.role.short_name)[:10]
@@ -921,8 +926,8 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
             "people/certs/appointment_confirmation.html",
             f"B_Beschluss_{obj.confirm_ref or ''}_{rsname}_{lname}-{date_str}.pdf"
         )
-    print_confirmation.label = "☑️ " + _("Print confirmation (post-confirmation) PDF")
-    print_confirmation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
+    print_confirmation.label = "☑️ " + _("Print appointment (post-confirmation) PDF")
+    print_confirmation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     def print_resignation(self, request, obj):
@@ -932,7 +937,8 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
         if not action:
             self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
         try:
-            record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment/resignation/…"})
+            #record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "resignation"})
+            sign_once(request, action, obj.person, note=_("Printed %(what)s") % {"what": "resignation"}, window_seconds=10)
         except PermissionDenied as e:
             self.message_user(request, str(e), level=messages.ERROR); return
         rsname = slugify(obj.role.short_name)[:10]
@@ -944,7 +950,7 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
             f"R_{rsname}_{lname}-{date_str}.pdf"
         )
     print_resignation.label = "🏁 " + _("Print resignation PDF")
-    print_resignation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
+    print_resignation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     # --- Visibility gates (buttons appear only when True) ---

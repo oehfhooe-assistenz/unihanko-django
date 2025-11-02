@@ -1,3 +1,4 @@
+#finances/models.py
 from __future__ import annotations
 from datetime import date, timedelta
 from django.db import models, transaction
@@ -9,6 +10,86 @@ import re
 from core.utils.privacy import mask_iban
 
 # --- helpers ---------------------------------------------------------------
+
+from decimal import Decimal, ROUND_HALF_UP
+import calendar
+
+def calculate_proration_breakdown(
+    start: date,
+    end: date,
+    *,
+    accounting_month_days: int = 30
+) -> list[dict]:
+    """
+    Pure function: Calculate monthly proration breakdown for a date range.
+    
+    Uses simple daily proration against a fixed "accounting month" 
+    (default 30 days) for consistent financial calculations.
+    
+    Args:
+        start: First day of coverage (inclusive)
+        end: Last day of coverage (inclusive, will be normalized if it's the 1st)
+        accounting_month_days: Days per month for proration calc (default 30)
+    
+    Returns:
+        List of dicts with keys:
+        - year (int)
+        - month (int)
+        - days (int): actual calendar days covered
+        - month_days (int): actual calendar days in that month
+        - fraction (Decimal): days / accounting_month_days
+    
+    Example:
+        >>> calculate_proration_breakdown(date(2024, 7, 15), date(2024, 9, 14))
+        [
+            {"year": 2024, "month": 7, "days": 17, "month_days": 31, "fraction": Decimal("0.5667")},
+            {"year": 2024, "month": 8, "days": 31, "month_days": 31, "fraction": Decimal("1.0333")},
+            {"year": 2024, "month": 9, "days": 14, "month_days": 30, "fraction": Decimal("0.4667")},
+        ]
+    """
+    # Normalize end date (treat 1st of month as last day of previous month)
+    if end.day == 1:
+        end = end - timedelta(days=1)
+    
+    # Validation
+    if start > end:
+        return []
+    
+    breakdown = []
+    current = date(start.year, start.month, 1)  # Start at month boundary
+    end_month = date(end.year, end.month, 1)
+    
+    # Iterate month by month until we've processed the end month
+    while current <= end_month:
+        # Calculate actual month boundaries
+        month_days_real = calendar.monthrange(current.year, current.month)[1]
+        month_start = current
+        month_end = current.replace(day=month_days_real)
+        
+        # Find overlap between [start, end] and this month
+        segment_start = max(start, month_start)
+        segment_end = min(end, month_end)
+        
+        # Only include if there's actual overlap
+        if segment_start <= segment_end:
+            covered_days = (segment_end - segment_start).days + 1  # inclusive
+            fraction = Decimal(covered_days) / Decimal(accounting_month_days)
+            
+            breakdown.append({
+                "year": current.year,
+                "month": current.month,
+                "days": covered_days,
+                "month_days": month_days_real,
+                "fraction": fraction.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP),
+            })
+        
+        # Move to next month
+        if current.month == 12:
+            current = date(current.year + 1, 1, 1)
+        else:
+            current = date(current.year, current.month + 1, 1)
+    
+    return breakdown
 
 def auto_end_from_start(start: date) -> date:
     """
@@ -45,6 +126,69 @@ def localized_code(start: date, end: date, lang: str | None = None) -> str:
     pref = "FY" if lang.startswith("en") else "WJ"
     return f"{pref}{start.year % 100:02d}_{end.year % 100:02d}"
 
+
+
+# --- payment plan state machine ------------------------------------------------------------
+
+def paymentplan_status(pp) -> str:
+    """
+    Determine PaymentPlan workflow status from HankoSign signatures and dates.
+    
+    Returns one of: DRAFT | PENDING | ACTIVE | CANCELLED | FINISHED
+    
+    Logic:
+      - CANCELLED: REJECT signature exists
+      - DRAFT: No SUBMIT signature (or withdrawn)
+      - PENDING: Submitted but missing APPROVE:WIREF, APPROVE:CHAIR, or VERIFY:WIREF
+      - FINISHED: All approvals + verify done, but past end date
+      - ACTIVE: All approvals + verify done, within date range
+    
+    Args:
+        pp: PaymentPlan instance
+        
+    Returns:
+        Status code string (DRAFT|PENDING|ACTIVE|CANCELLED|FINISHED)
+    """
+    from datetime import date as _date
+    from hankosign.utils import state_snapshot, has_sig
+    
+    # Get the current workflow state from HankoSign
+    st = state_snapshot(pp)
+    
+    # 1. Check for rejection (terminal state)
+    if st["rejected"]:  # Any REJECT signature exists
+        return "CANCELLED"
+    
+    # 2. Check if submitted
+    if not st["submitted"]:  # No SUBMIT or it was WITHDRAWN
+        return "DRAFT"
+    
+    # 3. Check for required approvals
+    # We need: APPROVE:WIREF and APPROVE:CHAIR
+    approved = st.get("approved", set())
+    
+    if "WIREF" not in approved:
+        return "PENDING"  # Still waiting for WiRef approval
+    
+    if "CHAIR" not in approved:
+        return "PENDING"  # Still waiting for Chair approval
+    
+    # 4. Check for banking verification
+    has_verify = has_sig(pp, "VERIFY", "WIREF")
+    if not has_verify:
+        return "PENDING"  # Still waiting for banking setup
+    
+    # 5. At this point: submitted + all approvals + verified
+    #    Now check if we're past the end date
+    _, end = pp.resolved_window()
+    today = _date.today()
+    
+    if today > end:
+        return "FINISHED"  # Naturally ended
+    
+    # 6. Everything done and still in date range
+    return "ACTIVE"
+
 # --- model -----------------------------------------------------------------
 
 class FiscalYear(models.Model):
@@ -66,7 +210,6 @@ class FiscalYear(models.Model):
     )
 
     is_active = models.BooleanField(_("Active"), default=False)
-    is_locked = models.BooleanField(_("Locked"), default=False, help_text=_("Locked years are read-only."))
 
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
@@ -118,14 +261,16 @@ class FiscalYear(models.Model):
                 original = FiscalYear.objects.get(pk=self.pk)
             except FiscalYear.DoesNotExist:
                 original = None
-            if original and original.is_locked:
-                protected = ("start", "end", "label", "code", "is_active")
-                changed = [f for f in protected if getattr(self, f) != getattr(original, f)]
-                if changed:
-                    errors["is_locked"] = _("This fiscal year is locked. You cannot change: %(fields)s.") % {
-                        "fields": ", ".join(changed)
-                    }
-                # allow toggling is_locked itself; nothing else
+            if original:
+                from hankosign.utils import state_snapshot
+                st = state_snapshot(original)
+                if st.get("explicit_locked"):
+                    protected = ("start", "end", "label", "code", "is_active")
+                    changed = [f for f in protected if getattr(self, f) != getattr(original, f)]
+                    if changed:
+                        errors["__all__"] = _(
+                            "This fiscal year is locked. You cannot change: %(fields)s."
+                        ) % {"fields": ", ".join(changed)}
 
         # Normal validations / autofill
         if not self.start:
@@ -156,7 +301,6 @@ class PaymentPlan(models.Model):
     class Status(models.TextChoices):
         DRAFT     = "DRAFT", _("Draft")
         ACTIVE    = "ACTIVE", _("Active")
-        SUSPENDED = "SUSPENDED", _("Suspended")
         FINISHED  = "FINISHED", _("Finished")
         CANCELLED = "CANCELLED", _("Cancelled")
 
@@ -194,11 +338,9 @@ class PaymentPlan(models.Model):
     status_note  = models.CharField(_("Status note (short)"), max_length=200, blank=True, help_text=_("Short note describing the current status. Optional."))
     notes        = models.TextField(_("Notes (internal)"), blank=True, help_text=_("Longer notes for internal use (e.g. 'Buchungsvermerke'). Optional."))
 
-    # Signatures (dates are enough for now)
+    # Non-Hankosign 'Signature' (dates are enough for now)
     signed_person_at = models.DateField(_("Signed by payee on"), blank=True, null=True, help_text=_("Date of signature received."))
-    signed_wiref_at  = models.DateField(_("Signed by WiRef on"), blank=True, null=True, help_text=_("Date of signature received."))
-    signed_chair_at  = models.DateField(_("Signed by chair on"), blank=True, null=True, help_text=_("Date of signature received."))
-
+    
     # Future media hook (nullable until the media container lands)
     pdf_file     = models.FileField(_("Signed PDF (optional)"), upload_to="payment_plans/%Y/%m/", blank=True, null=True, help_text=_("Upload for the signed payment plan PDFs. Note: Simply re-upload after each signature."))
 
@@ -230,6 +372,7 @@ class PaymentPlan(models.Model):
                 check=models.Q(pay_end__isnull=True) | models.Q(pay_start__isnull=True) | models.Q(pay_end__gte=models.F("pay_start")),
                 name="ck_payment_plan_start_before_end",
             ),
+            # plan code cannot be empty
             models.CheckConstraint(
             check=~models.Q(plan_code=""),
             name="ck_paymentplan_plan_code_nonempty",
@@ -303,66 +446,14 @@ class PaymentPlan(models.Model):
         end   = min(end,   self.fiscal_year.end)
         return (start, end)
 
-    # --- “richtwert” computation (simple daily proration with 30-day months) ---
-    @staticmethod
-    def _month_span_days(year: int, month: int) -> int:
-        return calendar.monthrange(year, month)[1]
-
-    @staticmethod
-    def _month_start(d: date) -> date:
-        return d.replace(day=1)
-
-    @staticmethod
-    def _month_end(d: date) -> date:
-        return d.replace(day=calendar.monthrange(d.year, d.month)[1])
-
     def months_breakdown(self) -> list[dict]:
         """
         Returns a breakdown per month with simple daily proration against 30-day months.
-        [
-          {"year": 2026, "month": 1, "days": 16, "month_days": 31, "fraction": Decimal("0.53")},
-          ...
-        ]
+        
+        Delegates to pure function for easier testing.
         """
         start, end = self.resolved_window()
-        if start > end:
-            return []
-
-        out = []
-        cursor = date(start.year, start.month, 1)
-        end_anchor = date(end.year, end.month, 1)
-
-        while True:
-            month_days_real = self._month_span_days(cursor.year, cursor.month)
-            m_start = self._month_start(cursor)
-            m_end   = self._month_end(cursor)
-
-            # overlap within this month
-            seg_start = max(start, m_start)
-            seg_end   = min(end,   m_end)
-            if seg_start <= seg_end:
-                covered_days = (seg_end - seg_start).days + 1  # inclusive
-                # proration against 30-day “accounting” month
-                fraction = Decimal(covered_days) / Decimal(30)
-                out.append({
-                    "year": cursor.year,
-                    "month": cursor.month,
-                    "days": covered_days,
-                    "month_days": month_days_real,
-                    "fraction": fraction.quantize(Decimal("0.0001")),
-                })
-
-            # stop after processing the end month
-            if cursor.year == end_anchor.year and cursor.month == end_anchor.month:
-                break
-
-            # next month
-            if cursor.month == 12:
-                cursor = date(cursor.year + 1, 1, 1)
-            else:
-                cursor = date(cursor.year, cursor.month + 1, 1)
-
-        return out
+        return calculate_proration_breakdown(start, end)
 
     def recommended_total(self) -> Decimal:
         """
@@ -516,12 +607,6 @@ class PaymentPlan(models.Model):
             raise ValidationError(errors)
 
     # ---------- State helpers ----------
-    def mark_suspended(self, note: str | None = None, when: date | None = None):
-        self.status = self.Status.SUSPENDED
-        if note:
-            self.status_note = note
-        # you can add a suspended_at field later if you want exact dates
-        self.save(update_fields=["status", "status_note", "updated_at"])
 
     def mark_active(self, note: str | None = None):
         self.status = self.Status.ACTIVE

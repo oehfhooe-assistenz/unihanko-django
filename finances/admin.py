@@ -1,3 +1,4 @@
+#finances/admin.py
 from django.contrib import admin, messages
 from django import forms
 from django.utils.translation import gettext_lazy as _, pgettext
@@ -15,7 +16,10 @@ from .models import FiscalYear, PaymentPlan, default_start, auto_end_from_start,
 from core.pdf import render_pdf_response
 from core.admin_mixins import ImportExportGuardMixin
 from core.utils.authz import is_finances_manager
-
+from hankosign.utils import render_signatures_box, state_snapshot, get_action, record_signature, has_sig, sign_once, RID_JS, object_status_span
+from finances.models import paymentplan_status
+from django.core.exceptions import PermissionDenied
+from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for_boolean
 
 # =============== Import–Export ===============
 class FiscalYearResource(resources.ModelResource):
@@ -23,7 +27,7 @@ class FiscalYearResource(resources.ModelResource):
         model = FiscalYear
         fields = (
             "id", "code", "label", "start", "end",
-            "is_active", "is_locked", "created_at", "updated_at"
+            "is_active", "created_at", "updated_at"
         )
         export_order = fields
 
@@ -181,15 +185,15 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
 
     # --- list / filters / search -------------------------------------------
     list_display = (
+        "status_text",
         "plan_code",
         "person_role",
         "fiscal_year",
-        "window_display",
         "cost_center",
         "monthly_amount",
         "effective_total_display",
-        "status_badge",
         "updated_at",
+        "active_text",
     )
     list_filter = (FYChipsFilter, "status", "pay_start", "pay_end")
     search_fields = (
@@ -202,14 +206,14 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
         "cost_center",
         "address",
     )
+    list_display_links = ("plan_code",)
     autocomplete_fields = ("person_role", "fiscal_year")
 
-    # (3/4) include bank-reference previews as read-only
     readonly_fields = (
         "plan_code_or_hint",
         "created_at", "updated_at",
         "window_preview", "breakdown_preview", "recommended_total_display", "role_monthly_hint",
-        "bank_reference_preview_full", "bank_reference_preview_short", "pdf_file",
+        "bank_reference_preview_full", "pdf_file", "signatures_box",
     )
 
     list_per_page = 50
@@ -226,7 +230,7 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
             "fields": (
                 ("payee_name",), ("iban"), ("bic"),
                 ("address"), "reference",
-                "bank_reference_preview_full", "bank_reference_preview_short",
+                "bank_reference_preview_full",
             ),
         }),
         (_("Standing invoice window"), {
@@ -238,9 +242,12 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
         (_("Payment Plan PDF Center [TBA]"), {
             "fields": (("pdf_file"),),
         }),
+        (_("HankoSign Workflow"), {
+        "fields": ("signatures_box",),
+        }),
         (_("Status & signatures"), {
             "fields": (("status"), ("status_note"),
-                       ("signed_person_at"), ("signed_wiref_at"), ("signed_chair_at")),
+                       ("signed_person_at"),),
         }),
         (_("Miscellaneous"), {
             "fields": (("notes"),),
@@ -256,42 +263,66 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
         s, e = obj.resolved_window()
         return f"{s:%Y-%m-%d} → {e:%Y-%m-%d}"
 
+
     @admin.display(description=_("Total"))
     def effective_total_display(self, obj):
         val = format(obj.effective_total, ".2f")
         return format_html("<strong>{} €</strong>", val)
 
+
     @admin.display(description=_("Status"))
-    def status_badge(self, obj):
-        colors = {
-            obj.Status.DRAFT: "#6b7280",
-            obj.Status.ACTIVE: "#2563eb",
-            obj.Status.SUSPENDED: "#f59e0b",
-            obj.Status.FINISHED: "#10b981",
-            obj.Status.CANCELLED: "#ef4444",
-        }
-        label = obj.get_status_display()
-        color = colors.get(obj.status, "#6b7280")
-        return format_html('<span class="badge" style="background:{};color:#fff;">{}</span>', color, label)
+    def status_text(self, obj):
+        # PaymentPlan uses WIREF/CHAIR approval stages
+        return object_status_span(obj, final_stage="CHAIR", tier1_stage="WIREF")
+
+
+    @admin.display(description=_("Locked"))
+    def active_text(self, obj):
+        if not obj:
+            return "—"
+        
+        # Check FY lock cascade
+        if obj.fiscal_year_id:
+            fy_st = state_snapshot(obj.fiscal_year)
+            is_locked = fy_st.get("explicit_locked", False)
+        else:
+            is_locked = False
+        
+        return boolean_status_span(
+            value=not is_locked,  # True = unlocked
+            true_label=_("Open"),
+            false_label=_("Locked"),
+            true_code="ok",
+            false_code="off",
+        )
+
+
+    @admin.display(description=_("Signatures"))
+    def signatures_box(self, obj):
+        return render_signatures_box(obj)
+
 
     @admin.display(description=_("Resolved window (clamped to FY)"))
     def window_preview(self, obj):
+        from django.template.loader import render_to_string
+        
         if not obj.pk:
             return _("— will be shown after saving —")
+        
         s, e = obj.resolved_window()
-        if s > e:
-            return format_html('<div style="color:#ef4444;">{}</div>', _("No overlap with fiscal year."))
         fy = obj.fiscal_year
-        return format_html(
-            '<div style="font-size:12px;">'
-            '<div><strong>{}</strong><span style="color:var(--uh-accent);font-weight:bold;"> {} → {}</span></div>'
-            '<div>{}:<span style="color:var(--uh-accent-700);"> {} → {} </span></div>'
-            "</div>",
-            _("Effective invoice (plan) window:"),
-            s.strftime("%Y-%m-%d"), e.strftime("%Y-%m-%d"),
-            _("FY bounds"),
-            fy.start.strftime("%Y-%m-%d"), fy.end.strftime("%Y-%m-%d"),
-        )
+        
+        ctx = {
+            "window_start": s,
+            "window_end": e,
+            "fy_start": fy.start,
+            "fy_end": fy.end,
+            "no_overlap": (s > e),
+        }
+        
+        html = render_to_string("admin/finances/window_preview.html", ctx)
+        return mark_safe(html)
+
 
     @admin.display(description=_("Plan code"))
     def plan_code_or_hint(self, obj):
@@ -302,6 +333,7 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
         empty = pgettext("PaymentPlan admin hint", "not available")
         return obj.plan_code or format_html('<span style="{}">{}</span>', muted_style, empty)
 
+
     @admin.display(description=_("Role’s default monthly amount (per Statutes)"))
     def role_monthly_hint(self, obj):
         if not obj or not obj.person_role_id:
@@ -309,22 +341,20 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
         amt = getattr(obj.person_role.role, "default_monthly_amount", None)
         return f"{amt:.2f} €" if amt is not None else "—"
 
+
     @admin.display(description=_("Monthly breakdown (30-day proration)"))
     def breakdown_preview(self, obj):
+        from django.template.loader import render_to_string
+        
         if not obj or not obj.pk:
             return _("— will be shown after saving —")
+        
         rows = obj.months_breakdown()
-        if not rows:
-            return _("No coverage in this fiscal year.")
-        lines = [
-            f"{r['year']}-{r['month']:02d}: {r['days']}d × {format(r['fraction'], '.4f')}"
-            for r in rows
-        ]
-        text = "\n".join(lines)
-        return format_html(
-            "<pre style='margin:.5rem 0 .25rem 0; font-size:12px; white-space:pre-wrap;'>{}</pre>",
-            text,
-        )
+        ctx = {"rows": rows}
+        
+        html = render_to_string("admin/finances/breakdown_preview.html", ctx)
+        return mark_safe(html)
+
 
     @admin.display(description=_("Recommended total ['richtwert']"))
     def recommended_total_display(self, obj):
@@ -333,126 +363,392 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
         val = format(obj.recommended_total(), ".2f")
         return format_html('<code style="color: yellow;">{} €</code>', val)
 
-    # (3/4) Bank reference previews (read-only)
-    @admin.display(description=_("Bank reference (full)"))
-    def bank_reference_preview_full(self, obj):
-        if not obj or not getattr(obj, "pk", None):
-            return "—"
-        return format_html(
-            '<div><code>{}</code></div>'
-            '<div class="help-block" style="margin-top:.25rem; color:#6b7280;">{}</div>',
-            getattr(obj, "bank_reference_long", ""),
-            _("Format: {reference} – {payee name} – {cost center}. Updated after saving. Used for exports."),
-        )
 
-    @admin.display(description=_("Bank reference (≤140)"))
-    def bank_reference_preview_short(self, obj):
+    @admin.display(description=_("Bank reference previews"))
+    def bank_reference_preview_full(self, obj):
+        from django.template.loader import render_to_string
+        
         if not obj or not getattr(obj, "pk", None):
             return "—"
-        short_val = ""
+        
+        ref_full = getattr(obj, "bank_reference_long", "")
+        
+        # Get short ref
+        ref_short = ""
         if hasattr(obj, "bank_reference_short"):
             try:
-                short_val = obj.bank_reference_short(140)
+                ref_short = obj.bank_reference_short(140)
             except TypeError:
-                short_val = getattr(obj, "bank_reference_short", "")
-        return format_html(
-            '<div><code>{}</code></div>'
-            '<div class="help-block" style="margin-top:.25rem; color:#6b7280;">{}</div>',
-            short_val,
-            _("Max 140 chars. Falls back to initials if needed; truncates the left part. Updated after saving."),
-        )
+                ref_short = getattr(obj, "bank_reference_short", "")
+        
+        ctx = {
+            "ref_full": ref_full,
+            "ref_short": ref_short,
+        }
+        
+        html = render_to_string("admin/finances/bank_reference_preview.html", ctx)
+        return mark_safe(html)
     
+
     # --- read-only rules ----------------------------------------------------
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
-        if obj:  # editing existing plan
-            ro += ["fiscal_year", "person_role"]
-        if obj and obj.fiscal_year and obj.fiscal_year.is_locked:
-            ro += [
-                "person_role", "fiscal_year",
-                "payee_name", "iban", "bic", "address", "reference",
+        
+        if not obj:
+            return ro
+        
+        # 1. FY locked → full tombstone (year-end close)
+        if obj.fiscal_year_id:
+            fy_st = state_snapshot(obj.fiscal_year)
+            if fy_st.get("explicit_locked"):
+                # Lock everything except system fields
+                return ro + [
+                    "person_role", "fiscal_year", "cost_center",
+                    "payee_name", "iban", "bic", "reference", "address",
+                    "pay_start", "pay_end",
+                    "monthly_amount", "total_override",
+                    "notes", "status_note",
+                    "signed_person_at",
+                ]
+        
+        # 2. Workflow-driven readonly
+        status = paymentplan_status(obj)
+        
+        if status == "DRAFT":
+            # Scope locked after creation
+            if obj.pk:
+                ro.extend(["person_role", "fiscal_year"])
+        
+        elif status == "PENDING":
+            # Most fields locked, notes editable for corrections
+            ro.extend([
+                "person_role", "fiscal_year", "cost_center",
+                "payee_name", "iban", "bic", "reference", "address",
                 "pay_start", "pay_end",
                 "monthly_amount", "total_override",
-                "status", "status_note",
-                "signed_person_at", "signed_wiref_at", "signed_chair_at",
-                "pdf_file",
-                "bank_reference_preview_full", "bank_reference_preview_short",
-            ]
-        return list(dict.fromkeys(ro))
+                "signed_person_at",
+            ])
+        
+        elif status in ("ACTIVE", "FINISHED", "CANCELLED"):
+            # Full tombstone
+            ro.extend([
+                "person_role", "fiscal_year", "cost_center",
+                "payee_name", "iban", "bic", "reference", "address",
+                "pay_start", "pay_end",
+                "monthly_amount", "total_override",
+                "notes", "status_note",
+                "signed_person_at",
+            ])
+        
+        return list(dict.fromkeys(ro))  # dedupe
+
 
     # --- queryset perf ------------------------------------------------------
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.select_related("person_role__person", "person_role__role", "fiscal_year")
+    
+    def get_changelist_row_attrs(self, request, obj):
+        # Check FY lock cascade
+        if obj.fiscal_year_id:
+            fy_st = state_snapshot(obj.fiscal_year)
+            is_locked = fy_st.get("explicit_locked", False)
+        else:
+            is_locked = False
+        
+        # If locked, prioritize lock state; otherwise show workflow state
+        if is_locked:
+            return row_state_attr_for_boolean(
+                value=False,  # locked
+                true_code="ok",
+                false_code="locked",
+            )
+        else:
+            # Show workflow state (final/wiref/submitted/draft will be handled by CSS)
+            return {}  # Let CSS handle it via :has() selectors
+
 
     # --- object actions (status transitions) --------------------------------
-    change_actions = ("activate_plan", "suspend_plan", "finish_plan", "cancel_plan", "print_pdf")
+    change_actions = ( "submit_plan", "withdraw_plan", "approve_wiref", "approve_chair", "verify_banking", "cancel_plan", "print_pdf", )
 
     def get_change_actions(self, request, object_id, form_url):
         actions = list(super().get_change_actions(request, object_id, form_url))
         obj = self.get_object(request, object_id)
+        
         if not obj:
             return actions
-        if obj.fiscal_year and obj.fiscal_year.is_locked:
-            actions = [a for a in actions if a in ("print_pdf",)]
-        elif obj.status == obj.Status.DRAFT:
-            actions = [a for a in actions if a in ("activate_plan", "cancel_plan", "print_pdf")]
-        elif obj.status == obj.Status.ACTIVE:
-            actions = [a for a in actions if a in ("suspend_plan", "finish_plan", "cancel_plan", "print_pdf")]
-        elif obj.status == obj.Status.SUSPENDED:
-            actions = [a for a in actions if a in ("activate_plan", "finish_plan", "cancel_plan", "print_pdf")]
-        else:
-            actions = [a for a in actions if a in ("print_pdf",)]
+        
+        def drop(*names):
+            for n in names:
+                if n in actions:
+                    actions.remove(n)
+        
+        # FY locked → only print
+        if obj.fiscal_year_id:
+            fy_st = state_snapshot(obj.fiscal_year)
+            if fy_st.get("explicit_locked"):
+                drop("submit_plan", "withdraw_plan", "approve_wiref", 
+                    "approve_chair", "verify_banking", "cancel_plan")
+                return actions
+        
+        # Workflow-driven visibility
+        status = paymentplan_status(obj)
+        
+        if status == "DRAFT":
+            # Show: submit, cancel, print
+            drop("withdraw_plan", "approve_wiref", "approve_chair", "verify_banking")
+        
+        elif status == "PENDING":
+            # Show based on approvals
+            st = state_snapshot(obj)
+            approved = st.get("approved", set())
+            
+            # Always hide submit
+            drop("submit_plan")
+            
+            # Hide withdraw if any approvals exist
+            if approved:
+                drop("withdraw_plan")
+            
+            # Hide approvals once done
+            if "WIREF" in approved:
+                drop("approve_wiref")
+            if "CHAIR" in approved:
+                drop("approve_chair")
+            
+            # Show verify only if both approvals present
+            if "WIREF" not in approved or "CHAIR" not in approved:
+                drop("verify_banking")
+        
+        elif status in ("ACTIVE", "FINISHED", "CANCELLED"):
+            # Show only print and cancel (if still active)
+            drop("submit_plan", "withdraw_plan", "approve_wiref", "approve_chair", "verify_banking")
+            
+            if status != "ACTIVE":
+                drop("cancel_plan")
+        
         return actions
 
-    def activate_plan(self, request, obj):
-        try:
-            obj.mark_active(note=_("Activated from admin"))
-        except IntegrityError:
-            self.message_user(
-                request,
-                _("Could not activate: another active plan exists for this assignment and year."),
-                level=messages.ERROR,
-            )
+
+    # === HankoSign Workflow Actions ===
+    def submit_plan(self, request, obj):
+        st = state_snapshot(obj)
+        if st["submitted"]:
+            messages.info(request, _("Already submitted."))
             return
-        self.message_user(request, _("Plan activated."), level=messages.SUCCESS)
-    activate_plan.label = _("Activate")
-    activate_plan.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-bottom: 1rem;",}
+        
+        action = get_action("SUBMIT:WIREF@finances.paymentplan")
+        if not action:
+            messages.error(request, _("Submit action not configured."))
+            return
+        
+        try:
+            record_signature(request.user, action, obj, note=_("Payment plan submitted"))
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+        
+        messages.success(request, _("Submitted."))
+    submit_plan.label = _("Submit")
+    submit_plan.attrs = {
+        "class": "btn btn-block btn-warning btn-sm",
+        "style": "margin-bottom: 1rem;",
+    }
 
-    def suspend_plan(self, request, obj):
-        obj.mark_suspended(note=_("Suspended from admin"))
-        self.message_user(request, _("Plan suspended."), level=messages.SUCCESS)
-    suspend_plan.label = _("Suspend")
-    suspend_plan.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
 
-    def finish_plan(self, request, obj):
-        obj.mark_finished(note=_("Finished from admin"))
-        self.message_user(request, _("Plan finished."), level=messages.SUCCESS)
-    finish_plan.label = _("Finish")
-    finish_plan.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;",}
+    def withdraw_plan(self, request, obj): 
+        st = state_snapshot(obj)
+        if not st["submitted"]:
+            messages.info(request, _("Not submitted."))
+            return
+        
+        # Block if any approvals exist
+        if st["approved"]:
+            messages.warning(request, _("Cannot withdraw after approvals."))
+            return
+        
+        action = get_action("WITHDRAW:WIREF@finances.paymentplan")
+        if not action:
+            messages.error(request, _("Withdraw action not configured."))
+            return
+        
+        try:
+            record_signature(request.user, action, obj, note=_("Submission withdrawn"))
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+        
+        messages.success(request, _("Withdrawn."))
+    withdraw_plan.label = _("Withdraw")
+    withdraw_plan.attrs = {
+        "class": "btn btn-block btn-secondary btn-sm",
+        "style": "margin-bottom: 1rem;",
+    }
 
-    def cancel_plan(self, request, obj):
-        obj.mark_cancelled(note=_("Cancelled from admin"))
-        self.message_user(request, _("Plan cancelled."), level=messages.SUCCESS)
-    cancel_plan.label = _("Cancel")
-    cancel_plan.attrs = {"class": "btn btn-block btn-danger btn-sm", "style": "margin-bottom: 1rem;",}
+    def approve_wiref(self, request, obj):
+        st = state_snapshot(obj)
+        if not st["submitted"]:
+            messages.warning(request, _("Submit first."))
+            return
+        
+        if "WIREF" in st["approved"]:
+            messages.info(request, _("Already approved (WiRef)."))
+            return
+        
+        action = get_action("APPROVE:WIREF@finances.paymentplan")
+        if not action:
+            messages.error(request, _("WiRef approval action not configured."))
+            return
+        
+        try:
+            record_signature(request.user, action, obj, note=_("Approved (WiRef)"))
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+        
+        messages.success(request, _("Approved (WiRef)."))
+    approve_wiref.label = _("Approve (WiRef)")
+    approve_wiref.attrs = {
+        "class": "btn btn-block btn-success btn-sm",
+        "style": "margin-bottom: 1rem;",
+    }
 
-    # === PDF actions (single + bulk) ===
+
+    def approve_chair(self, request, obj):
+        st = state_snapshot(obj)
+        if not st["submitted"]:
+            messages.warning(request, _("Submit first."))
+            return
+        
+        if "CHAIR" in st["approved"]:
+            messages.info(request, _("Already approved (Chair)."))
+            return
+        
+        action = get_action("APPROVE:CHAIR@finances.paymentplan")
+        if not action:
+            messages.error(request, _("Chair approval action not configured."))
+            return
+        
+        try:
+            record_signature(request.user, action, obj, note=_("Approved (Chair)"))
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+        
+        messages.success(request, _("Approved (Chair)."))
+    approve_chair.label = _("Approve (Chair)")
+    approve_chair.attrs = {
+        "class": "btn btn-block btn-success btn-sm",
+        "style": "margin-bottom: 1rem;",
+    }
+
+
+    def verify_banking(self, request, obj):
+        st = state_snapshot(obj)
+        
+        # Need both approvals first
+        if "WIREF" not in st["approved"] or "CHAIR" not in st["approved"]:
+            messages.warning(request, _("Both approvals required before verification."))
+            return
+        
+        if has_sig(obj, "VERIFY", "WIREF"):
+            messages.info(request, _("Already verified."))
+            return
+        
+        action = get_action("VERIFY:WIREF@finances.paymentplan")
+        if not action:
+            messages.error(request, _("Verify action not configured."))
+            return
+        
+        try:
+            record_signature(request.user, action, obj, note=_("Banking setup verified"))
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+        
+        messages.success(request, _("Banking verified. Plan is now ACTIVE."))
+    verify_banking.label = _("Verify banking")
+    verify_banking.attrs = {
+        "class": "btn btn-block btn-primary btn-sm",
+        "style": "margin-bottom: 1rem;",
+    }
+
+
+    def cancel_plan(self, request, obj):       
+        action = get_action("REJECT:-@finances.paymentplan")
+        if not action:
+            messages.error(request, _("Cancel action not configured."))
+            return
+        
+        try:
+            record_signature(request.user, action, obj, note=_("Payment plan cancelled"))
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+        
+        messages.success(request, _("Cancelled."))
+    cancel_plan.label = _("Cancel plan")
+    cancel_plan.attrs = {
+        "class": "btn btn-block btn-danger btn-sm",
+        "style": "margin-bottom: 1rem;",
+    }
+
+
     def print_pdf(self, request, obj):
+        action = get_action("RELEASE:-@finances.paymentplan")
+        if not action:
+            messages.error(request, _("Release action not configured."))
+            return
+        
+        try:
+            sign_once(request, action, obj, note=_("Printed payment plan PDF"), window_seconds=10)
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+        
         date_str = timezone.localtime().strftime("%Y-%m-%d")
         lname = slugify(obj.person_role.person.last_name)[:20]
         rsname = slugify(obj.person_role.role.short_name)[:10]
         ctx = {"pp": obj}
-        return render_pdf_response("finances/paymentplan_pdf.html", ctx, request, f"FGEB-BELEG_{obj.plan_code}_{rsname}_{lname}-{date_str}.pdf")
-    print_pdf.label = "🖨️ " + _("Print Receipt PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;",}
+        return render_pdf_response(
+            "finances/paymentplan_pdf.html",
+            ctx,
+            request,
+            f"FGEB-BELEG_{obj.plan_code}_{rsname}_{lname}-{date_str}.pdf"
+        )
+    print_pdf.label = "🖨️ " + _("Print PDF")
+    print_pdf.attrs = {
+        "class": "btn btn-block btn-info btn-sm",
+        "style": "margin-bottom: 1rem;",
+        "data-action": "post-object",
+        "onclick": RID_JS,
+    }
 
     @admin.action(description=_("Export selected to PDF"))
     def export_selected_pdf(self, request, queryset):
+        action = get_action("RELEASE:-@finances.paymentplan")
+        if not action:
+            messages.error(request, _("Release action not configured."))
+            return
+        
+        # Sign each plan in the export
+        for pp in queryset:
+            try:
+                sign_once(request, action, pp, note=_("Included in bulk PDF export"), window_seconds=10)
+            except Exception:
+                # Don't fail the whole export if one signature fails
+                pass
+        
         date_str = timezone.localtime().strftime("%Y-%m-%d")
         rows = queryset.select_related("person_role__person", "person_role__role", "fiscal_year") \
-                       .order_by("fiscal_year__start", "plan_code")
-        return render_pdf_response("finances/paymentplans_list_pdf.html", {"rows": rows}, request, f"FGEB_SELECT-{date_str}.pdf")
+                    .order_by("fiscal_year__start", "plan_code")
+        return render_pdf_response(
+            "finances/paymentplans_list_pdf.html",
+            {"rows": rows},
+            request,
+            f"FGEB_SELECT-{date_str}.pdf"
+        )
+
 
     # (3) Draft-stage banner
     def change_view(self, request, object_id, form_url="", extra_context=None):
@@ -549,8 +845,9 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         return is_finances_manager(request.user)
 
     # --- list / filters / search -------------------------------------------
-    list_display = ("display_code", "start", "end", "status_badges", "updated_at")
-    list_filter = ("is_active", "is_locked", "start", "end")
+    list_display = ("display_code", "start", "end", "is_active", "updated_at", "active_text")
+    list_display_links = ("display_code",)
+    list_filter = ("is_active", "start", "end")
     search_fields = ("code", "label")
     ordering = ("-start",)
     date_hierarchy = "start"
@@ -560,31 +857,35 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
     actions = ("export_selected_pdf", "make_active")
 
     # readonly timestamps always
-    readonly_fields = ("created_at", "updated_at", "locked_state")
+    readonly_fields = ("created_at", "updated_at", "active_text", "signatures_box")
 
     fieldsets = (
-        (_("Basics"), {"fields": (("start"), ("end"), "code", "label", "is_active", "locked_state")}),
-        (_("Timestamps"), {"fields": (("created_at"), ("updated_at"),)}),
+        (_("Basics"), {"fields": (("start"), ("end"), "code", "label", "is_active", )}),
+        (_("HankoSign Workflow"), {
+        "fields": ("signatures_box",),
+        }),
+        (_("System"), {"fields": (("created_at"), ("updated_at"),)}),
     )
 
     @admin.display(description=_("Locked"))
-    def locked_state(self, obj):
+    def active_text(self, obj):
         if not obj:
             return "—"
-        if obj.is_locked:
-            return format_html('<span class="badge" style="background:#6b7280;color:#fff;">{}</span>', _("Locked"))
-        return format_html('<span class="badge" style="background:#10b981;color:#fff;">{}</span>', _("Open"))
-
-    @admin.display(description=_("Status"))
-    def status_badges(self, obj):
-        parts = []
-        if obj.is_active:
-            parts.append('<span class="badge" style="background:#2563eb;color:#fff;margin-right:.25rem;">{}</span>'.format(_("Active")))
-        if obj.is_locked:
-            parts.append('<span class="badge" style="background:#6b7280;color:#fff;">{}</span>'.format(_("Locked")))
-        else:
-            parts.append('<span class="badge" style="background:#f59e0b;color:#fff;">{}</span>'.format(_("Open")))
-        return format_html(" ".join(parts))
+        
+        st = state_snapshot(obj)
+        is_locked = st.get("explicit_locked", False)
+        
+        return boolean_status_span(
+            value=not is_locked,  # True = unlocked
+            true_label=_("Open"),
+            false_label=_("Locked"),
+            true_code="ok",
+            false_code="off",
+        )
+    
+    @admin.display(description=_("Signatures"))
+    def signatures_box(self, obj):
+        return render_signatures_box(obj)
 
     # Prefill “Add” with current FY; user can change start and leave end blank.
     def get_changeform_initial_data(self, request):
@@ -595,8 +896,12 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
     # Make key fields read-only in the UI when locked (any user)
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
-        if obj and obj.is_locked:
-            ro += ["start", "end", "code", "label", "is_active"]
+        
+        if obj:
+            st = state_snapshot(obj)
+            if st.get("explicit_locked"):
+                ro += ["start", "end", "code", "label", "is_active"]
+        
         return ro
 
     # Hide actions the user isn't allowed to use
@@ -614,49 +919,90 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
     change_actions = ("print_pdf", "lock_year", "unlock_year")
 
     def print_pdf(self, request, obj):
+        action = get_action("RELEASE:-@finances.fiscalyear")
+        if not action:
+            messages.error(request, _("Release action not configured."))
+            return
+        
+        try:
+            sign_once(request, action, obj, note=_("Printed fiscal year PDF"), window_seconds=10)
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+        
         date_str = timezone.localtime().strftime("%Y-%m-%d")
         ctx = {"fy": obj}
-        return render_pdf_response("finances/fiscalyear_pdf.html", ctx, request, f"WJFY-STATUS_{obj.display_code()}-{date_str}.pdf")
+        return render_pdf_response(
+            "finances/fiscalyear_pdf.html",
+            ctx,
+            request,
+            f"WJFY-STATUS_{obj.display_code()}-{date_str}.pdf"
+        )
     print_pdf.label = "🖨️ " + _("Print receipt PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;",}
+    print_pdf.attrs = {
+        "class": "btn btn-block btn-secondary btn-sm",
+        "style": "margin-bottom: 1rem;",
+        "data-action": "post-object",
+        "onclick": RID_JS,
+    }
 
     @admin.action(description=_("Print selected as overview PDF"))
     def export_selected_pdf(self, request, queryset):
+        action = get_action("RELEASE:-@finances.fiscalyear")
+        if not action:
+            messages.error(request, _("Release action not configured."))
+            return
+        
+        # Sign each FY in the export
+        for fy in queryset:
+            try:
+                sign_once(request, action, fy, note=_("Included in bulk PDF export"), window_seconds=10)
+            except Exception:
+                # Don't fail the whole export if one signature fails
+                pass
+        
         date_str = timezone.localtime().strftime("%Y-%m-%d")
         rows = queryset.order_by("-start")
-        return render_pdf_response("finances/fiscalyears_list_pdf.html", {"rows": rows}, request, f"WJFY-SELECT-{date_str}.pdf")
+        return render_pdf_response(
+            "finances/fiscalyears_list_pdf.html",
+            {"rows": rows},
+            request,
+            f"WJFY-SELECT-{date_str}.pdf"
+        )
 
     @admin.action(description=_("Set selected as active (and clear others)"))
     def make_active(self, request, queryset):
         if not self._is_manager(request):
-            self.message_user(request, _("You don’t have permission to set active."), level=messages.WARNING)
+            messages.warning(request, _("You don't have permission to set active."))
             return
 
-        # Block locked targets and enforce a single selection
-        locked = queryset.filter(is_locked=True)
-        if locked.exists():
-            self.message_user(
+        # Block locked targets (check via state_snapshot)
+        locked_objs = []
+        for fy in queryset:
+            st = state_snapshot(fy)
+            if st.get("explicit_locked"):
+                locked_objs.append(fy)
+        
+        if locked_objs:
+            messages.warning(
                 request,
-                _("You cannot set a locked fiscal year as active. Deselect locked rows first."),
-                level=messages.WARNING,
+                _("You cannot set a locked fiscal year as active. Deselect locked rows first.")
             )
             return
 
         count = queryset.count()
         if count != 1:
-            self.message_user(
+            messages.warning(
                 request,
-                _("Select exactly one fiscal year to set active (you selected %(n)d).") % {"n": count},
-                level=messages.WARNING,
+                _("Select exactly one fiscal year to set active (you selected %(n)d).") % {"n": count}
             )
             return
 
         target = queryset.first()
         if target.is_active:
-            self.message_user(
+            messages.info(
                 request,
-                _("%(code)s is already the active fiscal year.") % {"code": target.display_code()},
-                level=messages.INFO,
+                _("%(code)s is already the active fiscal year.") % {"code": target.display_code()}
             )
             return
 
@@ -665,56 +1011,110 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
                 FiscalYear.objects.exclude(pk=target.pk).update(is_active=False)
                 target.is_active = True
                 target.save(update_fields=["is_active"])
-            self.message_user(
+            messages.success(
                 request,
-                _("Activated %(code)s as the current fiscal year.") % {"code": target.display_code()},
-                level=messages.SUCCESS,
+                _("Activated %(code)s as the current fiscal year.") % {"code": target.display_code()}
             )
         except IntegrityError:
-            self.message_user(
+            messages.error(
                 request,
-                _("Could not set active due to a database constraint (another year may have been activated concurrently)."),
-                level=messages.ERROR,
+                _("Could not set active due to a database constraint (another year may have been activated concurrently).")
             )
 
     # === Object actions: Lock / Unlock (managers only) ===
     def get_change_actions(self, request, object_id, form_url):
         actions = super().get_change_actions(request, object_id, form_url)
+        
         if not self._is_manager(request):
             # only allow Print PDF for editors
             return [a for a in actions if a == "print_pdf"]
+        
         obj = self.get_object(request, object_id)
         if obj:
-            if obj.is_locked:
+            st = state_snapshot(obj)
+            is_locked = st.get("explicit_locked", False)
+            
+            if is_locked:
                 # hide Lock, keep Unlock + PDF
                 return [a for a in actions if a in ("unlock_year", "print_pdf")]
             else:
                 # show Lock + PDF
                 return [a for a in actions if a in ("lock_year", "print_pdf")]
+        
         return actions
 
     def lock_year(self, request, obj):
         if not self._is_manager(request):
-            self.message_user(request, _("You don’t have permission to lock years."), level=messages.WARNING)
+            messages.warning(request, _("You don't have permission to lock years."))
             return
-        if obj.is_locked:
-            self.message_user(request, _("Already locked."), level=messages.INFO)
+        
+        # Check if already locked via HankoSign
+        st = state_snapshot(obj)
+        if st.get("explicit_locked"):
+            messages.info(request, _("Already locked."))
             return
-        obj.is_locked = True
-        obj.save(update_fields=["is_locked"])
-        self.message_user(request, _("Fiscal year locked."), level=messages.SUCCESS)
+        
+        action = get_action("LOCK:-@finances.fiscalyear")
+        if not action:
+            messages.error(request, _("Lock action not configured."))
+            return
+        
+        try:
+            record_signature(request.user, action, obj, note=_("Fiscal year locked"))
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+        
+        messages.success(request, _("Fiscal year locked."))
     lock_year.label = _("Lock year")
-    lock_year.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
+    lock_year.attrs = {
+        "class": "btn btn-block btn-warning btn-sm",
+        "style": "margin-bottom: 1rem;",
+    }
 
     def unlock_year(self, request, obj):
         if not self._is_manager(request):
-            self.message_user(request, _("You don’t have permission to unlock years."), level=messages.WARNING)
+            messages.warning(request, _("You don't have permission to unlock years."))
             return
-        if not obj.is_locked:
-            self.message_user(request, _("Already open."), level=messages.INFO)
+        
+        # Check if locked via HankoSign
+        st = state_snapshot(obj)
+        if not st.get("explicit_locked"):
+            messages.info(request, _("Already unlocked."))
             return
-        obj.is_locked = False
-        obj.save(update_fields=["is_locked"])
-        self.message_user(request, _("Fiscal year unlocked."), level=messages.SUCCESS)
+        
+        action = get_action("UNLOCK:-@finances.fiscalyear")
+        if not action:
+            messages.error(request, _("Unlock action not configured."))
+            return
+        
+        try:
+            record_signature(request.user, action, obj, note=_("Fiscal year unlocked"))
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+            return
+    
+        messages.success(request, _("Fiscal year unlocked."))
     unlock_year.label = _("Unlock year")
-    unlock_year.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-bottom: 1rem;",}
+    unlock_year.attrs = {
+        "class": "btn btn-block btn-success btn-sm",
+        "style": "margin-bottom: 1rem;",
+    }
+
+    def get_changelist_row_attrs(self, request, obj):
+        st = state_snapshot(obj)
+        is_locked = st.get("explicit_locked", False)
+        
+        # If locked, show locked state; otherwise show active state
+        if is_locked:
+            return row_state_attr_for_boolean(
+                value=False,  # locked
+                true_code="ok",
+                false_code="off",
+            )
+        else:
+            return row_state_attr_for_boolean(
+                value=obj.is_active,
+                true_code="ok",
+                false_code="off",
+            )

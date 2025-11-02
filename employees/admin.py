@@ -1,3 +1,4 @@
+#employees/admin.py
 from django.contrib import admin, messages
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -24,9 +25,7 @@ from django.utils.formats import date_format
 from concurrency.admin import ConcurrentModelAdmin
 from django import forms
 from django.contrib.admin.widgets import AdminTimeWidget
-from hankosign.utils import render_signatures_box
 from core.utils.authz import is_employees_manager
-from core.admin_mixins import FriendlyConcurrencyMixin
 
 from .models import (
     Employee,
@@ -38,7 +37,7 @@ from .models import (
 )
 
 from django.core.exceptions import PermissionDenied
-from hankosign.utils import record_signature, get_action, state_snapshot
+from hankosign.utils import record_signature, get_action, state_snapshot, render_signatures_box, RID_JS, sign_once
 
 # =========================
 # Import–Export resources
@@ -251,9 +250,10 @@ class EmployeeAdmin(
         "person_role",
         "weekly_hours",
         "saldo_display",
-        "active_text",
         "updated_at",
+        "active_text",
     )
+    list_display_links = ("person_role",)
     list_filter = ("is_active",)
     search_fields = (
         "person_role__person__last_name",
@@ -263,7 +263,6 @@ class EmployeeAdmin(
     autocomplete_fields = ("person_role",)
     readonly_fields = ("daily_expected", "created_at", "updated_at")
     inlines = [EmploymentDocumentInline, EmployeeLeaveYearInline]
-    actions = ("export_selected_pdf",)
 
     fieldsets = (
         (_("Assignment"), {"fields": ("person_role", "is_active")}),
@@ -314,10 +313,23 @@ class EmployeeAdmin(
     change_actions = ("print_employee_pdf",)
 
     def print_employee_pdf(self, request, obj):
+        action = get_action("RELEASE:-@employees.employee")
+        if not action:
+            messages.error(request, _("Release action is not configured.")); return
+        try:
+            sign_once(request, action, obj, note=_("Printed employee dossier PDF"), window_seconds=10)
+        except PermissionDenied as e:
+            messages.error(request, str(e)); return
+
         ctx = {"emp": obj, "org": OrgInfo.get_solo()}
         return render_pdf_response("employees/employee_pdf.html", ctx, request, f"EMP_{obj.id}.pdf")
-    print_employee_pdf.label = "🖨️ " + _(" Print Employee PDF")
-    print_employee_pdf.attrs = {"class": "btn btn-block btn-info btn-sm", "style": "margin-bottom: 1rem;",}
+    print_employee_pdf.label = "🖨️ " + _("Print Employee PDF")
+    print_employee_pdf.attrs = {
+        "class": "btn btn-block btn-info btn-sm",
+        "style": "margin-bottom: 1rem;",
+        "data-action": "post-object",
+        "onclick": RID_JS,
+    }
 
 
     def get_readonly_fields(self, request, obj=None):
@@ -390,7 +402,8 @@ class EmploymentDocumentAdmin(
 ):
     form = EmploymentDocumentAdminForm
     resource_classes = [EmploymentDocumentResource]
-    list_display = ("code", "employee", "kind_text", "title", "period_display", "status_text", "updated_at")
+    list_display = ("status_text", "code", "employee", "kind_text", "title", "period_display", "updated_at")
+    list_display_links = ("code",)
     list_filter = ("kind", "is_active", "start_date", "end_date")
     search_fields = (
         "code",
@@ -524,6 +537,13 @@ class EmploymentDocumentAdmin(
 
     def print_receipt(self, request, obj):
         from hankosign.utils import seal_signatures_context
+        action = get_action("RELEASE:-@employees.employmentdocument")
+        if not action:
+            messages.error(request, _("Release action is not configured.")); return
+        try:
+            sign_once(request, action, obj, note=_("Printed document receipt PDF"), window_seconds=10)
+        except PermissionDenied as e:
+            messages.error(request, str(e)); return
         emp = (
             Employee.objects.select_related("person_role__person", "person_role__role").get(pk=obj.employee_id)
         )
@@ -536,12 +556,19 @@ class EmploymentDocumentAdmin(
             filename=f"EDOC__{obj.code}.pdf",
         )
     print_receipt.label = "🖨️ " + _("Print document receipt PDF")
-    print_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;",}
+    print_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     def print_leaverequest_receipt(self, request, obj):
         from decimal import Decimal, ROUND_HALF_UP
         from hankosign.utils import seal_signatures_context
+        action = get_action("RELEASE:-@employees.employmentdocument")
+        if not action:
+            messages.error(request, _("Release action is not configured.")); return
+        try:
+            sign_once(request, action, obj, note=_("Printed leave request receipt PDF"), window_seconds=10)
+        except PermissionDenied as e:
+            messages.error(request, str(e)); return
         # defensive guard (in case someone hits the URL directly)
         if obj.kind != obj.Kind.AA:
             from django.contrib import messages
@@ -566,13 +593,20 @@ class EmploymentDocumentAdmin(
         daily_expected_hours = to_hours(int(daily_minutes)) if daily_minutes else Decimal("0.00")
         ctx = {"doc": obj, "org": OrgInfo.get_solo(), "emp": emp, "person": emp.person_role.person, "role": emp.person_role.role, "leave_amount_m": leave_amount_minutes, "leave_amount_h": leave_amount_hours, "daily_expected_h": daily_expected_hours, "signatures": signatures}
         
-        return render_pdf_response("employees/leaverequest_receipt_pdf.html", ctx, request, filename=f"UA_{obj.code}.pdf",)
+        return render_pdf_response("employees/leaverequest_receipt_pdf.html", ctx, request, filename=f"EDOC_{obj.code}.pdf",)
     print_leaverequest_receipt.label = "🖨️ " + _("Print leave request receipt PDF")
-    print_leaverequest_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;",}
+    print_leaverequest_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     def print_sicknote_receipt(self, request, obj):
         from hankosign.utils import seal_signatures_context
+        action = get_action("RELEASE:-@employees.employmentdocument")
+        if not action:
+            messages.error(request, _("Release action is not configured.")); return
+        try:
+            sign_once(request, action, obj, note=_("Printed sick note receipt PDF"), window_seconds=10)
+        except PermissionDenied as e:
+            messages.error(request, str(e)); return
         # defensive guard (in case someone hits the URL directly)
         if obj.kind != obj.Kind.KM:
             from django.contrib import messages
@@ -584,9 +618,9 @@ class EmploymentDocumentAdmin(
         signatures = seal_signatures_context(obj)
         duration_days_incl = getattr(obj, "duration_weekdays_inclusive", None) or 0
         ctx = {"doc": obj, "org": OrgInfo.get_solo(), "emp": emp, "person": emp.person_role.person, "role": emp.person_role.role, "signatures": signatures}
-        return render_pdf_response("employees/sicknote_receipt_pdf.html", ctx, request, filename=f"KM_{obj.code}.pdf")
+        return render_pdf_response("employees/sicknote_receipt_pdf.html", ctx, request, filename=f"EDOC_{obj.code}.pdf")
     print_sicknote_receipt.label = "🖨️ " + _("Print sick note receipt PDF")
-    print_sicknote_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;",}
+    print_sicknote_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     def submit_doc(self, request, obj):
@@ -790,12 +824,13 @@ class TimeSheetAdmin(
 ):
     resource_classes = [TimeSheetResource]
     list_display = (
+        "status_text",        
         "employee",
         "period_label",
-        "status_text",
         "minutes_summary",
         "updated_at",
     )
+    list_display_links = ("employee",)
     list_filter = (TimeSheetStateFilter, "year", "month")
     search_fields = (
         "employee__person_role__person__last_name",
@@ -816,7 +851,6 @@ class TimeSheetAdmin(
         "signatures_box",
     )
     inlines = []
-    actions = ("export_selected_pdf",)
 
     fieldsets = (
         (_("Scope"), {"fields": ("employee", ("year", "month"))}),
@@ -1119,6 +1153,13 @@ class TimeSheetAdmin(
     from datetime import date as _date
     def print_timesheet(self, request, obj):
         from hankosign.utils import seal_signatures_context
+        action = get_action("RELEASE:-@employees.timesheet")
+        if not action:
+            messages.error(request, _("Release action is not configured.")); return
+        try:
+            sign_once(request, action, obj, note=_("Printed timesheet PDF"), window_seconds=10)
+        except PermissionDenied as e:
+            messages.error(request, str(e)); return
         emp = (
             Employee.objects.select_related("person_role__person", "person_role__role").get(pk=obj.employee_id)
         )
@@ -1148,7 +1189,7 @@ class TimeSheetAdmin(
             f"JOURNAL_{emp.person_role.person.last_name}_{obj.year}-{obj.month:02d}.pdf",
         )
     print_timesheet.label = "🖨️ " + _("Print Timesheet PDF")
-    print_timesheet.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;",}
+    print_timesheet.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;","data-action": "post-object", "onclick": RID_JS}
 
 
     # --- workflow transitions ---
