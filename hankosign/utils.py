@@ -242,19 +242,28 @@ def _stages(obj, verb: str) -> set[str]:
         .distinct()
     )
 
-# REPLACE your old state_snapshot with this universal version
+
+# In hankosign/utils.py
+
 def state_snapshot(obj) -> dict:
     """
     Universal snapshot:
       - 'submitted' => last SUBMIT is after last WITHDRAW (any stage)
       - 'approved'  => set of stages that approved (from data)
-      - 'rejected'  => set of stages that rejected (from data)
+      - 'rejected'  => ANY REJECT signature exists (boolean)
       - 'required'  => set of approval stages required (from configured Actions)
       - 'final'     => all required approvals present
       - 'locked'    => simple lock rule (submitted or any approved or final)
     """
     if not obj or not getattr(obj, "pk", None):
-        return {"submitted": False, "approved": set(), "rejected": set(), "required": set(), "final": False, "locked": False}
+        return {
+            "submitted": False,
+            "approved": set(),
+            "rejected": False,  # ← Changed to boolean
+            "required": set(),
+            "final": False,
+            "locked": False
+        }
 
     ct = _scope_ct(obj)
 
@@ -266,15 +275,21 @@ def state_snapshot(obj) -> dict:
     )
 
     # Facts from signatures
-    t_submit   = _last(obj, "SUBMIT")     # any stage
-    t_withdraw = _last(obj, "WITHDRAW")   # any stage
+    t_submit   = _last(obj, "SUBMIT")
+    t_withdraw = _last(obj, "WITHDRAW")
     t_lock = _last(obj, "LOCK")
     t_unlock = _last(obj, "UNLOCK")
     submitted  = bool(t_submit and (not t_withdraw or t_submit > t_withdraw))
     explicit_locked = bool(t_lock and (not t_unlock or t_lock > t_unlock))
 
     approved = _stages(obj, "APPROVE")
-    rejected = _stages(obj, "REJECT")
+    
+    # Check if ANY REJECT signature exists (regardless of stage)
+    rejected = Signature.objects.filter(
+        content_type=ct,
+        object_id=str(obj.pk),
+        verb="REJECT"
+    ).exists()  # ← Boolean instead of set
 
     final = bool(required) and required.issubset(approved)
 
@@ -283,7 +298,7 @@ def state_snapshot(obj) -> dict:
     return {
         "submitted": submitted,
         "approved": approved,
-        "rejected": rejected,
+        "rejected": rejected,  # ← Now boolean
         "required": required,
         "final": final,
         "locked": locked,

@@ -1,7 +1,16 @@
 {% extends "pdf/base.html" %} {% load i18n %} {% block pdf_title %}{% trans "Payment plans overview" %} – UniHanko{% endblock %} 
 {% block header_title %}{% trans "Payment plans" %}{% endblock %} {% block header_subtitle %}{% trans "Overview of selected standing invoices (selection)" %}
 {% endblock %} {% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %} {% block content %}
-
+{% block extra_styles %}
+.cert-footerbar {
+    position: running(page-footer);
+    font-size: 10px;
+    color: #374151;
+    border-top: 1px solid #ff8a3d;
+    padding-top: 4mm;
+    line-height: 1.3;
+  }
+{% endblock %}
 <p style="margin:0 0 10px 0; font-size:11px; color:#6b7280;">
     {% trans "This is an overview. For a detailed receipt, open a payment plan in the admin and use 'Print Receipt PDF'." %}
 </p>
@@ -15,8 +24,6 @@
             <th>{% trans "Last updated at" %}</th>
             <th>{% trans "for Assignment" %}<br><span style="color:var(--muted); font-size: smaller;">{% trans "(nominal monthly amount)" %}</span></th>
             <th>{% trans "Signed (Person)" %}</th>
-            <th>{% trans "Signed (WiRef)" %}</th>
-            <th>{% trans "Signed (Chair)" %}</th>
             <th>{% trans "Plan start" %}</th>
             <th>{% trans "Plan end" %}</th>
             <th style="text-align: right;">{% trans "Total amount" %}</th>
@@ -31,8 +38,6 @@
             <td>{{ pp.updated_at|date:"Y-m-d H:i" }}</td>
             <td>{{ pp.person_role}} <br><span style="color:var(--muted); font-size: smaller;">({{ pp.person_role.role.default_monthly_amount|default:"—" }} €)</span></td>
             <td>{{ pp.signed_person_at|default:"—" }}</td>
-            <td>{{ pp.signed_wiref_at|default:"—" }}</td>
-            <td>{{ pp.signed_chair_at|default:"—" }}</td>
             <td>{{ pp.pay_start|date:"j. F Y"|default:"—" }}</td>
             <td>{{ pp.pay_end|date:"j. F Y"|default:"—" }}</td>
             <td style="text-align: right;">{{ pp.total_override|default:0.00 }} €</td>
@@ -44,6 +49,16 @@
         {% endfor %}
     </tbody>
 </table>
+
+    <div class="cert-footerbar">
+        <strong>{{ org.org_name_long_de }}</strong>
+        {% if org.org_address %} • <u>{% trans "Adresse" %}</u> <i>({% trans "Zentralstelle im Büro Linz" %})</i>: {{ org.org_address }}{% endif %}
+        {% if org.bank_name or org.bank_iban or org.bank_bic %}
+        <br><u>Bank</u>: {% if org.bank_name %}{{ org.bank_name }}{% endif %}
+        {% if org.bank_iban %} • IBAN: {{ org.bank_iban }}{% endif %}
+        {% if org.bank_bic %} • BIC: {{ org.bank_bic }}{% endif %}
+        {% endif %}
+    </div>
 
 <div style="color: (--muted)">
 <h4 style="margin:14px 0 6px 0; text-align: center; font-size: 10px;">{% trans "Important notice" %}</h4>

@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 import re
 from core.utils.privacy import mask_iban
+from concurrency.fields import AutoIncVersionField
 
 # --- helpers ---------------------------------------------------------------
 
@@ -283,6 +284,18 @@ class FiscalYear(models.Model):
 
         if errors:
             raise ValidationError(errors)
+        
+    @property
+    def is_locked(self):
+        """
+        Check if this fiscal year is locked via HankoSign signatures.
+        
+        Note: The old `is_locked` BooleanField is deprecated. This property
+        replaces it by reading from HankoSign state_snapshot().
+        """
+        from hankosign.utils import state_snapshot
+        st = state_snapshot(self)
+        return st.get("explicit_locked", False)
 
     def save(self, *args, **kwargs):
         # Ensure end/code even if form didn't call full_clean()
@@ -349,6 +362,7 @@ class PaymentPlan(models.Model):
     updated_at   = models.DateTimeField(auto_now=True)
 
     history = HistoricalRecords()
+    version = AutoIncVersionField()
 
     class Meta:
         verbose_name = _("Payment plan")
@@ -391,6 +405,7 @@ class PaymentPlan(models.Model):
         return f"[{code}] {self.person_role} — {self.fiscal_year.display_code()}"
 
     # ---------- Resolvers & helpers ----------
+
 
     @staticmethod
     def _normalize_end_inclusive(end: date | None) -> date | None:

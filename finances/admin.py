@@ -11,15 +11,16 @@ from import_export.admin import ImportExportModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
 from django.db import transaction, IntegrityError
 from django.utils.safestring import mark_safe
-
+from organisation.models import OrgInfo
 from .models import FiscalYear, PaymentPlan, default_start, auto_end_from_start, stored_code_from_dates
 from core.pdf import render_pdf_response
 from core.admin_mixins import ImportExportGuardMixin
 from core.utils.authz import is_finances_manager
-from hankosign.utils import render_signatures_box, state_snapshot, get_action, record_signature, has_sig, sign_once, RID_JS, object_status_span
+from hankosign.utils import render_signatures_box, state_snapshot, get_action, record_signature, has_sig, sign_once, RID_JS, object_status_span, seal_signatures_context
 from finances.models import paymentplan_status
 from django.core.exceptions import PermissionDenied
 from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for_boolean
+from concurrency.admin import ConcurrentModelAdmin
 
 # =============== Import–Export ===============
 class FiscalYearResource(resources.ModelResource):
@@ -174,7 +175,7 @@ class FYChipsFilter(admin.SimpleListFilter):
 
 # =============== PaymentPlan Admin ===============
 @admin.register(PaymentPlan)
-class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [PaymentPlanResource]
     form = PaymentPlanForm
     actions = ("export_selected_pdf",)
@@ -252,8 +253,8 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
         (_("Miscellaneous"), {
             "fields": (("notes"),),
         }),
-        (_("Timestamps"), {
-            "fields": (("created_at"), ("updated_at"),),
+        (_("System"), {
+            "fields": (("created_at"), ("updated_at"), ("version"),),
         }),
     )
 
@@ -496,7 +497,7 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
         
         if status == "DRAFT":
             # Show: submit, cancel, print
-            drop("withdraw_plan", "approve_wiref", "approve_chair", "verify_banking")
+            drop("withdraw_plan", "approve_wiref", "approve_chair", "verify_banking", "cancel_plan",)
         
         elif status == "PENDING":
             # Show based on approvals
@@ -705,11 +706,11 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
         except PermissionDenied as e:
             messages.error(request, str(e))
             return
-        
+        signatures = seal_signatures_context(obj)
         date_str = timezone.localtime().strftime("%Y-%m-%d")
         lname = slugify(obj.person_role.person.last_name)[:20]
         rsname = slugify(obj.person_role.role.short_name)[:10]
-        ctx = {"pp": obj}
+        ctx = {"pp": obj, "signatures": signatures, "org": OrgInfo.get_solo(), }
         return render_pdf_response(
             "finances/paymentplan_pdf.html",
             ctx,
@@ -744,7 +745,7 @@ class PaymentPlanAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExport
                     .order_by("fiscal_year__start", "plan_code")
         return render_pdf_response(
             "finances/paymentplans_list_pdf.html",
-            {"rows": rows},
+            {"rows": rows, "org": OrgInfo.get_solo()},
             request,
             f"FGEB_SELECT-{date_str}.pdf"
         )
@@ -929,9 +930,9 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         except PermissionDenied as e:
             messages.error(request, str(e))
             return
-        
+        signatures = seal_signatures_context(obj)
         date_str = timezone.localtime().strftime("%Y-%m-%d")
-        ctx = {"fy": obj}
+        ctx = {"fy": obj, "org": OrgInfo.get_solo(), "signatures": signatures}
         return render_pdf_response(
             "finances/fiscalyear_pdf.html",
             ctx,
@@ -965,7 +966,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         rows = queryset.order_by("-start")
         return render_pdf_response(
             "finances/fiscalyears_list_pdf.html",
-            {"rows": rows},
+            {"rows": rows, "org": OrgInfo.get_solo()},
             request,
             f"WJFY-SELECT-{date_str}.pdf"
         )

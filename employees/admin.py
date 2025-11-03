@@ -270,7 +270,7 @@ class EmployeeAdmin(
         (_("PTO terms"), {"fields": ("annual_leave_days_base", "annual_leave_days_extra", "leave_reset_override")}),
         (_("Personal data"), {"fields": ("insurance_no", "dob",)}),
         (_("Miscellaneous"), {"fields": ("notes",)}),
-        (_("Timestamps"), {"fields": (("created_at"), ("updated_at"),)}),
+        (_("System"), {"fields": (("created_at"), ("updated_at"),)}),
     )
 
 
@@ -858,7 +858,7 @@ class TimeSheetAdmin(
         (_("Leave Calendar"), {"fields": ("leave_calendar_preview", "pto_infobox",)}),
         (_("HankoSign Workflow"), {"fields": ("signatures_box",),}),
         (_("Exports"), {"fields": ("pdf_file", "export_payload", "totals_preview")}),
-        (_("Timestamps"), {"fields": (("version"), ("created_at"), ("updated_at"))}),
+        (_("System"), {"fields": (("version"), ("created_at"), ("updated_at"))}),
     )
 
     @admin.display(description=_("Work Calendar"))
@@ -1445,7 +1445,7 @@ class HolidayCalendarAdmin(ImportExportGuardMixin, ImportExportModelAdmin, Simpl
     fieldsets = (
         (_("Basics"), {"fields": ("name", "is_active")}),
         (_("Rules"), {"fields": ("rules_text",)}),
-        (_("Timestamps"), {"fields": (("created_at"), ("updated_at"),)}),
+        (_("System"), {"fields": (("created_at"), ("updated_at"),)}),
     )
 
     def get_actions(self, request):
