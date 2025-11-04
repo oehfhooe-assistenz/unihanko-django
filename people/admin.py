@@ -24,6 +24,7 @@ from django.db.models import DateField
 from django.utils.safestring import mark_safe
 from django.template.loader import render_to_string
 from core.utils.authz import is_people_manager
+from django.db import transaction
 
 
 # =========================
@@ -347,6 +348,7 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
         return bool(st["locked"])
 
 
+    @transaction.atomic
     def _lock_one(self, request, obj) -> bool:
         st = state_snapshot(obj)
         if st.get("explicit_locked"):
@@ -359,6 +361,7 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
         return True
     
 
+    @transaction.atomic
     def _unlock_one(self, request, obj) -> bool:
         st = state_snapshot(obj)
         if not st.get("explicit_locked"):
@@ -513,6 +516,7 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
         return render_pdf_response("people/people_list_pdf.html", {"rows": rows}, request, f"HR-P_SELECT_{date_str}.pdf")
 
 
+    @transaction.atomic
     def regenerate_access_code(self, request, obj):
         if not self._is_manager(request):
             self.message_user(request, _("You don’t have permission to regenerate access codes."), level=messages.WARNING)
@@ -798,6 +802,7 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
         return (obj.notes[:60] + "…") if obj.notes and len(obj.notes) > 60 else (obj.notes or "—")
 
 
+    @transaction.atomic
     @admin.action(description=_("Offboard selected (end today, set default reason if empty)"))
     def offboard_today(self, request, queryset):
         # If you seed O01 = "Austritt" (fallback X99), this will be used as a default when end_reason is missing
@@ -861,6 +866,7 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
         )
     print_appointment_regular.label = "🧾 " + _("Print appointment (non-confirmation) PDF")
     print_appointment_regular.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
+
 
     def print_appointment_ad_interim(self, request, obj):
         if not is_people_manager(request.user):

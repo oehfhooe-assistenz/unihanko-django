@@ -31,6 +31,10 @@ class ActionAdmin(admin.ModelAdmin):
         (_("System"), {"fields": ("created_at", "updated_at")}),
     )
 
+    # --- policy -------------------------------------------------------------
+    def has_delete_permission(self, request, obj=None):
+        return False
+
 
 class PolicyAdminForm(forms.ModelForm):
     class Meta:
@@ -126,6 +130,10 @@ class SignatoryAdmin(admin.ModelAdmin):
     def user_display(self, obj):
         u = obj.user
         return getattr(u, "username", "—")
+    
+    # --- policy -------------------------------------------------------------
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Signature)

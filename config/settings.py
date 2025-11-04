@@ -9,23 +9,34 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+import environ
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Environment variables
+env = environ.Env(
+    DEBUG=(bool, False) # default to false for safety
+)
+
+environ.Env.read_env(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-rz9r+bbkq_y+p&y&$m98m()h+b2g4n4eedn4c*h51zzzntna*h'
+
+SECRET_KEY = env('SECRET_KEY', default='django-insecure-rz9r+bbkq_y+p&y&$m98m()h+b2g4n4eedn4c*h51zzzntna*h')
+
+# Separate secret key for HankoSign signature generation
+
+HANKOSIGN_SECRET = env('HANKOSIGN_SECRET', default='django-insecure-GENERATE_ANOTHER_ONE_HERE')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool('DEBUG', default=True)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
 LOGIN_URL = "/admin/login/"
 LOGIN_REDIRECT_URL = "/admin/"

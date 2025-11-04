@@ -248,6 +248,6 @@ class Signature(models.Model):
                     str(self.object_id),
                 ]
             ).encode("utf-8")
-            key = f"{settings.SECRET_KEY}:{self.signatory.base_key}".encode("utf-8")
+            key = f"{settings.HANKOSIGN_SECRET}:{self.signatory.base_key}".encode("utf-8")
             self.signature_id = hmac.new(key, msg, hashlib.sha256).hexdigest()
         super().save(*args, **kwargs)

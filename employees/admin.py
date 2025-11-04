@@ -26,6 +26,7 @@ from concurrency.admin import ConcurrentModelAdmin
 from django import forms
 from django.contrib.admin.widgets import AdminTimeWidget
 from core.utils.authz import is_employees_manager
+from django.db import transaction
 
 from .models import (
     Employee,
@@ -622,7 +623,7 @@ class EmploymentDocumentAdmin(
     print_sicknote_receipt.label = "🖨️ " + _("Print sick note receipt PDF")
     print_sicknote_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
-
+    @transaction.atomic
     def submit_doc(self, request, obj):
         from hankosign.utils import state_snapshot, get_action, record_signature
         st = state_snapshot(obj)
@@ -639,6 +640,7 @@ class EmploymentDocumentAdmin(
     submit_doc.attrs = {"class": "btn btn-block btn-warning btn-sm","style": "margin-bottom: 1rem;",}
 
 
+    @transaction.atomic
     def withdraw_doc(self, request, obj):
         from hankosign.utils import state_snapshot, get_action, record_signature
         st = state_snapshot(obj)
@@ -656,6 +658,8 @@ class EmploymentDocumentAdmin(
     withdraw_doc.label = _("Withdraw submission")
     withdraw_doc.attrs = {"class": "btn btn-block btn-secondary btn-sm","style": "margin-bottom: 1rem;",}
 
+
+    @transaction.atomic
     def approve_wiref_doc(self, request, obj):
         from hankosign.utils import state_snapshot, get_action, record_signature
         st = state_snapshot(obj)
@@ -674,6 +678,7 @@ class EmploymentDocumentAdmin(
     approve_wiref_doc.attrs = {"class": "btn btn-block btn-success btn-sm","style": "margin-bottom: 1rem;",}
 
 
+    @transaction.atomic
     def approve_chair_doc(self, request, obj):
         from hankosign.utils import state_snapshot, get_action, record_signature
         st = state_snapshot(obj)
@@ -692,6 +697,7 @@ class EmploymentDocumentAdmin(
     approve_chair_doc.attrs = {"class": "btn btn-block btn-success btn-sm","style": "margin-bottom: 1rem;",}
 
 
+    @transaction.atomic
     def reject_wiref_doc(self, request, obj):
         from hankosign.utils import state_snapshot, get_action, record_signature
         st = state_snapshot(obj)
@@ -710,6 +716,7 @@ class EmploymentDocumentAdmin(
     reject_wiref_doc.attrs = {"class": "btn btn-block btn-danger btn-sm","style": "margin-bottom: 1rem;",}
 
 
+    @transaction.atomic
     def reject_chair_doc(self, request, obj):
         from hankosign.utils import state_snapshot, get_action, record_signature
         st = state_snapshot(obj)
@@ -1098,7 +1105,6 @@ class TimeSheetAdmin(
 
 
     change_actions = ("submit_timesheet", "withdraw_timesheet", "approve_wiref", "approve_chair", "reject_wiref", "reject_chair", "lock_timesheet", "unlock_timesheet", "print_timesheet",)
-
     def get_change_actions(self, request, object_id, form_url):
         actions = list(super().get_change_actions(request, object_id, form_url))
         obj = self.get_object(request, object_id)
@@ -1193,9 +1199,8 @@ class TimeSheetAdmin(
 
 
     # --- workflow transitions ---
-    from django.core.exceptions import PermissionDenied
-
     # SUBMIT by ASS
+    @transaction.atomic
     def submit_timesheet(self, request, obj):
         st = state_snapshot(obj)
         if st["submitted"]:
@@ -1222,6 +1227,7 @@ class TimeSheetAdmin(
 
 
     # WITHDRAW by ASS (only if no approvals yet)
+    @transaction.atomic
     def withdraw_timesheet(self, request, obj):
         st = state_snapshot(obj)
         if not st["submitted"]:
@@ -1251,6 +1257,7 @@ class TimeSheetAdmin(
 
 
     # APPROVE by WIREF
+    @transaction.atomic
     def approve_wiref(self, request, obj):
         st = state_snapshot(obj)
         if not st["submitted"]:
@@ -1280,6 +1287,7 @@ class TimeSheetAdmin(
 
 
     # APPROVE by CHAIR
+    @transaction.atomic
     def approve_chair(self, request, obj):
         st = state_snapshot(obj)
         if not st["submitted"]:
@@ -1307,7 +1315,9 @@ class TimeSheetAdmin(
     approve_chair.label = _("Approve (Chair)")
     approve_chair.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-bottom: 1rem;",}
 
+
     # REJECT by WIREF
+    @transaction.atomic
     def reject_wiref(self, request, obj):
         st = state_snapshot(obj)
         if not st["submitted"]:
@@ -1337,6 +1347,7 @@ class TimeSheetAdmin(
 
 
     # REJECT by CHAIR
+    @transaction.atomic
     def reject_chair(self, request, obj):
         st = state_snapshot(obj)
         if not st["submitted"]:
@@ -1366,6 +1377,7 @@ class TimeSheetAdmin(
 
 
     # LOCK Timesheet (CHAIR or WIREF)
+    @transaction.atomic
     def lock_timesheet(self, request, obj):
         st = state_snapshot(obj)
         if st["explicit_locked"]:
@@ -1390,6 +1402,7 @@ class TimeSheetAdmin(
     lock_timesheet.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;"}
 
 
+    @transaction.atomic
     def unlock_timesheet(self, request, obj):
         st = state_snapshot(obj)
         if not st["explicit_locked"]:

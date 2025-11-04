@@ -17,6 +17,7 @@ db.sqlite3
 
 # Environment / secrets
 .env
+.env.*
 *.env
 
 # OS / editor noise

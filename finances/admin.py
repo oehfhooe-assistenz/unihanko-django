@@ -532,6 +532,7 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
 
 
     # === HankoSign Workflow Actions ===
+    @transaction.atomic
     def submit_plan(self, request, obj):
         st = state_snapshot(obj)
         if st["submitted"]:
@@ -557,6 +558,7 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
     }
 
 
+    @transaction.atomic
     def withdraw_plan(self, request, obj): 
         st = state_snapshot(obj)
         if not st["submitted"]:
@@ -586,6 +588,8 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
         "style": "margin-bottom: 1rem;",
     }
 
+
+    @transaction.atomic
     def approve_wiref(self, request, obj):
         st = state_snapshot(obj)
         if not st["submitted"]:
@@ -615,6 +619,7 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
     }
 
 
+    @transaction.atomic
     def approve_chair(self, request, obj):
         st = state_snapshot(obj)
         if not st["submitted"]:
@@ -644,6 +649,7 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
     }
 
 
+    @transaction.atomic
     def verify_banking(self, request, obj):
         st = state_snapshot(obj)
         
@@ -675,6 +681,7 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
     }
 
 
+    @transaction.atomic
     def cancel_plan(self, request, obj):       
         action = get_action("REJECT:-@finances.paymentplan")
         if not action:
@@ -856,7 +863,6 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
 
     # bulk actions
     actions = ("export_selected_pdf", "make_active")
-
     # readonly timestamps always
     readonly_fields = ("created_at", "updated_at", "active_text", "signatures_box")
 
@@ -867,6 +873,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         }),
         (_("System"), {"fields": (("created_at"), ("updated_at"),)}),
     )
+
 
     @admin.display(description=_("Locked"))
     def active_text(self, obj):
@@ -883,16 +890,19 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
             true_code="ok",
             false_code="off",
         )
-    
+
+
     @admin.display(description=_("Signatures"))
     def signatures_box(self, obj):
         return render_signatures_box(obj)
+
 
     # Prefill “Add” with current FY; user can change start and leave end blank.
     def get_changeform_initial_data(self, request):
         start = default_start()
         end = auto_end_from_start(start)
         return {"start": start, "end": end, "code": stored_code_from_dates(start, end)}
+
 
     # Make key fields read-only in the UI when locked (any user)
     def get_readonly_fields(self, request, obj=None):
@@ -905,6 +915,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         
         return ro
 
+
     # Hide actions the user isn't allowed to use
     def get_actions(self, request):
         actions = super().get_actions(request)
@@ -912,13 +923,14 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
             actions.pop("make_active", None)
         return actions
 
+
     # No hard delete (policy consistent with People)
     def has_delete_permission(self, request, obj=None):
         return False
 
+
     # === PDF actions (single + bulk) ===
     change_actions = ("print_pdf", "lock_year", "unlock_year")
-
     def print_pdf(self, request, obj):
         action = get_action("RELEASE:-@finances.fiscalyear")
         if not action:
@@ -947,6 +959,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         "onclick": RID_JS,
     }
 
+
     @admin.action(description=_("Print selected as overview PDF"))
     def export_selected_pdf(self, request, queryset):
         action = get_action("RELEASE:-@finances.fiscalyear")
@@ -970,6 +983,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
             request,
             f"WJFY-SELECT-{date_str}.pdf"
         )
+
 
     @admin.action(description=_("Set selected as active (and clear others)"))
     def make_active(self, request, queryset):
@@ -1022,6 +1036,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
                 _("Could not set active due to a database constraint (another year may have been activated concurrently).")
             )
 
+
     # === Object actions: Lock / Unlock (managers only) ===
     def get_change_actions(self, request, object_id, form_url):
         actions = super().get_change_actions(request, object_id, form_url)
@@ -1044,6 +1059,8 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         
         return actions
 
+
+    @transaction.atomic
     def lock_year(self, request, obj):
         if not self._is_manager(request):
             messages.warning(request, _("You don't have permission to lock years."))
@@ -1073,6 +1090,8 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         "style": "margin-bottom: 1rem;",
     }
 
+
+    @transaction.atomic
     def unlock_year(self, request, obj):
         if not self._is_manager(request):
             messages.warning(request, _("You don't have permission to unlock years."))
@@ -1101,6 +1120,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         "class": "btn btn-block btn-success btn-sm",
         "style": "margin-bottom: 1rem;",
     }
+
 
     def get_changelist_row_attrs(self, request, obj):
         st = state_snapshot(obj)
