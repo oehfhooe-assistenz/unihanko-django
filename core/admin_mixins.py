@@ -4,8 +4,6 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from concurrency.exceptions import RecordModifiedError
-from django.contrib import admin
 
 FEATURE_IMPORT_GROUP = "feature:import"
 FEATURE_EXPORT_GROUP = "feature:export"     # or use one combined group
@@ -47,37 +45,53 @@ class ImportExportGuardMixin:
             return True
         return self._user_in_group(request, self.export_feature_group)
 
-class FriendlyConcurrencyMixin:
-    """
-    Show a clearer message on concurrency conflicts.
-    We *bypass* ConcurrentModelAdmin.save_model/delete_model
-    to avoid its built-in catch-and-toast.
-    """
+from functools import wraps
+from django.contrib import messages
+from django.http import HttpResponseRedirect
+from django.core.exceptions import PermissionDenied
+import logging
 
-    def save_model(self, request, obj, form, change):
+logger = logging.getLogger('unihanko.admin')  # We'll configure this logger in settings
+
+def safe_admin_action(func):
+    """
+    Decorator to add consistent error handling to admin object actions.
+    
+    - Catches PermissionDenied and shows user-friendly error
+    - Catches all other exceptions, logs them, and shows generic error
+    - Returns user to the change page on error
+    """
+    @wraps(func)
+    def wrapper(self, request, obj):
         try:
-            # Skip ConcurrentModelAdmin.save_model to avoid its catch.
-            admin.ModelAdmin.save_model(self, request, obj, form, change)
-        except RecordModifiedError:
+            return func(self, request, obj)
+        except PermissionDenied as e:
+            # Expected authorization errors
+            self.message_user(request, str(e), level=messages.ERROR)
+            return HttpResponseRedirect(request.path)
+        except Exception as e:
+            # Unexpected errors - log for debugging
             self.message_user(
                 request,
-                _("Someone else updated this record while you were editing. "
-                  "Your changes were NOT saved. Reload, review, then submit again."),
-                level=messages.ERROR,
+                f"An error occurred: {e}",
+                level=messages.ERROR
             )
-            return HttpResponseRedirect(
-                reverse(f"admin:{obj._meta.app_label}_{obj._meta.model_name}_change", args=[obj.pk])
+            logger.exception(
+                f"Error in {self.__class__.__name__}.{func.__name__} "
+                f"for object {obj.pk}: {e}"
             )
+            return HttpResponseRedirect(request.path)
+    return wrapper
 
-    def delete_model(self, request, obj):
-        try:
-            admin.ModelAdmin.delete_model(self, request, obj)
-        except RecordModifiedError:
-            self.message_user(
-                request,
-                _("This record changed just now and could not be deleted. Reload and try again."),
-                level=messages.ERROR,
-            )
-            return HttpResponseRedirect(
-                reverse(f"admin:{obj._meta.app_label}_{obj._meta.model_name}_change", args=[obj.pk])
-            )
+class HelpPageMixin:
+    """Mixin to add help widget to admin changelist."""
+    
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['show_help_widget'] = True
+        return super().changelist_view(request, extra_context=extra_context)
+    
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['show_help_widget'] = True
+        return super().changeform_view(request, object_id, form_url, extra_context=extra_context)

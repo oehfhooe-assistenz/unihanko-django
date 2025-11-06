@@ -3,31 +3,26 @@ from django.contrib import admin, messages
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.shortcuts import redirect
-
 from django_object_actions import DjangoObjectActions
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
-
-from core.admin_mixins import ImportExportGuardMixin
+from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action
 from core.pdf import render_pdf_response
 from organisation.models import OrgInfo
-
+from decimal import Decimal, ROUND_HALF_UP
 from django.urls import reverse
 from django.http import HttpResponse
-
 # NEW: helpers for the server-rendered calendar
 from datetime import date as _date, timedelta
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.utils.formats import date_format
-
 from concurrency.admin import ConcurrentModelAdmin
 from django import forms
 from django.contrib.admin.widgets import AdminTimeWidget
 from core.utils.authz import is_employees_manager
 from django.db import transaction
-
 from .models import (
     Employee,
     EmploymentDocument,
@@ -36,10 +31,11 @@ from .models import (
     HolidayCalendar,
     EmployeeLeaveYear,
 )
-
-from django.core.exceptions import PermissionDenied
-from hankosign.utils import record_signature, get_action, state_snapshot, render_signatures_box, RID_JS, sign_once
-
+from hankosign.utils import record_signature, get_action, state_snapshot, render_signatures_box, RID_JS, sign_once, seal_signatures_context, object_status_span
+from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for_boolean
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import Exists, OuterRef, Subquery, F, Q, BooleanField, ExpressionWrapper
+from hankosign.models import Signature
 # =========================
 # Import–Export resources
 # =========================
@@ -241,10 +237,10 @@ class EmployeeLeaveYearInline(admin.TabularInline):
         qs = super().get_queryset(request)
         return qs.order_by("-label_year")
 
-from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for_boolean
+
 @admin.register(Employee)
 class EmployeeAdmin(
-    ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
+    HelpPageMixin, ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
 ):
     resource_classes = [EmployeeResource]
     list_display = (
@@ -255,14 +251,14 @@ class EmployeeAdmin(
         "active_text",
     )
     list_display_links = ("person_role",)
-    list_filter = ("is_active",)
+    list_filter = ("is_active", "weekly_hours",)
     search_fields = (
         "person_role__person__last_name",
         "person_role__person__first_name",
         "person_role__role__name",
     )
     autocomplete_fields = ("person_role",)
-    readonly_fields = ("daily_expected", "created_at", "updated_at")
+    readonly_fields = ("daily_expected", "created_at", "updated_at", "signatures_box")
     inlines = [EmploymentDocumentInline, EmployeeLeaveYearInline]
 
     fieldsets = (
@@ -271,6 +267,7 @@ class EmployeeAdmin(
         (_("PTO terms"), {"fields": ("annual_leave_days_base", "annual_leave_days_extra", "leave_reset_override")}),
         (_("Personal data"), {"fields": ("insurance_no", "dob",)}),
         (_("Miscellaneous"), {"fields": ("notes",)}),
+        (_("HankoSign Workflow"), {"fields": ("signatures_box",)}),
         (_("System"), {"fields": (("created_at"), ("updated_at"),)}),
     )
 
@@ -311,26 +308,29 @@ class EmployeeAdmin(
         return False
 
 
-    change_actions = ("print_employee_pdf",)
-
-    def print_employee_pdf(self, request, obj):
+    change_actions = ("print_employee",)
+    @safe_admin_action
+    def print_employee(self, request, obj):
         action = get_action("RELEASE:-@employees.employee")
         if not action:
-            messages.error(request, _("Release action is not configured.")); return
-        try:
-            sign_once(request, action, obj, note=_("Printed employee dossier PDF"), window_seconds=10)
-        except PermissionDenied as e:
-            messages.error(request, str(e)); return
-
+            messages.error(request, _("Release action is not configured."))
+            return
+        sign_once(request, action, obj, note=_("Printed employee dossier PDF"), window_seconds=10)
         ctx = {"emp": obj, "org": OrgInfo.get_solo()}
         return render_pdf_response("employees/employee_pdf.html", ctx, request, f"EMP_{obj.id}.pdf")
-    print_employee_pdf.label = "🖨️ " + _("Print Employee PDF")
-    print_employee_pdf.attrs = {
+    print_employee.label = "🖨️ " + _("Print Employee PDF")
+    print_employee.attrs = {
         "class": "btn btn-block btn-info btn-sm",
         "style": "margin-bottom: 1rem;",
         "data-action": "post-object",
         "onclick": RID_JS,
     }
+
+
+    @admin.display(description=_("Signatures"))
+    def signatures_box(self, obj):
+        
+        return render_signatures_box(obj)
 
 
     def get_readonly_fields(self, request, obj=None):
@@ -361,9 +361,6 @@ class EmployeeAdmin(
 # =========================
 
 # admin.py
-from django import forms
-from django.utils.translation import gettext_lazy as _
-from .models import EmploymentDocument
 
 class EmploymentDocumentAdminForm(forms.ModelForm):
     class Meta:
@@ -399,13 +396,13 @@ class EmploymentDocumentAdminForm(forms.ModelForm):
 
 @admin.register(EmploymentDocument)
 class EmploymentDocumentAdmin(
-    ConcurrentModelAdmin, ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
+    ConcurrentModelAdmin, HelpPageMixin, ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
 ):
     form = EmploymentDocumentAdminForm
     resource_classes = [EmploymentDocumentResource]
     list_display = ("status_text", "code", "employee", "kind_text", "title", "period_display", "updated_at")
     list_display_links = ("code",)
-    list_filter = ("kind", "is_active", "start_date", "end_date")
+    list_filter = ("kind", "is_active", "start_date", "end_date",)
     search_fields = (
         "code",
         "title",
@@ -423,6 +420,15 @@ class EmploymentDocumentAdmin(
         (_("System"), {"fields": ("code", "version", "created_at", "updated_at")}),
     )
 
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related(
+            "employee__person_role__person",
+            "employee__person_role__role"
+        )
+
+
     @admin.display(description=_("Kind"))
     def kind_text(self, obj):
         return obj.get_kind_display()
@@ -431,7 +437,6 @@ class EmploymentDocumentAdmin(
     @admin.display(description=_("Status"))
     def status_text(self, obj):
         # default stages are WIREF/CHAIR; override here if you want different tiers for docs
-        from hankosign.utils import object_status_span
         return object_status_span(obj, final_stage="CHAIR", tier1_stage="WIREF")
 
 
@@ -444,7 +449,6 @@ class EmploymentDocumentAdmin(
 
     @admin.display(description=_("Signatures"))
     def signatures_box(self, obj):
-        from hankosign.utils import render_signatures_box
         return render_signatures_box(obj)
 
 
@@ -463,8 +467,6 @@ class EmploymentDocumentAdmin(
             for f in scope_fields:
                 if f not in base:
                     base.append(f)
-
-            from hankosign.utils import state_snapshot
             st = state_snapshot(obj)
             if st["submitted"] and not is_mgr:
                 # lock the rest after submit for non-managers
@@ -476,7 +478,6 @@ class EmploymentDocumentAdmin(
 
 
     change_actions = ("submit_doc", "withdraw_doc", "approve_wiref_doc", "approve_chair_doc", "reject_wiref_doc", "reject_chair_doc", "print_receipt", "print_leaverequest_receipt", "print_sicknote_receipt")
-
     def get_change_actions(self, request, object_id, form_url):
         actions = list(super().get_change_actions(request, object_id, form_url))
         obj = self.get_object(request, object_id)
@@ -510,7 +511,6 @@ class EmploymentDocumentAdmin(
                     actions.remove(name)
 
         # ---- State-based gating (unchanged logic, but now print gating already applied) ----
-        from hankosign.utils import state_snapshot
         st = state_snapshot(obj)
         approved = st["approved"]
         chair_ok = ("CHAIR" in approved) or st.get("final")
@@ -534,17 +534,14 @@ class EmploymentDocumentAdmin(
         return actions
 
 
-# actions
-
+    # actions
+    @safe_admin_action
     def print_receipt(self, request, obj):
-        from hankosign.utils import seal_signatures_context
         action = get_action("RELEASE:-@employees.employmentdocument")
         if not action:
-            messages.error(request, _("Release action is not configured.")); return
-        try:
-            sign_once(request, action, obj, note=_("Printed document receipt PDF"), window_seconds=10)
-        except PermissionDenied as e:
-            messages.error(request, str(e)); return
+            messages.error(request, _("Release action is not configured."))
+            return
+        sign_once(request, action, obj, note=_("Printed document receipt PDF"), window_seconds=10)
         emp = (
             Employee.objects.select_related("person_role__person", "person_role__role").get(pk=obj.employee_id)
         )
@@ -560,21 +557,17 @@ class EmploymentDocumentAdmin(
     print_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
+    @safe_admin_action
     def print_leaverequest_receipt(self, request, obj):
-        from decimal import Decimal, ROUND_HALF_UP
-        from hankosign.utils import seal_signatures_context
         action = get_action("RELEASE:-@employees.employmentdocument")
         if not action:
-            messages.error(request, _("Release action is not configured.")); return
-        try:
-            sign_once(request, action, obj, note=_("Printed leave request receipt PDF"), window_seconds=10)
-        except PermissionDenied as e:
-            messages.error(request, str(e)); return
+            messages.error(request, _("Release action is not configured."))
+            return
         # defensive guard (in case someone hits the URL directly)
         if obj.kind != obj.Kind.AA:
-            from django.contrib import messages
             messages.warning(request, _("Leave request is only available for AA documents."))
             return
+        sign_once(request, action, obj, note=_("Printed leave request receipt PDF"), window_seconds=10)
         emp = (
             Employee.objects.select_related("person_role__person", "person_role__role").get(pk=obj.employee_id)
         )
@@ -599,20 +592,17 @@ class EmploymentDocumentAdmin(
     print_leaverequest_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
+    @safe_admin_action
     def print_sicknote_receipt(self, request, obj):
-        from hankosign.utils import seal_signatures_context
         action = get_action("RELEASE:-@employees.employmentdocument")
         if not action:
-            messages.error(request, _("Release action is not configured.")); return
-        try:
-            sign_once(request, action, obj, note=_("Printed sick note receipt PDF"), window_seconds=10)
-        except PermissionDenied as e:
-            messages.error(request, str(e)); return
+            messages.error(request, _("Release action is not configured."))
+            return
         # defensive guard (in case someone hits the URL directly)
         if obj.kind != obj.Kind.KM:
-            from django.contrib import messages
             messages.warning(request, _("Leave request is only available for KM documents."))
             return
+        sign_once(request, action, obj, note=_("Printed sick note receipt PDF"), window_seconds=10)
         emp = (
             Employee.objects.select_related("person_role__person", "person_role__role").get(pk=obj.employee_id)
         )
@@ -623,113 +613,119 @@ class EmploymentDocumentAdmin(
     print_sicknote_receipt.label = "🖨️ " + _("Print sick note receipt PDF")
     print_sicknote_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
+
     @transaction.atomic
+    @safe_admin_action
     def submit_doc(self, request, obj):
-        from hankosign.utils import state_snapshot, get_action, record_signature
         st = state_snapshot(obj)
         if st["submitted"]:
-            messages.info(request, _("Already submitted.")); return
+            messages.info(request, _("Already submitted."))
+            return
         action = get_action("SUBMIT:ASS@employees.employmentdocument")
-        if not action: messages.error(request, _("Submission action is not configured.")); return
-        try:
-            record_signature(request.user, action, obj, note=_("Document submitted"))
-        except PermissionDenied as e:
-            messages.error(request, str(e)); return
+        if not action:
+            messages.error(request, _("Submission action is not configured."))
+            return
+        record_signature(request.user, action, obj, note=_("Document %(code)s submitted") % {"code": f"{obj.code}"})
         messages.success(request, _("Submitted."))
     submit_doc.label = _("Submit")
     submit_doc.attrs = {"class": "btn btn-block btn-warning btn-sm","style": "margin-bottom: 1rem;",}
 
 
     @transaction.atomic
+    @safe_admin_action
     def withdraw_doc(self, request, obj):
-        from hankosign.utils import state_snapshot, get_action, record_signature
         st = state_snapshot(obj)
         if not st["submitted"]:
-            messages.info(request, _("Not submitted.")); return
+            messages.info(request, _("Not submitted."))
+            return
         if "WIREF" in st["approved"] or "CHAIR" in st["approved"]:
-            messages.warning(request, _("Cannot withdraw after approvals.")); return
+            messages.warning(request, _("Cannot withdraw after approvals."))
+            return
         action = get_action("WITHDRAW:ASS@employees.employmentdocument")
-        if not action: messages.error(request, _("Withdraw action is not configured.")); return
-        try:
-            record_signature(request.user, action, obj, note=_("Submission withdrawn"))
-        except PermissionDenied as e:
-            messages.error(request, str(e)); return
+        if not action:
+            messages.error(request, _("Withdraw action is not configured."))
+            return
+        record_signature(request.user, action, obj, note=_("Document %(code)s withdrawn") % {"code": f"{obj.code}"})
         messages.success(request, _("Withdrawn."))
     withdraw_doc.label = _("Withdraw submission")
     withdraw_doc.attrs = {"class": "btn btn-block btn-secondary btn-sm","style": "margin-bottom: 1rem;",}
 
 
     @transaction.atomic
+    @safe_admin_action
     def approve_wiref_doc(self, request, obj):
-        from hankosign.utils import state_snapshot, get_action, record_signature
         st = state_snapshot(obj)
         if not st["submitted"]:
-            messages.warning(request, _("Submit first.")); return
+            messages.warning(request, _("Submit first."))
+            return
         if "WIREF" in st["approved"]:
-            messages.info(request, _("Already approved (WiRef).")); return
+            messages.info(request, _("Already approved (WiRef)."))
+            return
         action = get_action("APPROVE:WIREF@employees.employmentdocument")
-        if not action: messages.error(request, _("WiRef approval action is not configured.")); return
-        try:
-            record_signature(request.user, action, obj, note=_("Approved (WiRef)"))
-        except PermissionDenied as e:
-            messages.error(request, str(e)); return
+        if not action:
+            messages.error(request, _("WiRef approval action is not configured."))
+            return
+        record_signature(request.user, action, obj, note=_("Document %(code)s approved (WiRef)") % {"code": f"{obj.code}"})
         messages.success(request, _("Approved (WiRef)."))
     approve_wiref_doc.label = _("Approve (WiRef)")
     approve_wiref_doc.attrs = {"class": "btn btn-block btn-success btn-sm","style": "margin-bottom: 1rem;",}
 
 
     @transaction.atomic
+    @safe_admin_action
     def approve_chair_doc(self, request, obj):
-        from hankosign.utils import state_snapshot, get_action, record_signature
         st = state_snapshot(obj)
         if not st["submitted"]:
-            messages.warning(request, _("Submit first.")); return
+            messages.warning(request, _("Submit first."))
+            return
         if "CHAIR" in st["approved"]:
-            messages.info(request, _("Already approved (Chair).")); return
+            messages.info(request, _("Already approved (Chair)."))
+            return
         action = get_action("APPROVE:CHAIR@employees.employmentdocument")
-        if not action: messages.error(request, _("Chair approval action is not configured.")); return
-        try:
-            record_signature(request.user, action, obj, note=_("Approved (Chair)"))
-        except PermissionDenied as e:
-            messages.error(request, str(e)); return
+        if not action:
+            messages.error(request, _("Chair approval action is not configured."))
+            return
+        record_signature(request.user, action, obj, note=_("Document %(code)s approved (Chair)") % {"code": f"{obj.code}"})
         messages.success(request, _("Approved (Chair)."))
     approve_chair_doc.label = _("Approve (Chair)")
     approve_chair_doc.attrs = {"class": "btn btn-block btn-success btn-sm","style": "margin-bottom: 1rem;",}
 
 
     @transaction.atomic
+    @safe_admin_action
     def reject_wiref_doc(self, request, obj):
-        from hankosign.utils import state_snapshot, get_action, record_signature
         st = state_snapshot(obj)
         if not st["submitted"]:
-            messages.warning(request, _("Nothing to reject (not submitted).")); return
+            messages.warning(request, _("Nothing to reject (not submitted)."))
+            return
         if "CHAIR" in st["approved"]:
-            messages.warning(request, _("Already final; cannot reject.")); return
+            messages.warning(request, _("Already final; cannot reject."))
+            return
         action = get_action("REJECT:WIREF@employees.employmentdocument")
-        if not action: messages.error(request, _("WiRef rejection action is not configured.")); return
-        try:
-            record_signature(request.user, action, obj, note=_("Rejected (WiRef)"))
-        except PermissionDenied as e:
-            messages.error(request, str(e)); return
+        if not action:
+            messages.error(request, _("WiRef rejection action is not configured."))
+            return
+        record_signature(request.user, action, obj, note=_("Document %(code)s rejected (WiRef)") % {"code": f"{obj.code}"})
         messages.success(request, _("Rejected (WiRef)."))
     reject_wiref_doc.label = _("Reject (WiRef)")
     reject_wiref_doc.attrs = {"class": "btn btn-block btn-danger btn-sm","style": "margin-bottom: 1rem;",}
 
 
     @transaction.atomic
+    @safe_admin_action
     def reject_chair_doc(self, request, obj):
-        from hankosign.utils import state_snapshot, get_action, record_signature
         st = state_snapshot(obj)
         if not st["submitted"]:
-            messages.warning(request, _("Nothing to reject (not submitted).")); return
+            messages.warning(request, _("Nothing to reject (not submitted)."))
+            return
         if "CHAIR" in st["approved"]:
-            messages.warning(request, _("Already final; cannot reject.")); return
+            messages.warning(request, _("Already final; cannot reject."))
+            return
         action = get_action("REJECT:CHAIR@employees.employmentdocument")
-        if not action: messages.error(request, _("Chair rejection action is not configured.")); return
-        try:
-            record_signature(request.user, action, obj, note=_("Rejected (Chair)"))
-        except PermissionDenied as e:
-            messages.error(request, str(e)); return
+        if not action:
+            messages.error(request, _("Chair rejection action is not configured."))
+            return
+        record_signature(request.user, action, obj, note=_("Document %(code)s rejected (Chair)") % {"code": f"{obj.code}"})
         messages.success(request, _("Rejected (Chair)."))
     reject_chair_doc.label = _("Reject (Chair)")
     reject_chair_doc.attrs = {"class": "btn btn-block btn-danger btn-sm","style": "margin-bottom: 1rem;",}
@@ -739,10 +735,6 @@ class EmploymentDocumentAdmin(
 # Timesheet Admin
 # =========================
 
-
-from django.contrib.contenttypes.models import ContentType
-from django.db.models import Exists, OuterRef, Subquery, F, Q, BooleanField, ExpressionWrapper
-from hankosign.models import Signature
 
 class TimeSheetStateFilter(admin.SimpleListFilter):
     title = _("State")
@@ -827,7 +819,7 @@ class TimeSheetStateFilter(admin.SimpleListFilter):
 
 @admin.register(TimeSheet)
 class TimeSheetAdmin(
-    ConcurrentModelAdmin, ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
+    ConcurrentModelAdmin, HelpPageMixin, ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
 ):
     resource_classes = [TimeSheetResource]
     list_display = (
@@ -838,7 +830,7 @@ class TimeSheetAdmin(
         "updated_at",
     )
     list_display_links = ("employee",)
-    list_filter = (TimeSheetStateFilter, "year", "month")
+    list_filter = (TimeSheetStateFilter, "year", "month",)
     search_fields = (
         "employee__person_role__person__last_name",
         "employee__person_role__person__first_name",
@@ -1013,7 +1005,6 @@ class TimeSheetAdmin(
 
     @admin.display(description=_("Status"))
     def status_text(self, obj):
-        from hankosign.utils import object_status_span
         return object_status_span(obj)   # emits <span class="js-state" data-state="...">Label</span>
 
 
@@ -1057,9 +1048,6 @@ class TimeSheetAdmin(
     @admin.display(description=_("PTO overview"))
     def pto_infobox(self, obj):
         from django.utils.translation import gettext_lazy as _t
-        from django.utils.safestring import mark_safe
-        from django.template.loader import render_to_string
-        from datetime import timedelta
 
         if not obj or not obj.pk:
             return _t("— save first to see PTO —")
@@ -1157,15 +1145,13 @@ class TimeSheetAdmin(
 
     
     from datetime import date as _date
+    @safe_admin_action
     def print_timesheet(self, request, obj):
-        from hankosign.utils import seal_signatures_context
         action = get_action("RELEASE:-@employees.timesheet")
         if not action:
-            messages.error(request, _("Release action is not configured.")); return
-        try:
-            sign_once(request, action, obj, note=_("Printed timesheet PDF"), window_seconds=10)
-        except PermissionDenied as e:
-            messages.error(request, str(e)); return
+            messages.error(request, _("Release action is not configured."))
+            return
+        sign_once(request, action, obj, note=_("Printed timesheet PDF"), window_seconds=10)
         emp = (
             Employee.objects.select_related("person_role__person", "person_role__role").get(pk=obj.employee_id)
         )
@@ -1201,26 +1187,17 @@ class TimeSheetAdmin(
     # --- workflow transitions ---
     # SUBMIT by ASS
     @transaction.atomic
+    @safe_admin_action
     def submit_timesheet(self, request, obj):
         st = state_snapshot(obj)
         if st["submitted"]:
             messages.info(request, _("Already submitted."))
             return
-
         action = get_action("SUBMIT:ASS@employees.timesheet")
         if not action:
             messages.error(request, _("Submission action is not configured."))
             return
-
-        try:
-            record_signature(
-                request.user, action, obj,
-                note=_("Timesheet %(period)s submitted") % {"period": f"{obj.year}-{obj.month:02d}"}
-            )
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
-
+        record_signature(request.user, action, obj, note=_("Timesheet %(period)s submitted") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Timesheet submitted."))
     submit_timesheet.label = _("Submit")
     submit_timesheet.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
@@ -1228,6 +1205,7 @@ class TimeSheetAdmin(
 
     # WITHDRAW by ASS (only if no approvals yet)
     @transaction.atomic
+    @safe_admin_action
     def withdraw_timesheet(self, request, obj):
         st = state_snapshot(obj)
         if not st["submitted"]:
@@ -1236,21 +1214,11 @@ class TimeSheetAdmin(
         if "WIREF" in st["approved"] or "CHAIR" in st["approved"]:
             messages.warning(request, _("Cannot withdraw after approvals."))
             return
-
         action = get_action("WITHDRAW:ASS@employees.timesheet")
         if not action:
             messages.error(request, _("Withdraw action is not configured."))
             return
-
-        try:
-            record_signature(
-                request.user, action, obj,
-                note=_("Timesheet %(period)s withdrawn") % {"period": f"{obj.year}-{obj.month:02d}"}
-            )
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
-
+        record_signature(request.user, action, obj, note=_("Timesheet %(period)s withdrawn") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Submission withdrawn."))
     withdraw_timesheet.label = _("Withdraw submission")
     withdraw_timesheet.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;",}
@@ -1258,6 +1226,7 @@ class TimeSheetAdmin(
 
     # APPROVE by WIREF
     @transaction.atomic
+    @safe_admin_action
     def approve_wiref(self, request, obj):
         st = state_snapshot(obj)
         if not st["submitted"]:
@@ -1266,21 +1235,11 @@ class TimeSheetAdmin(
         if "WIREF" in st["approved"]:
             messages.info(request, _("Already approved by WiRef."))
             return
-
         action = get_action("APPROVE:WIREF@employees.timesheet")
         if not action:
             messages.error(request, _("WiRef approval action is not configured."))
             return
-
-        try:
-            record_signature(
-                request.user, action, obj,
-                note=_("Timesheet %(period)s approved") % {"period": f"{obj.year}-{obj.month:02d}"}
-            )
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
-
+        record_signature(request.user, action, obj, note=_("Timesheet %(period)s approved") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Approved by WiRef."))
     approve_wiref.label = _("Approve (WiRef)")
     approve_wiref.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-bottom: 1rem;",}
@@ -1288,6 +1247,7 @@ class TimeSheetAdmin(
 
     # APPROVE by CHAIR
     @transaction.atomic
+    @safe_admin_action
     def approve_chair(self, request, obj):
         st = state_snapshot(obj)
         if not st["submitted"]:
@@ -1296,21 +1256,11 @@ class TimeSheetAdmin(
         if "CHAIR" in st["approved"]:
             messages.info(request, _("Already approved by Chair."))
             return
-
         action = get_action("APPROVE:CHAIR@employees.timesheet")
         if not action:
             messages.error(request, _("Chair approval action is not configured."))
             return
-
-        try:
-            record_signature(
-                request.user, action, obj,
-                note=_("Timesheet %(period)s approved") % {"period": f"{obj.year}-{obj.month:02d}"}
-            )
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
-
+        record_signature(request.user, action, obj, note=_("Timesheet %(period)s approved") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Approved by Chair."))
     approve_chair.label = _("Approve (Chair)")
     approve_chair.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-bottom: 1rem;",}
@@ -1318,6 +1268,7 @@ class TimeSheetAdmin(
 
     # REJECT by WIREF
     @transaction.atomic
+    @safe_admin_action
     def reject_wiref(self, request, obj):
         st = state_snapshot(obj)
         if not st["submitted"]:
@@ -1326,21 +1277,11 @@ class TimeSheetAdmin(
         if "CHAIR" in st["approved"]:
             messages.warning(request, _("Already final; cannot reject."))
             return
-
         action = get_action("REJECT:WIREF@employees.timesheet")
         if not action:
             messages.error(request, _("WiRef rejection action is not configured."))
             return
-
-        try:
-            record_signature(
-                request.user, action, obj,
-                note=_("Timesheet %(period)s rejected") % {"period": f"{obj.year}-{obj.month:02d}"}
-            )
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
-
+        record_signature(request.user, action, obj, note=_("Timesheet %(period)s rejected") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Rejected by WiRef."))
     reject_wiref.label = _("Reject (WiRef)")
     reject_wiref.attrs = {"class": "btn btn-block btn-danger btn-sm", "style": "margin-bottom: 1rem;",}
@@ -1348,6 +1289,7 @@ class TimeSheetAdmin(
 
     # REJECT by CHAIR
     @transaction.atomic
+    @safe_admin_action
     def reject_chair(self, request, obj):
         st = state_snapshot(obj)
         if not st["submitted"]:
@@ -1356,21 +1298,11 @@ class TimeSheetAdmin(
         if "CHAIR" in st["approved"]:
             messages.warning(request, _("Already final; cannot reject."))
             return
-
         action = get_action("REJECT:CHAIR@employees.timesheet")
         if not action:
             messages.error(request, _("Chair rejection action is not configured."))
             return
-
-        try:
-            record_signature(
-                request.user, action, obj,
-                note=_("Timesheet %(period)s rejected") % {"period": f"{obj.year}-{obj.month:02d}"}
-            )
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
-
+        record_signature(request.user, action, obj, note=_("Timesheet %(period)s rejected") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Rejected by Chair."))
     reject_chair.label = _("Reject (Chair)")
     reject_chair.attrs = {"class": "btn btn-block btn-danger btn-sm", "style": "margin-bottom: 1rem;",}
@@ -1378,6 +1310,7 @@ class TimeSheetAdmin(
 
     # LOCK Timesheet (CHAIR or WIREF)
     @transaction.atomic
+    @safe_admin_action
     def lock_timesheet(self, request, obj):
         st = state_snapshot(obj)
         if st["explicit_locked"]:
@@ -1386,39 +1319,28 @@ class TimeSheetAdmin(
         if not ("CHAIR" in st["approved"] or st["final"]):
             messages.warning(request, _("Locking is only available after final approval."))
             return
-
         action = get_action("LOCK:-@employees.timesheet")
         if not action:
             messages.error(request, _("Lock action is not configured."))
             return
-
-        try:
-            record_signature(request.user, action, obj, note=_("Timesheet locked"))
-        except PermissionDenied as e:
-            messages.error(request, str(e)); return
-
+        record_signature(request.user, action, obj, note=_("Timesheet %(period)s locked") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Locked."))
     lock_timesheet.label = _("Lock")
     lock_timesheet.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;"}
 
 
     @transaction.atomic
+    @safe_admin_action
     def unlock_timesheet(self, request, obj):
         st = state_snapshot(obj)
         if not st["explicit_locked"]:
             messages.info(request, _("Not locked."))
             return
-
         action = get_action("UNLOCK:-@employees.timesheet")
         if not action:
             messages.error(request, _("Unlock action is not configured."))
             return
-
-        try:
-            record_signature(request.user, action, obj, note=_("Timesheet unlocked"))
-        except PermissionDenied as e:
-            messages.error(request, str(e)); return
-
+        record_signature(request.user, action, obj, note=_("Timesheet %(period)s unlocked") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Unlocked."))
     unlock_timesheet.label = _("Unlock")
     unlock_timesheet.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;"}
@@ -1474,11 +1396,11 @@ class HolidayCalendarAdmin(ImportExportGuardMixin, ImportExportModelAdmin, Simpl
 # =========================
 
 @admin.register(TimeEntry)
-class TimeEntryAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, ImportExportModelAdmin):
+class TimeEntryAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, ImportExportModelAdmin):
     resource_classes = [TimeEntryResource]
     form = TimeEntryAdminForm
     list_display = ("timesheet", "date", "minutes", "kind", "short_comment", "updated_at")
-    list_filter = ("timesheet", "kind", "date")
+    list_filter = ("timesheet", "kind", "date",)
     search_fields = ("timesheet__employee__person_role__person__last_name", "comment")
     readonly_fields = ("created_at", "updated_at", )
 

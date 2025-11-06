@@ -14,9 +14,9 @@ from django.urls import reverse
 from organisation.models import OrgInfo
 from .models import Person, Role, PersonRole, RoleTransitionReason
 from core.pdf import render_pdf_response
-from core.admin_mixins import ImportExportGuardMixin
+from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action
 from concurrency.admin import ConcurrentModelAdmin
-from hankosign.utils import render_signatures_box, state_snapshot, get_action, record_signature, RID_JS, sign_once
+from hankosign.utils import render_signatures_box, state_snapshot, get_action, record_signature, RID_JS, sign_once, seal_signatures_context
 from django.core.exceptions import PermissionDenied
 from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for_boolean
 from django.db.models.functions import Coalesce
@@ -25,6 +25,7 @@ from django.utils.safestring import mark_safe
 from django.template.loader import render_to_string
 from core.utils.authz import is_people_manager
 from django.db import transaction
+from django.db.models import Prefetch
 
 
 # =========================
@@ -223,7 +224,7 @@ class PersonRoleInline(admin.StackedInline):
 # Person Admin
 # =========================
 @admin.register(Person)
-class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class PersonAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [PersonResource]
 
     # Helper: who counts as a "manager" for people?
@@ -241,7 +242,7 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
         "updated_at",
         "active_text",
     )
-    list_filter = (ActiveAssignmentFilter, "gender", "is_active")
+    list_filter = (ActiveAssignmentFilter, "gender", "is_active",)
     search_fields = ("first_name", "last_name", "email", "student_email", "matric_no")
     autocomplete_fields = ("user",)
     readonly_fields = ("uuid", "personal_access_code", "created_at", "updated_at", "signatures_box", "mail_merged")
@@ -308,18 +309,27 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
     def signatures_box(self, obj):
         return render_signatures_box(obj)
 
+
     @admin.display(description=_("Active roles"))
     def active_roles(self, obj):
-        names = (
-            obj.role_assignments.filter(end_date__isnull=True)
-            .select_related("role")
-            .values_list("role__name", flat=True)
-        )
+        # Uses prefetched data - no extra queries!
+        names = [pr.role.name for pr in obj.role_assignments.all()]
         return ", ".join(names) or "—"
+
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.prefetch_related(
+            Prefetch(
+                'role_assignments',
+                queryset=PersonRole.objects.filter(end_date__isnull=True).select_related('role')
+            )
+        )
 
     def has_delete_permission(self, request, obj=None):
         # Policy: no hard deletes
         return False
+
 
     @admin.display(description=_("E-Mail"), ordering="email")
     def mail_merged(self, obj):
@@ -336,7 +346,7 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
 
 
     # === actions ===
-    change_actions = ("print_pdf", "print_pac_pdf", "regenerate_access_code", "lock_person", "unlock_person",)
+    change_actions = ("print_person", "print_pac", "regenerate_access_code", "lock_person", "unlock_person",)
 
     def _is_locked(self, request, obj):
         if not obj:
@@ -373,23 +383,27 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
         record_signature(request.user, action, obj, note=_("Personnel record unlocked"))
         return True
 
-
+    
+    @safe_admin_action
     def lock_person(self, request, obj):
-        try:
-            changed = self._lock_one(request, obj)
-        except PermissionDenied as e:
-            self.message_user(request, str(e), level=messages.ERROR); return
-        self.message_user(request, _("Locked.") if changed else _("Already locked."), level=messages.SUCCESS if changed else messages.INFO)
+        changed = self._lock_one(request, obj)
+        self.message_user(
+            request, 
+            _("Locked.") if changed else _("Already locked."), 
+            level=messages.SUCCESS if changed else messages.INFO
+        )
     lock_person.label = _("Lock record")
     lock_person.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;"}
 
 
+    @safe_admin_action
     def unlock_person(self, request, obj):
-        try:
-            changed = self._unlock_one(request, obj)
-        except PermissionDenied as e:
-            self.message_user(request, str(e), level=messages.ERROR); return
-        self.message_user(request, _("Unlocked.") if changed else _("Not locked."), level=messages.SUCCESS if changed else messages.INFO)
+        changed = self._unlock_one(request, obj)
+        self.message_user(
+            request,
+            _("Unlocked.") if changed else _("Not locked."),
+            level=messages.SUCCESS if changed else messages.INFO
+        )
     unlock_person.label = _("Unlock record")
     unlock_person.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;"}
 
@@ -457,47 +471,40 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
         level = messages.SUCCESS if ok and not fail else (messages.WARNING if ok and fail else messages.INFO)
         self.message_user(request, ", ".join(msg) + ".", level=level)
 
-
-    def print_pdf(self, request, obj):
+    @safe_admin_action
+    def print_person(self, request, obj):
         action = get_action("RELEASE:-@people.person")
         if not action:
-            self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
-        try:
-            #record_signature(request.user, action, obj, note=_("Printed personnel dossier PDF"))
-            sign_once(request, action, obj, note=_("Printed personnel dossier PDF"), window_seconds=10)
-        except PermissionDenied as e:
-            self.message_user(request, str(e), level=messages.ERROR); return
-
+            self.message_user(request, _("Release action not configured."), level=messages.ERROR)
+            return
+        sign_once(request, action, obj, note=_("Printed personnel dossier PDF"), window_seconds=10)
         date_str = timezone.localtime().strftime("%Y-%m-%d")
         lname = slugify(obj.last_name)[:40]
         return render_pdf_response("people/person_pdf.html",
             {"p": obj, "org": OrgInfo.get_solo()},
             request, f"HR-P_AKT_{obj.id}_{lname}_{date_str}.pdf")
-    print_pdf.label = "🖨️ " + _("Print Personnel Record PDF")
-    print_pdf.attrs = {"class": "btn btn-block btn-info btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
+    print_person.label = "🖨️ " + _("Print Personnel Record PDF")
+    print_person.attrs = {"class": "btn btn-block btn-info btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
-    def print_pac_pdf(self, request, obj):
-        from hankosign.utils import seal_signatures_context
+    @safe_admin_action
+    def print_pac(self, request, obj):
         if not self._is_manager(request):
-            self.message_user(request, _("Managers only."), level=messages.WARNING); return
+            self.message_user(request, _("Managers only."), level=messages.WARNING)
+            return
         action = get_action("RELEASE:-@people.person")
         if not action:
-            self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
-        try:
-            #record_signature(request.user, action, obj, note=_("Printed PAC info PDF"))
-            sign_once(request, action, obj, note=_("Printed PAC info PDF"), window_seconds=10)
-        except PermissionDenied as e:
-            self.message_user(request, str(e), level=messages.ERROR); return
-
+            self.message_user(request, _("Release action not configured."), level=messages.ERROR)
+            return
+        sign_once(request, action, obj, note=_("Printed PAC info PDF"), window_seconds=10)
         date_str = timezone.localtime().strftime("%Y-%m-%d")
         lname = slugify(obj.last_name)[:40]
         signatures = seal_signatures_context(obj)   # seal ON this Person
         return render_pdf_response("people/person_action_code_notice_pdf.html",
             {"p": obj, "signatures": signatures},
             request, f"HR-P_PAC_INFO_{obj.id}_{lname}_{date_str}.pdf")
-    print_pac_pdf.label = "🖨️ " + _("Print Personal Access Code Info PDF (ext.)")
-    print_pac_pdf.attrs = {"class": "btn btn-block btn-info btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
+    print_pac.label = "🖨️ " + _("Print Personal Access Code Info PDF (ext.)")
+    print_pac.attrs = {"class": "btn btn-block btn-info btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     @admin.action(description=_("Print selected as roster PDF"))
@@ -516,6 +523,7 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
         return render_pdf_response("people/people_list_pdf.html", {"rows": rows}, request, f"HR-P_SELECT_{date_str}.pdf")
 
 
+    @safe_admin_action
     @transaction.atomic
     def regenerate_access_code(self, request, obj):
         if not self._is_manager(request):
@@ -523,12 +531,9 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
             return
         action = get_action("RELEASE:-@people.person")
         if not action:
-            self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
-        try:
-            record_signature(request.user, action, obj, note=_("Regenerated access code"))
-        except PermissionDenied as e:
-            self.message_user(request, str(e), level=messages.ERROR); return
-
+            self.message_user(request, _("Release action not configured."), level=messages.ERROR)
+            return
+        record_signature(request.user, action, obj, note=_("Regenerated access code"))
         new_code = obj.regenerate_access_code()
         self.message_user(request, _("New access code generated: %(code)s") % {"code": new_code}, level=messages.SUCCESS)
     _REGEN_MESSAGE = _("Regenerate the access code for this person? The old code will stop working.")
@@ -549,7 +554,7 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
             if n in actions: actions.remove(n)
         if not self._is_manager(request):
             drop("regenerate_access_code")
-            drop("print_pac_pdf")
+            drop("print_pac")
             drop("lock_person")
             drop("unlock_person")
         if obj:
@@ -584,11 +589,11 @@ class PersonAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActi
 # Role Admin
 # =========================
 @admin.register(Role)
-class RoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, ImportExportModelAdmin, SimpleHistoryAdmin):
+class RoleAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [RoleResource]
     list_display = ("name", "short_name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind_text", "is_system")
     search_fields = ("name",)
-    list_filter = ("is_elected","is_stipend_reimbursed", "kind", "is_system")
+    list_filter = ("is_elected","is_stipend_reimbursed", "is_system", "kind",)
 
     @admin.display(description=_("Role type"), ordering="kind")
     def kind_text(self, obj):
@@ -624,7 +629,7 @@ class RoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, ImportExportModelA
 # Reason Admin (dictionary)
 # =========================
 @admin.register(RoleTransitionReason)
-class ReasonAdmin(ImportExportGuardMixin, ImportExportModelAdmin):
+class ReasonAdmin(HelpPageMixin, ImportExportGuardMixin, ImportExportModelAdmin):
     resource_classes = [RoleTransitionReasonResource]
     list_display = ("code", "name_localized", "active")
     list_filter = ("active",)
@@ -657,7 +662,7 @@ from finances.models import FiscalYear
 # PersonRole Admin
 # =========================
 @admin.register(PersonRole)
-class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class PersonRoleAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [PersonRoleResource]
     list_display = (
         "person",
@@ -844,18 +849,15 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
         self.message_user(request, _("Managers only."), level=messages.WARNING)
         return HttpResponseRedirect(reverse("admin:people_personrole_change", args=[obj.pk]))
 
-
+    @safe_admin_action
     def print_appointment_regular(self, request, obj):
         if not is_people_manager(request.user):
             return self._deny_and_back(request, obj)
         action = get_action("RELEASE:-@people.person")
         if not action:
-            self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
-        try:
-            #record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (non-confirmation)"})
-            sign_once(request, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (non-confirmation)"}, window_seconds=10)
-        except PermissionDenied as e:
-            self.message_user(request, str(e), level=messages.ERROR); return
+            self.message_user(request, _("Release action not configured."), level=messages.ERROR)
+            return
+        sign_once(request, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (non-confirmation)"}, window_seconds=10)
         rsname = slugify(obj.role.short_name)[:10]
         lname = slugify(obj.person.last_name)[:20]
         date_str = timezone.localtime().strftime("%Y-%m-%d")
@@ -868,17 +870,15 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
     print_appointment_regular.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
+    @safe_admin_action
     def print_appointment_ad_interim(self, request, obj):
         if not is_people_manager(request.user):
             return self._deny_and_back(request, obj)
         action = get_action("RELEASE:-@people.person")
         if not action:
-            self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
-        try:
-            #record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (ad interim)"})
-            sign_once(request, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (ad interim)"}, window_seconds=10)
-        except PermissionDenied as e:
-            self.message_user(request, str(e), level=messages.ERROR); return
+            self.message_user(request, _("Release action not configured."), level=messages.ERROR)
+            return
+        sign_once(request, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (ad interim)"}, window_seconds=10)
         rsname = slugify(obj.role.short_name)[:10]
         lname = slugify(obj.person.last_name)[:20]
         date_str = timezone.localtime().strftime("%Y-%m-%d")
@@ -891,20 +891,14 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
     print_appointment_ad_interim.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
+    @safe_admin_action
     def print_confirmation(self, request, obj):
         if not is_people_manager(request.user):
             return self._deny_and_back(request, obj)
         action = get_action("RELEASE:-@people.person")
         if not action:
-            self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
-        try:
-            #record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (post-confirmation)"})
-            sign_once(request, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (post-confirmation)"}, window_seconds=10)
-        except PermissionDenied as e:
-            self.message_user(request, str(e), level=messages.ERROR); return
-        rsname = slugify(obj.role.short_name)[:10]
-        lname = slugify(obj.person.last_name)[:20]
-        date_str = timezone.localtime().strftime("%Y-%m-%d")
+            self.message_user(request, _("Release action not configured."), level=messages.ERROR)
+            return
         # role-kind guard
         if getattr(obj.role, "kind", None) != obj.role.Kind.DEPT_HEAD:
             self.message_user(
@@ -915,7 +909,6 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
             return HttpResponseRedirect(
                 reverse("admin:people_personrole_change", args=[obj.pk])
             )
-
         # data readiness guard
         if not obj.confirm_date:
             self.message_user(
@@ -926,7 +919,10 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
             return HttpResponseRedirect(
                 reverse("admin:people_personrole_change", args=[obj.pk])
             )
-
+        sign_once(request, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (post-confirmation)"}, window_seconds=10)
+        rsname = slugify(obj.role.short_name)[:10]
+        lname = slugify(obj.person.last_name)[:20]
+        date_str = timezone.localtime().strftime("%Y-%m-%d")
         return self._render_cert(
             request, obj,
             "people/certs/appointment_confirmation.html",
@@ -935,18 +931,15 @@ class PersonRoleAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObject
     print_confirmation.label = "☑️ " + _("Print appointment (post-confirmation) PDF")
     print_confirmation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
-
+    @safe_admin_action
     def print_resignation(self, request, obj):
         if not is_people_manager(request.user):
             return self._deny_and_back(request, obj)
         action = get_action("RELEASE:-@people.person")
         if not action:
-            self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
-        try:
-            #record_signature(request.user, action, obj.person, note=_("Printed %(what)s") % {"what": "resignation"})
-            sign_once(request, action, obj.person, note=_("Printed %(what)s") % {"what": "resignation"}, window_seconds=10)
-        except PermissionDenied as e:
-            self.message_user(request, str(e), level=messages.ERROR); return
+            self.message_user(request, _("Release action not configured."), level=messages.ERROR)
+            return
+        sign_once(request, action, obj.person, note=_("Printed %(what)s") % {"what": "resignation"}, window_seconds=10)
         rsname = slugify(obj.role.short_name)[:10]
         lname = slugify(obj.person.last_name)[:20]
         date_str = timezone.localtime().strftime("%Y-%m-%d")

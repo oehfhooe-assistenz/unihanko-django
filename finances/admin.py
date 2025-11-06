@@ -14,7 +14,7 @@ from django.utils.safestring import mark_safe
 from organisation.models import OrgInfo
 from .models import FiscalYear, PaymentPlan, default_start, auto_end_from_start, stored_code_from_dates
 from core.pdf import render_pdf_response
-from core.admin_mixins import ImportExportGuardMixin
+from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action
 from core.utils.authz import is_finances_manager
 from hankosign.utils import render_signatures_box, state_snapshot, get_action, record_signature, has_sig, sign_once, RID_JS, object_status_span, seal_signatures_context
 from finances.models import paymentplan_status
@@ -175,7 +175,7 @@ class FYChipsFilter(admin.SimpleListFilter):
 
 # =============== PaymentPlan Admin ===============
 @admin.register(PaymentPlan)
-class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class PaymentPlanAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [PaymentPlanResource]
     form = PaymentPlanForm
     actions = ("export_selected_pdf",)
@@ -196,7 +196,7 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
         "updated_at",
         "active_text",
     )
-    list_filter = (FYChipsFilter, "status", "pay_start", "pay_end")
+    list_filter = (FYChipsFilter, "status", "pay_start", "pay_end", "cost_center",)
     search_fields = (
         "plan_code",
         "person_role__person__last_name",
@@ -470,7 +470,7 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
 
 
     # --- object actions (status transitions) --------------------------------
-    change_actions = ( "submit_plan", "withdraw_plan", "approve_wiref", "approve_chair", "verify_banking", "cancel_plan", "print_pdf", )
+    change_actions = ( "submit_plan", "withdraw_plan", "approve_wiref", "approve_chair", "verify_banking", "cancel_plan", "print_paymentplan", )
 
     def get_change_actions(self, request, object_id, form_url):
         actions = list(super().get_change_actions(request, object_id, form_url))
@@ -533,23 +533,17 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
 
     # === HankoSign Workflow Actions ===
     @transaction.atomic
+    @safe_admin_action
     def submit_plan(self, request, obj):
         st = state_snapshot(obj)
         if st["submitted"]:
             messages.info(request, _("Already submitted."))
             return
-        
         action = get_action("SUBMIT:WIREF@finances.paymentplan")
         if not action:
             messages.error(request, _("Submit action not configured."))
             return
-        
-        try:
-            record_signature(request.user, action, obj, note=_("Payment plan submitted"))
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
-        
+        record_signature(request.user, action, obj, note=_("Payment plan %(code)s submitted") % {"code": f"{obj.plan_code}"})
         messages.success(request, _("Submitted."))
     submit_plan.label = _("Submit")
     submit_plan.attrs = {
@@ -559,28 +553,21 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
 
 
     @transaction.atomic
+    @safe_admin_action
     def withdraw_plan(self, request, obj): 
         st = state_snapshot(obj)
         if not st["submitted"]:
             messages.info(request, _("Not submitted."))
             return
-        
         # Block if any approvals exist
         if st["approved"]:
             messages.warning(request, _("Cannot withdraw after approvals."))
-            return
-        
+            return   
         action = get_action("WITHDRAW:WIREF@finances.paymentplan")
         if not action:
             messages.error(request, _("Withdraw action not configured."))
             return
-        
-        try:
-            record_signature(request.user, action, obj, note=_("Submission withdrawn"))
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
-        
+        record_signature(request.user, action, obj, note=_("Payment plan %(code)s withdrawn") % {"code": f"{obj.plan_code}"})
         messages.success(request, _("Withdrawn."))
     withdraw_plan.label = _("Withdraw")
     withdraw_plan.attrs = {
@@ -590,27 +577,20 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
 
 
     @transaction.atomic
+    @safe_admin_action
     def approve_wiref(self, request, obj):
         st = state_snapshot(obj)
         if not st["submitted"]:
             messages.warning(request, _("Submit first."))
             return
-        
         if "WIREF" in st["approved"]:
             messages.info(request, _("Already approved (WiRef)."))
             return
-        
         action = get_action("APPROVE:WIREF@finances.paymentplan")
         if not action:
             messages.error(request, _("WiRef approval action not configured."))
             return
-        
-        try:
-            record_signature(request.user, action, obj, note=_("Approved (WiRef)"))
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
-        
+        record_signature(request.user, action, obj, note=_("Payment plan %(code)s approved (WiRef)") % {"code": f"{obj.plan_code}"})
         messages.success(request, _("Approved (WiRef)."))
     approve_wiref.label = _("Approve (WiRef)")
     approve_wiref.attrs = {
@@ -620,27 +600,20 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
 
 
     @transaction.atomic
+    @safe_admin_action
     def approve_chair(self, request, obj):
         st = state_snapshot(obj)
         if not st["submitted"]:
             messages.warning(request, _("Submit first."))
             return
-        
         if "CHAIR" in st["approved"]:
             messages.info(request, _("Already approved (Chair)."))
             return
-        
         action = get_action("APPROVE:CHAIR@finances.paymentplan")
         if not action:
             messages.error(request, _("Chair approval action not configured."))
             return
-        
-        try:
-            record_signature(request.user, action, obj, note=_("Approved (Chair)"))
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
-        
+        record_signature(request.user, action, obj, note=_("Payment plan %(code)s approved (Chair)") % {"code": f"{obj.plan_code}"})
         messages.success(request, _("Approved (Chair)."))
     approve_chair.label = _("Approve (Chair)")
     approve_chair.attrs = {
@@ -650,29 +623,21 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
 
 
     @transaction.atomic
+    @safe_admin_action
     def verify_banking(self, request, obj):
         st = state_snapshot(obj)
-        
         # Need both approvals first
         if "WIREF" not in st["approved"] or "CHAIR" not in st["approved"]:
             messages.warning(request, _("Both approvals required before verification."))
             return
-        
         if has_sig(obj, "VERIFY", "WIREF"):
             messages.info(request, _("Already verified."))
             return
-        
         action = get_action("VERIFY:WIREF@finances.paymentplan")
         if not action:
             messages.error(request, _("Verify action not configured."))
             return
-        
-        try:
-            record_signature(request.user, action, obj, note=_("Banking setup verified"))
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
-        
+        record_signature(request.user, action, obj, note=_("Payment plan %(code)s bank-transaction verified (WiRef)") % {"code": f"{obj.plan_code}"})
         messages.success(request, _("Banking verified. Plan is now ACTIVE."))
     verify_banking.label = _("Verify banking")
     verify_banking.attrs = {
@@ -682,18 +647,13 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
 
 
     @transaction.atomic
+    @safe_admin_action
     def cancel_plan(self, request, obj):       
         action = get_action("REJECT:-@finances.paymentplan")
         if not action:
             messages.error(request, _("Cancel action not configured."))
             return
-        
-        try:
-            record_signature(request.user, action, obj, note=_("Payment plan cancelled"))
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
-        
+        record_signature(request.user, action, obj, note=_("Payment plan %(code)s cancelled (WiRef or Chair)") % {"code": f"{obj.plan_code}"})
         messages.success(request, _("Cancelled."))
     cancel_plan.label = _("Cancel plan")
     cancel_plan.attrs = {
@@ -701,18 +661,13 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
         "style": "margin-bottom: 1rem;",
     }
 
-
-    def print_pdf(self, request, obj):
+    @safe_admin_action
+    def print_paymentplan(self, request, obj):
         action = get_action("RELEASE:-@finances.paymentplan")
         if not action:
             messages.error(request, _("Release action not configured."))
             return
-        
-        try:
-            sign_once(request, action, obj, note=_("Printed payment plan PDF"), window_seconds=10)
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
+        sign_once(request, action, obj, note=_("Printed payment plan PDF"), window_seconds=10)
         signatures = seal_signatures_context(obj)
         date_str = timezone.localtime().strftime("%Y-%m-%d")
         lname = slugify(obj.person_role.person.last_name)[:20]
@@ -724,13 +679,14 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
             request,
             f"FGEB-BELEG_{obj.plan_code}_{rsname}_{lname}-{date_str}.pdf"
         )
-    print_pdf.label = "🖨️ " + _("Print PDF")
-    print_pdf.attrs = {
+    print_paymentplan.label = "🖨️ " + _("Print PDF")
+    print_paymentplan.attrs = {
         "class": "btn btn-block btn-info btn-sm",
         "style": "margin-bottom: 1rem;",
         "data-action": "post-object",
         "onclick": RID_JS,
     }
+
 
     @admin.action(description=_("Export selected to PDF"))
     def export_selected_pdf(self, request, queryset):
@@ -844,7 +800,7 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, ImportExportGuardMixin, DjangoObjec
 
 # =============== FiscalYear Admin ===============
 @admin.register(FiscalYear)
-class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class FiscalYearAdmin(HelpPageMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
     resource_classes = [FiscalYearResource]
     form = FiscalYearForm
 
@@ -855,7 +811,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
     # --- list / filters / search -------------------------------------------
     list_display = ("display_code", "start", "end", "is_active", "updated_at", "active_text")
     list_display_links = ("display_code",)
-    list_filter = ("is_active", "start", "end")
+    list_filter = ("is_active", "start", "end", "is_active",)
     search_fields = ("code", "label")
     ordering = ("-start",)
     date_hierarchy = "start"
@@ -930,18 +886,14 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
 
 
     # === PDF actions (single + bulk) ===
-    change_actions = ("print_pdf", "lock_year", "unlock_year")
-    def print_pdf(self, request, obj):
+    change_actions = ("print_fiscalyear", "lock_year", "unlock_year")
+    @safe_admin_action
+    def print_fiscalyear(self, request, obj):
         action = get_action("RELEASE:-@finances.fiscalyear")
         if not action:
             messages.error(request, _("Release action not configured."))
             return
-        
-        try:
-            sign_once(request, action, obj, note=_("Printed fiscal year PDF"), window_seconds=10)
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
+        sign_once(request, action, obj, note=_("Printed fiscal year PDF"), window_seconds=10)
         signatures = seal_signatures_context(obj)
         date_str = timezone.localtime().strftime("%Y-%m-%d")
         ctx = {"fy": obj, "org": OrgInfo.get_solo(), "signatures": signatures}
@@ -951,8 +903,8 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
             request,
             f"WJFY-STATUS_{obj.display_code()}-{date_str}.pdf"
         )
-    print_pdf.label = "🖨️ " + _("Print receipt PDF")
-    print_pdf.attrs = {
+    print_fiscalyear.label = "🖨️ " + _("Print receipt PDF")
+    print_fiscalyear.attrs = {
         "class": "btn btn-block btn-secondary btn-sm",
         "style": "margin-bottom: 1rem;",
         "data-action": "post-object",
@@ -1043,7 +995,7 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
         
         if not self._is_manager(request):
             # only allow Print PDF for editors
-            return [a for a in actions if a == "print_pdf"]
+            return [a for a in actions if a == "print_fiscalyear"]
         
         obj = self.get_object(request, object_id)
         if obj:
@@ -1052,37 +1004,30 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
             
             if is_locked:
                 # hide Lock, keep Unlock + PDF
-                return [a for a in actions if a in ("unlock_year", "print_pdf")]
+                return [a for a in actions if a in ("unlock_year", "print_fiscalyear")]
             else:
                 # show Lock + PDF
-                return [a for a in actions if a in ("lock_year", "print_pdf")]
+                return [a for a in actions if a in ("lock_year", "print_fiscalyear")]
         
         return actions
 
 
     @transaction.atomic
+    @safe_admin_action
     def lock_year(self, request, obj):
         if not self._is_manager(request):
             messages.warning(request, _("You don't have permission to lock years."))
             return
-        
         # Check if already locked via HankoSign
         st = state_snapshot(obj)
         if st.get("explicit_locked"):
             messages.info(request, _("Already locked."))
             return
-        
         action = get_action("LOCK:-@finances.fiscalyear")
         if not action:
             messages.error(request, _("Lock action not configured."))
             return
-        
-        try:
-            record_signature(request.user, action, obj, note=_("Fiscal year locked"))
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
-        
+        record_signature(request.user, action, obj, note=_("Fiscal year %(code)s locked") % {"code": f"{obj.code}"})
         messages.success(request, _("Fiscal year locked."))
     lock_year.label = _("Lock year")
     lock_year.attrs = {
@@ -1092,28 +1037,21 @@ class FiscalYearAdmin(ImportExportGuardMixin, DjangoObjectActions, ImportExportM
 
 
     @transaction.atomic
+    @safe_admin_action
     def unlock_year(self, request, obj):
         if not self._is_manager(request):
             messages.warning(request, _("You don't have permission to unlock years."))
             return
-        
         # Check if locked via HankoSign
         st = state_snapshot(obj)
         if not st.get("explicit_locked"):
             messages.info(request, _("Already unlocked."))
             return
-        
         action = get_action("UNLOCK:-@finances.fiscalyear")
         if not action:
             messages.error(request, _("Unlock action not configured."))
             return
-        
-        try:
-            record_signature(request.user, action, obj, note=_("Fiscal year unlocked"))
-        except PermissionDenied as e:
-            messages.error(request, str(e))
-            return
-    
+        record_signature(request.user, action, obj, note=_("Fiscal year %(code)s unlocked") % {"code": f"{obj.code}"})
         messages.success(request, _("Fiscal year unlocked."))
     unlock_year.label = _("Unlock year")
     unlock_year.attrs = {

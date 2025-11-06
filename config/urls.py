@@ -21,11 +21,9 @@ from core import views as core_views
 admin.site.index_title = "Dashboard"
 
 urlpatterns = [
-    path("admin/help/<str:app_label>/<str:model_name>/",
-        core_views.admin_help_flatpage,
-         name="admin_help"),
     path('i18n/', include('django.conf.urls.i18n')),
     path('', core_views.home, name='home'),
     path('admin/cockpit/', core_views.admin_cockpit, name='admin_cockpit'),
     path('admin/', admin.site.urls),
+    path('markdownx/', include('markdownx.urls')),
 ]

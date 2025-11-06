@@ -219,6 +219,8 @@ class Signature(models.Model):
         ]
         ordering = ("-at", "-id")
         indexes = [
+            models.Index(fields=["at"]),
+            models.Index(fields=["-at"]),
             models.Index(fields=["content_type", "object_id"]),
             models.Index(fields=["verb", "stage"]),
             models.Index(fields=["content_type", "object_id", "verb", "stage",])

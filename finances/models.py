@@ -4,16 +4,18 @@ from datetime import date, timedelta
 from django.db import models, transaction
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 import re
 from core.utils.privacy import mask_iban
 from concurrency.fields import AutoIncVersionField
-
-# --- helpers ---------------------------------------------------------------
-
+from hankosign.utils import state_snapshot, has_sig
 from decimal import Decimal, ROUND_HALF_UP
 import calendar
+from django.core.validators import RegexValidator
+from people.models import PersonRole
+from django.utils.translation import get_language, gettext_lazy as _
+# --- helpers ---------------------------------------------------------------
+
 
 def calculate_proration_breakdown(
     start: date,
@@ -122,7 +124,6 @@ def localized_code(start: date, end: date, lang: str | None = None) -> str:
       en*  -> FYyy_yy
       other-> WJyy_yy
     """
-    from django.utils.translation import get_language  # local import to keep model import-time clean
     lang = (lang or get_language() or "en").lower()
     pref = "FY" if lang.startswith("en") else "WJ"
     return f"{pref}{start.year % 100:02d}_{end.year % 100:02d}"
@@ -150,9 +151,6 @@ def paymentplan_status(pp) -> str:
     Returns:
         Status code string (DRAFT|PENDING|ACTIVE|CANCELLED|FINISHED)
     """
-    from datetime import date as _date
-    from hankosign.utils import state_snapshot, has_sig
-    
     # Get the current workflow state from HankoSign
     st = state_snapshot(pp)
     
@@ -182,7 +180,7 @@ def paymentplan_status(pp) -> str:
     # 5. At this point: submitted + all approvals + verified
     #    Now check if we're past the end date
     _, end = pp.resolved_window()
-    today = _date.today()
+    today = timezone.localdate()
     
     if today > end:
         return "FINISHED"  # Naturally ended
@@ -263,7 +261,6 @@ class FiscalYear(models.Model):
             except FiscalYear.DoesNotExist:
                 original = None
             if original:
-                from hankosign.utils import state_snapshot
                 st = state_snapshot(original)
                 if st.get("explicit_locked"):
                     protected = ("start", "end", "label", "code", "is_active")
@@ -293,7 +290,6 @@ class FiscalYear(models.Model):
         Note: The old `is_locked` BooleanField is deprecated. This property
         replaces it by reading from HankoSign state_snapshot().
         """
-        from hankosign.utils import state_snapshot
         st = state_snapshot(self)
         return st.get("explicit_locked", False)
 
@@ -305,10 +301,6 @@ class FiscalYear(models.Model):
             self.code = stored_code_from_dates(self.start, self.end)
         super().save(*args, **kwargs)
 
-import calendar
-from decimal import Decimal, ROUND_HALF_UP
-from django.core.validators import RegexValidator
-from people.models import PersonRole
 
 class PaymentPlan(models.Model):
     class Status(models.TextChoices):

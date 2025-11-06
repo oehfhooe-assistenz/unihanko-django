@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 # Register your models here.
-
+from core.admin_mixins import HelpPageMixin
 from django.utils.translation import gettext_lazy as _
 from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for_boolean
 from .models import Action, Policy, Signatory, Signature
@@ -20,7 +20,7 @@ class SignatureInline(admin.TabularInline):
 
 
 @admin.register(Action)
-class ActionAdmin(admin.ModelAdmin):
+class ActionAdmin(HelpPageMixin, admin.ModelAdmin):
     list_display = ("human_label", "verb", "stage", "scope", "is_repeatable", "require_distinct_signer", "action_code", "updated_at")
     list_filter = ("verb", "stage", "scope", "is_repeatable", "require_distinct_signer")
     search_fields = ("human_label",)
@@ -63,12 +63,10 @@ class PolicyAdminForm(forms.ModelForm):
         return obj
 
 @admin.register(Policy)
-class PolicyAdmin(admin.ModelAdmin):
+class PolicyAdmin(HelpPageMixin, admin.ModelAdmin):
     form = PolicyAdminForm
     list_display = ("role", "actions_display", "actions_count" , "updated_at")
-    list_filter = (
-        "actions__verb", "actions__stage", "actions__scope",
-    )
+    list_filter = ("actions__verb", "actions__stage", "actions__scope",)
     search_fields = ("role__name", "action__human_label", "actions__human_label")
     readonly_fields = ("created_at", "updated_at")
     autocomplete_fields = ("role", "action")
@@ -94,7 +92,7 @@ class PolicyAdmin(admin.ModelAdmin):
 
 
 @admin.register(Signatory)
-class SignatoryAdmin(admin.ModelAdmin):
+class SignatoryAdmin(HelpPageMixin, admin.ModelAdmin):
     list_display = ("display_name", "user_display", "person_role", "verified_text", "updated_at", "active_text")
     list_filter = ("is_active", "is_verified", "person_role__role")
     search_fields = ("person_role__person__last_name", "person_role__person__first_name", "person_role__person__user__username")

@@ -41,6 +41,59 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 LOGIN_URL = "/admin/login/"
 LOGIN_REDIRECT_URL = "/admin/"
 
+LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'admin_file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'admin_actions.log',
+            'maxBytes': 1024 * 1024 * 10,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'hankosign_file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'hankosign.log',
+            'maxBytes': 1024 * 1024 *10, # 10 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'unihanko.admin': {
+            'handlers': ['admin_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'hankosign': {
+            'handlers': ['hankosign_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        }
+    },
+}
+
+if not DEBUG:  # Production
+    LOGGING['loggers']['hankosign']['handlers'] = ['console']
+    LOGGING['loggers']['unihanko.admin']['handlers'] = ['console']
+
 
 # Application definition
 
@@ -55,6 +108,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
     'django.contrib.flatpages',
+    'markdownx',
+    'helppages',
     'import_export',
     'simple_history',
     'django_object_actions',
@@ -152,6 +207,14 @@ LANGUAGES = [
 
 LOCALE_PATHS = [BASE_DIR / "locale"]
 
+
+MARKDOWNX_MARKDOWN_EXTENSIONS = [
+    'markdown.extensions.extra',
+    'markdown.extensions.nl2br',
+    'markdown.extensions.sane_lists',
+]
+MARKDOWNX_MARKDOWN_EXTENSION_CONFIGS = {}
+MARKDOWNX_MEDIA_PATH = 'markdownx/'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/

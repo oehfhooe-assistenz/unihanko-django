@@ -1,0 +1,82 @@
+{% load i18n %}
+
+<div class="container-fluid px-0 mb-3">
+    {# Legend (always visible) #}
+    {% if help.show_legend and legend_html %}
+    <div class="alert alert-info mb-2" role="alert">
+        <h6 class="alert-heading mb-2">
+            <i class="fas fa-map-signs mr-2"></i>
+            <strong>{% trans "Legend" %}</strong>
+        </h6>
+        <div class="small">
+            {{ legend_html|safe }}
+        </div>
+    </div>
+    {% endif %}
+
+    {# Accordion (expandable help) #}
+    <div class="card">
+        <div class="card-header bg-info text-white p-0" id="help-heading-{{ help.id }}">
+            <button class="btn btn-block text-left text-white pl-3 py-2" type="button" 
+                    data-toggle="collapse" data-target="#help-collapse-{{ help.id }}" 
+                    aria-expanded="false" aria-controls="help-collapse-{{ help.id }}"
+                    style="text-decoration: none;">
+                <i class="fas fa-question-circle mr-2"></i>
+                <strong>{{ title }}</strong>  {# ← Language-aware title #}
+                {% if help.author %}
+                    <small class="ml-3" style="opacity: 0.8;">{% trans "by" %} {{ help.author }}</small>
+                {% endif %}
+                <i class="fa-solid fa-chevron-down mr-2 float-right"></i>
+            </button>
+        </div>
+        
+        <div id="help-collapse-{{ help.id }}" class="collapse" 
+             aria-labelledby="help-heading-{{ help.id }}">
+            <div class="card-body">
+                <div class="help-content">
+                    {{ content_html|safe }}
+                </div>
+                
+                {% if help.help_contact %}
+                <div class="alert alert-light border mt-3 mb-0">
+                    <i class="fas fa-envelope mr-2"></i>
+                    <strong>{% trans "Questions?" %}</strong> {{ help.help_contact }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Ensure markdown content renders nicely */
+.help-content h1, .help-content h2, .help-content h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+.help-content h1 { font-size: 1.5rem; }
+.help-content h2 { font-size: 1.3rem; }
+.help-content h3 { font-size: 1.1rem; }
+.help-content p {
+    margin-bottom: 0.75rem;
+}
+.help-content ul, .help-content ol {
+    margin-bottom: 0.75rem;
+    padding-left: 1.5rem;
+}
+.help-content li {
+    margin-bottom: 0.25rem;
+}
+.help-content code {
+    background: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 90%;
+}
+.help-content pre {
+    background: #f4f4f4;
+    padding: 1rem;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+</style>

@@ -359,6 +359,12 @@ class PersonRole(models.Model):
                 name="ck_confirm_after_start",
             )
         ]
+        indexes = [
+            models.Index(fields=["effective_start"]),
+            models.Index(fields=["effective_end"]),
+            models.Index(fields=["effective_start", "effective_end"]),
+            models.Index(fields=["person", "end_date"]),
+        ]
         verbose_name = _("Assignment")
         verbose_name_plural = _("Assignments")
 

@@ -10,10 +10,10 @@ from django.utils.safestring import mark_safe
 from django.db.models import Max
 from datetime import timedelta
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Case, When, IntegerField
 from .models import Action, Policy, Signatory, Signature
-
 User = get_user_model()
+from django.core.cache import cache
 
 
 def resolve_signatory(user: User) -> Optional[Signatory]:
@@ -56,7 +56,8 @@ def get_action(action_ref: Union[str, Action]) -> Optional[Action]:
     except Exception:
         return None
 
-from django.db.models import Q, Case, When, IntegerField
+
+
 def can_act(
     user: User,
     action_ref: Union[str, Action],
@@ -108,7 +109,8 @@ def can_act(
 
     return True, None, sig, action, pol
 
-
+import logging
+logger = logging.getLogger('hankosign')
 def record_signature(
     user: User,
     action_ref: Union[str, Action],
@@ -149,8 +151,7 @@ def record_signature(
                         verb=action.verb, stage=action.stage, signatory=sig)
                 .order_by("-at", "-id")
                 .first())
-
-    return Signature.objects.create(
+    signum = Signature.objects.create(
         signatory=sig,
         content_type=ct,
         object_id=str(obj.pk),
@@ -162,10 +163,15 @@ def record_signature(
         payload=payload or {},
         is_repeatable=bool(action.is_repeatable),  # snapshot
     )
+    logger.info(
+        f"Signature recorded: {signum.verb}/{signum.stage} "
+        f"on {signum.content_type.model}#{signum.object_id} "
+        f"by {signum.signatory.display_name} "
+    )
+    return signum
 
 
 # ---------- read-only signature box (admin widget helper) ----------
-
 def render_signatures_box(obj):
     from django.utils.translation import gettext as _t
     if not obj or not getattr(obj, "pk", None):
@@ -201,9 +207,9 @@ def render_signatures_box(obj):
 
 
 # ---------- tiny helpers you use in admin ----------
-
 def _scope_ct(obj):
     return ContentType.objects.get_for_model(obj.__class__)
+
 
 def has_sig(obj, verb: str, stage: str) -> bool:
     return Signature.objects.filter(
@@ -212,6 +218,7 @@ def has_sig(obj, verb: str, stage: str) -> bool:
         verb=verb,
         stage=stage,
     ).exists()
+
 
 def sig_time(obj, verb: str, stage: str):
     s = (
@@ -222,7 +229,8 @@ def sig_time(obj, verb: str, stage: str):
     )
     return s.at if s else None
 
-# NEW: last occurrence for a verb (optionally limited to certain stages)
+
+# last occurrence for a verb (optionally limited to certain stages)
 def _last(obj, verb: str, stages: set[str] | None = None):
     ct = _scope_ct(obj)
     qs = Signature.objects.filter(content_type=ct, object_id=str(obj.pk), verb=verb)
@@ -231,7 +239,8 @@ def _last(obj, verb: str, stages: set[str] | None = None):
     row = qs.order_by("-at", "-id").first()
     return row.at if row else None
 
-# NEW: which stages have at least one signature for this verb on this object
+
+# which stages have at least one signature for this verb on this object
 def _stages(obj, verb: str) -> set[str]:
     ct = _scope_ct(obj)
     return set(
@@ -243,8 +252,7 @@ def _stages(obj, verb: str) -> set[str]:
     )
 
 
-# In hankosign/utils.py
-
+# state snapshot machine (for deltas use model-specific reducer methods)
 def state_snapshot(obj) -> dict:
     """
     Universal snapshot:
@@ -306,8 +314,6 @@ def state_snapshot(obj) -> dict:
     }
 
 
-from django.utils.translation import gettext_lazy as _
-
 def object_status(obj, *, final_stage="CHAIR", tier1_stage="WIREF"):
     """
     Return a normalized status for any HankoSign-driven object.
@@ -367,10 +373,6 @@ def object_status_span(obj, *, final_stage="CHAIR", tier1_stage="WIREF"):
 
 
 # ---------- Attestation Seal helpers (PDF) ----------
-
-from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
-
 # Human label for each verb/stage you currently use
 _ACTION_LABELS = {
     ("SUBMIT",   "ASS"):   _("Submit"),
@@ -390,11 +392,13 @@ _ACTION_LABELS = {
     ("RELEASE",  ""):      _("Print/Release"),
 }
 
+
 def action_display(sig: Signature) -> str:
     """Return the human label for a signature's action."""
     stage = (sig.stage or "").upper()
     return _ACTION_LABELS.get((sig.verb.upper(), stage),
                               f"{sig.verb.title()} ({stage or '-'})")
+
 
 def _short_sig_id(sig: Signature) -> str:
     """
@@ -443,24 +447,25 @@ def seal_signatures_context(obj, *, tz=None) -> list[dict]:
         })
     return out
 
-# --- request-id (rid) helpers + idempotent sign ---
-from django.core.cache import cache
-from django.contrib.contenttypes.models import ContentType
 
+# --- request-id (rid) helpers + idempotent sign ---
 # Tiny JS you can reuse on DAO links to append a unique rid per click
 RID_JS = (
     "this.href = this.href + (this.href.indexOf('?')>-1?'&':'?') + "
     "'rid=' + (Date.now().toString(36) + Math.random().toString(36).slice(2));"
 )
 
+
 def get_rid(request) -> Optional[str]:
     rid = (request.GET.get("rid") or "").strip()
     return rid or None
+
 
 def _once_key(*, user_id: int, obj, action, rid: Optional[str]) -> str:
     ct = ContentType.objects.get_for_model(obj.__class__)
     base = f"{action.verb}:{action.stage or '-'}@{action.scope_id}"
     return f"hs:once:{base}:{user_id}:{ct.id}:{obj.pk}:{rid or 'no-rid'}"
+
 
 def sign_once(
     request,
