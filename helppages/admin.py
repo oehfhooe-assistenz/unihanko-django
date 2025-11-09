@@ -5,9 +5,10 @@ from django.utils.translation import gettext_lazy as _
 from markdownx.admin import MarkdownxModelAdmin
 from core.admin_mixins import HelpPageMixin
 from .models import HelpPage
+from simple_history.admin import SimpleHistoryAdmin
 
 @admin.register(HelpPage)
-class HelpPageAdmin(HelpPageMixin, MarkdownxModelAdmin):
+class HelpPageAdmin(HelpPageMixin, MarkdownxModelAdmin, SimpleHistoryAdmin):
     list_display = ('content_type', 'get_title', 'author', 'is_active', 'updated_at')
     list_filter = ('is_active', 'content_type__app_label', 'show_legend')
     search_fields = ('title_de', 'title_en', 'content_de', 'content_en', 'author')
@@ -25,11 +26,11 @@ class HelpPageAdmin(HelpPageMixin, MarkdownxModelAdmin):
             'fields': (('title_de', 'title_en'),),
         }),
         (_("Quick Reference (Always Visible)"), {
-            'fields': ('legend_de', 'legend_en'),
+            'fields': (('legend_de'), ('legend_en'),),
             'description': _('Short text explaining status badges, icons, etc.'),
         }),
         (_("Full Help Content (Accordion)"), {
-            'fields': ('content_de', 'content_en'),
+            'fields': (('content_de'), ('content_en'),),
             'description': _('Detailed help text. Use AI to translate between languages!'),
         }),
         (_("System"), {

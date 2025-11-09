@@ -1,0 +1,361 @@
+# HankoSign Actions Configuration
+# Format: Each action needs verb, stage (optional), scope (model), and a human label
+
+actions:
+  # ========================================
+  # PEOPLE MODULE
+  # ========================================
+  - verb: RELEASE
+    stage: ""
+    scope: people.Person
+    human_label: "Release/Print Personnel Record"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Allows printing personnel dossiers, PAC info, roster PDFs, and personnel certificates"
+
+  - verb: LOCK
+    stage: ""
+    scope: people.Person
+    human_label: "Lock Personnel Record"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Prevents further edits to person record (managers can bypass)"
+
+  - verb: UNLOCK
+    stage: ""
+    scope: people.Person
+    human_label: "Unlock Personnel Record"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Re-enables editing of locked person record"
+
+  # ========================================
+  # FINANCES MODULE - Payment Plans
+  # ========================================
+  - verb: SUBMIT
+    stage: "WIREF"
+    scope: finances.PaymentPlan
+    human_label: "Submit Payment Plan (WiRef)"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Employee submits payment plan for WiRef approval"
+
+  - verb: WITHDRAW
+    stage: "WIREF"
+    scope: finances.PaymentPlan
+    human_label: "Withdraw Payment Plan"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Withdraw submitted payment plan (before approvals)"
+
+  - verb: APPROVE
+    stage: "WIREF"
+    scope: finances.PaymentPlan
+    human_label: "Approve Payment Plan (WiRef)"
+    is_repeatable: false
+    require_distinct_signer: true
+    comment: "Financial officer approves payment plan"
+
+  - verb: APPROVE
+    stage: "CHAIR"
+    scope: finances.PaymentPlan
+    human_label: "Approve Payment Plan (Chair)"
+    is_repeatable: false
+    require_distinct_signer: true
+    comment: "Chair approves payment plan (final approval)"
+
+  - verb: VERIFY
+    stage: "WIREF"
+    scope: finances.PaymentPlan
+    human_label: "Verify Banking Setup (WiRef)"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Confirms banking transaction is set up correctly (moves to ACTIVE status)"
+
+  - verb: REJECT
+    stage: ""
+    scope: finances.PaymentPlan
+    human_label: "Cancel/Reject Payment Plan"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Cancel payment plan at any stage"
+
+  - verb: RELEASE
+    stage: ""
+    scope: finances.PaymentPlan
+    human_label: "Release/Print Payment Plan PDF"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Allows printing payment plan PDFs and receipts"
+
+  # ========================================
+  # FINANCES MODULE - Fiscal Years
+  # ========================================
+  - verb: LOCK
+    stage: ""
+    scope: finances.FiscalYear
+    human_label: "Lock Fiscal Year"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Locks fiscal year after year-end close (cascades to all payment plans)"
+
+  - verb: UNLOCK
+    stage: ""
+    scope: finances.FiscalYear
+    human_label: "Unlock Fiscal Year"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Reopens fiscal year for corrections"
+
+  - verb: RELEASE
+    stage: ""
+    scope: finances.FiscalYear
+    human_label: "Release/Print Fiscal Year PDF"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Allows printing fiscal year status and overview PDFs"
+
+  # ========================================
+  # EMPLOYEES MODULE - Employee
+  # ========================================
+  - verb: RELEASE
+    stage: ""
+    scope: employees.Employee
+    human_label: "Release/Print Employee Dossier"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Allows printing employee dossier PDFs"
+
+  # ========================================
+  # EMPLOYEES MODULE - Employment Documents
+  # ========================================
+  - verb: SUBMIT
+    stage: "ASS"
+    scope: employees.EmploymentDocument
+    human_label: "Submit Employment Document (ASS)"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Submit employment contract/document for approval"
+
+  - verb: WITHDRAW
+    stage: "ASS"
+    scope: employees.EmploymentDocument
+    human_label: "Withdraw Employment Document"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Withdraw submitted document (before approvals)"
+
+  - verb: APPROVE
+    stage: "WIREF"
+    scope: employees.EmploymentDocument
+    human_label: "Approve Employment Document (WiRef)"
+    is_repeatable: false
+    require_distinct_signer: true
+    comment: "Financial officer approves employment document"
+
+  - verb: APPROVE
+    stage: "CHAIR"
+    scope: employees.EmploymentDocument
+    human_label: "Approve Employment Document (Chair)"
+    is_repeatable: false
+    require_distinct_signer: true
+    comment: "Chair approves employment document (final)"
+
+  - verb: REJECT
+    stage: "WIREF"
+    scope: employees.EmploymentDocument
+    human_label: "Reject Employment Document (WiRef)"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Financial officer rejects employment document"
+
+  - verb: REJECT
+    stage: "CHAIR"
+    scope: employees.EmploymentDocument
+    human_label: "Reject Employment Document (Chair)"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Chair rejects employment document"
+
+  - verb: RELEASE
+    stage: ""
+    scope: employees.EmploymentDocument
+    human_label: "Release/Print Employment Document PDF"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Allows printing employment contracts, leave requests, and sick notes"
+
+  # ========================================
+  # EMPLOYEES MODULE - Timesheets
+  # ========================================
+  - verb: SUBMIT
+    stage: "ASS"
+    scope: employees.TimeSheet
+    human_label: "Submit Timesheet (ASS)"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Employee submits timesheet for approval"
+
+  - verb: WITHDRAW
+    stage: "ASS"
+    scope: employees.TimeSheet
+    human_label: "Withdraw Timesheet"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Employee withdraws submitted timesheet (before approvals)"
+
+  - verb: APPROVE
+    stage: "WIREF"
+    scope: employees.TimeSheet
+    human_label: "Approve Timesheet (WiRef)"
+    is_repeatable: false
+    require_distinct_signer: true
+    comment: "Financial officer approves timesheet"
+
+  - verb: APPROVE
+    stage: "CHAIR"
+    scope: employees.TimeSheet
+    human_label: "Approve Timesheet (Chair)"
+    is_repeatable: false
+    require_distinct_signer: true
+    comment: "Chair approves timesheet (final)"
+
+  - verb: REJECT
+    stage: "WIREF"
+    scope: employees.TimeSheet
+    human_label: "Reject Timesheet (WiRef)"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Financial officer rejects timesheet"
+
+  - verb: REJECT
+    stage: "CHAIR"
+    scope: employees.TimeSheet
+    human_label: "Reject Timesheet (Chair)"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Chair rejects timesheet"
+
+  - verb: LOCK
+    stage: ""
+    scope: employees.TimeSheet
+    human_label: "Lock Timesheet"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Locks timesheet after final approval (prevents further edits)"
+
+  - verb: UNLOCK
+    stage: ""
+    scope: employees.TimeSheet
+    human_label: "Unlock Timesheet"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Reopens locked timesheet for corrections"
+
+  - verb: RELEASE
+    stage: ""
+    scope: employees.TimeSheet
+    human_label: "Release/Print Timesheet PDF"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Allows printing timesheet PDFs and work journals"
+
+  # ========================================
+  # ASSEMBLY MODULE - Terms
+  # ========================================
+  - verb: LOCK
+    stage: ""
+    scope: assembly.Term
+    human_label: "Lock Assembly Term"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Locks term after completion (cascades to sessions)"
+
+  - verb: UNLOCK
+    stage: ""
+    scope: assembly.Term
+    human_label: "Unlock Assembly Term"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Reopens term for corrections"
+
+  - verb: RELEASE
+    stage: ""
+    scope: assembly.Term
+    human_label: "Release/Print Term Overview PDF"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Allows printing term overview PDFs"
+
+  # ========================================
+  # ASSEMBLY MODULE - Compositions
+  # ========================================
+  - verb: RELEASE
+    stage: ""
+    scope: assembly.Composition
+    human_label: "Release/Print Board Roster PDF"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Allows printing board composition/roster PDFs"
+
+  # ========================================
+  # ASSEMBLY MODULE - Sessions
+  # ========================================
+  - verb: SUBMIT
+    stage: "ASS"
+    scope: assembly.Session
+    human_label: "Submit Session Protocol (ASS)"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Submit session protocol for chair approval"
+
+  - verb: WITHDRAW
+    stage: "ASS"
+    scope: assembly.Session
+    human_label: "Withdraw Session Protocol"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Withdraw submitted protocol (before approval)"
+
+  - verb: APPROVE
+    stage: "CHAIR"
+    scope: assembly.Session
+    human_label: "Approve Session Protocol (Chair)"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Chair approves session protocol (locks editing)"
+
+  - verb: REJECT
+    stage: "CHAIR"
+    scope: assembly.Session
+    human_label: "Reject Session Protocol (Chair)"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Chair rejects session protocol"
+
+  - verb: VERIFY
+    stage: ""
+    scope: assembly.Session
+    human_label: "Verify Sent to KoKo/HSG"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Confirms protocol was sent to oversight bodies"
+
+  - verb: RELEASE
+    stage: ""
+    scope: assembly.Session
+    human_label: "Release/Print Session Protocol PDF"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Allows printing session protocol PDFs"
+
+  # ========================================
+  # ASSEMBLY MODULE - Session Items
+  # ========================================
+  - verb: RELEASE
+    stage: ""
+    scope: assembly.SessionItem
+    human_label: "Release/Print Session Item PDF"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Allows printing individual resolution/item PDFs"

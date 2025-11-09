@@ -1,0 +1,80 @@
+{% extends "pdf/base.html" %} {% load i18n static %} 
+{% block extra_styles %} .sig-section { margin-top: 12mm; page-break-inside: avoid; } .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; } .sig-box { height: 28mm; border: 1px dashed #9aa3af;
+border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { position: absolute; top: 4px; left: 6px; font-size: 10px; color: #9aa3af; } .sig-meta { margin-top: 6px; font-size: 11px; color: #6b7280; } 
+.cert-footerbar {
+    position: running(page-footer);
+    font-size: 10px;
+    color: #374151;
+    border-top: 1px solid #ff8a3d;
+    padding-top: 4mm;
+    line-height: 1.3;
+  }
+{% endblock %}
+{% block pdf_title %}{% trans "Higher Ed Representative Assembly" %} — {{ comp.term.code }}{% endblock %}
+{% block header_title %}{% trans "Mandates roster" %}{% endblock %} 
+{% block header_subtitle %}{{ comp.term.code }}{% endblock %}
+{% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %} 
+{% block content %}
+<h2 style="margin:0 0 8px 0;">{% trans "HV Mandates roster" %} — {{ comp.term.code }}</h2>
+<table>
+    <thead>
+        <tr>
+            <th>{% trans "Position" %}</th>
+            <th>{% trans "Name" %}</th>
+            <th>{% trans "Role" %}</th>
+            <th>{% trans "Officer Role" %}</th>
+            <th>{% trans "Period" %}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for mandate in mandates %}
+        <tr>
+            <td>{{ mandate.position }}</td>
+            <td>{{ mandate.person_role.person }}</td>
+            <td>{{ mandate.person_role.role }}</td>
+            <td>{{ mandate.get_officer_role_display }}</td>
+            <td>{{ mandate.start_date|date:"j. F Y" }} - {% if mandate.end_date %}{{ mandate.end_date|date:"j. F Y" }}{% else %}{% trans "Active" %}{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<section style="border-left: 3px solid var(--rule); padding: 1mm 1mm 1mm 2mm;">
+  <h4>{% trans "System Information" %}</h4>
+<table>
+        <tr>
+            <th>{% trans "Created at" %}</th>
+            <td>{{ comp.created_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Updated at" %}</th>
+            <td>{{ comp.updated_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+</table>
+</section>
+
+{% block styles %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'hankosign/hs_seal.css' %}">
+{% endblock %}
+
+{% include "hankosign/_attestation_seal.html" with signatures=signatures %}
+
+    <div class="cert-footerbar">
+        <strong>{{ org.org_name_long_de }}</strong>
+        {% if org.org_address %} • <u>{% trans "Adresse" %}</u> <i>({% trans "Zentralstelle im Büro Linz" %})</i>: {{ org.org_address }}{% endif %}
+        {% if org.bank_name or org.bank_iban or org.bank_bic %}
+        <br><u>Bank</u>: {% if org.bank_name %}{{ org.bank_name }}{% endif %}
+        {% if org.bank_iban %} • IBAN: {{ org.bank_iban }}{% endif %}
+        {% if org.bank_bic %} • BIC: {{ org.bank_bic }}{% endif %}
+        {% endif %}
+    </div>
+
+<div style="color: (--muted)">
+<h4 style="margin:14px 0 6px 0; text-align: center; font-size: 10px;">{% trans "Important notice" %}</h4>
+<p style="font-size:6px; text-align: center;">
+    {% trans "This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited. If accompanied by a valid electronic signature, this document may constitute a temporary certification of employment with the students’ union." %}
+</p>
+</div>
+
+{% endblock %}

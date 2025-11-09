@@ -160,7 +160,7 @@ class TimeEntryAdminForm(forms.ModelForm):
         t = self.cleaned_data.get("end_time")
         return t.replace(second=0, microsecond=0) if t else t
 
-class TimeEntryInline(admin.TabularInline):
+class TimeEntryInline(admin.StackedInline):
 
     model = TimeEntry
     form = TimeEntryAdminForm
@@ -206,7 +206,7 @@ class EmploymentDocumentInline(admin.StackedInline):
 # Employee Admin
 # =========================
 
-class EmployeeLeaveYearInline(admin.TabularInline):
+class EmployeeLeaveYearInline(admin.StackedInline):
     model = EmployeeLeaveYear
     extra = 0
     can_delete = False
@@ -316,7 +316,8 @@ class EmployeeAdmin(
             messages.error(request, _("Release action is not configured."))
             return
         sign_once(request, action, obj, note=_("Printed employee dossier PDF"), window_seconds=10)
-        ctx = {"emp": obj, "org": OrgInfo.get_solo()}
+        signatures = seal_signatures_context(obj)
+        ctx = {"emp": obj, "signatures": signatures, "org": OrgInfo.get_solo()}
         return render_pdf_response("employees/employee_pdf.html", ctx, request, f"EMP_{obj.id}.pdf")
     print_employee.label = "🖨️ " + _("Print Employee PDF")
     print_employee.attrs = {

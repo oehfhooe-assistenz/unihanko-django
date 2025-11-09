@@ -312,8 +312,19 @@ class PersonRole(models.Model):
     )
     
     CONFIRM_REF_REGEX = r"^(?:HV|AO)-[IVXLCDM]+-\d{4}$"  # HV-<roman>-YYYY or AO-<roman>-YYYY
-    confirm_date = models.DateField(_("Confirmation date"), null=True, blank=True, help_text=_("Date of assembly confirmation (if applicable)"))
-    confirm_ref = models.CharField(_("Confirmation reference"), max_length=120, null=True, blank=True, validators=[RegexValidator(regex=CONFIRM_REF_REGEX, flags=re.I, message=_("Use HV-<roman>-YYYY or AO-<roman>-YYYY (e.g. HV-IV-2024, AO-VI-2023)."),)], help_text=_("Assembly reference or note (if applicable). Format: HV-<roman>-YYYY or AO-<roman>-YYYY (e.g. HV-IV-2024)."))
+    confirm_date = models.DateField(
+        _("Confirmation date"), 
+        null=True, blank=True, 
+        help_text=_("Date of assembly confirmation (if applicable)")
+    )
+    elected_via = models.ForeignKey(
+        'assembly.SessionItem',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='elected_persons',
+        verbose_name=_("Elected via"),
+        help_text=_("Assembly session item that confirmed this appointment")
+    )
 
     # Per-assignment free-text note
     notes = models.TextField(_("Notes"), blank=True)
@@ -382,18 +393,16 @@ class PersonRole(models.Model):
         I_OR_X = re.compile(r'^(?:I\d{2}|X99)$', re.I)
         O_OR_X = re.compile(r'^(?:O\d{2}|X99)$', re.I)
         super().clean()
-        if self.confirm_ref:
-            self.confirm_ref = self.confirm_ref.upper()
 
         errors = {}
 
         if self.role and getattr(self.role, "is_system", False):
             # System roles shouldn't carry confirmation paperwork
-            if self.confirm_date or self.confirm_ref:
-                errors.setdefault("confirm_date", []).append(_("Confirmation isn’t used for system roles."))
-                errors.setdefault("confirm_ref", []).append(_("Confirmation isn’t used for system roles."))
+            if self.confirm_date or self.elected_via_id:  # ← Changed
+                errors.setdefault("confirm_date", []).append(_("Confirmation isn't used for system roles."))
+                errors.setdefault("elected_via", []).append(_("Confirmation isn't used for system roles."))  # ← Changed
                 self.confirm_date = None
-                self.confirm_ref = None
+                self.elected_via = None  # ← Changed
 
             # Optional: disallow effective_* dates for clarity
             if self.effective_start or self.effective_end:
@@ -427,9 +436,9 @@ class PersonRole(models.Model):
                     _("Start and end reason cannot be the same (except X99).")
                 )
 
-        # --- confirm ref requires date ---
-        if self.confirm_ref and not self.confirm_date:
-            errors.setdefault("confirm_date", []).append(_("Provide a confirmation date when adding a reference."))
+        # --- elected_via requires date ---
+        if self.elected_via_id and not self.confirm_date:  # ← Changed
+            errors.setdefault("confirm_date", []).append(_("Provide a confirmation date when using assembly election."))  # ← Changed
 
         if errors:
             raise ValidationError(errors)

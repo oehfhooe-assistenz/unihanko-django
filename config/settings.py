@@ -12,38 +12,29 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import environ
 from pathlib import Path
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 # Environment variables
 env = environ.Env(
     DEBUG=(bool, False) # default to false for safety
 )
-
 environ.Env.read_env(BASE_DIR / '.env')
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
-
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-rz9r+bbkq_y+p&y&$m98m()h+b2g4n4eedn4c*h51zzzntna*h')
-
 # Separate secret key for HankoSign signature generation
-
 HANKOSIGN_SECRET = env('HANKOSIGN_SECRET', default='django-insecure-GENERATE_ANOTHER_ONE_HERE')
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG', default=True)
-
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
-
 LOGIN_URL = "/admin/login/"
 LOGIN_REDIRECT_URL = "/admin/"
-
 LOGS_DIR = BASE_DIR / 'logs'
 LOGS_DIR.mkdir(exist_ok=True)
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -89,17 +80,16 @@ LOGGING = {
         }
     },
 }
-
 if not DEBUG:  # Production
     LOGGING['loggers']['hankosign']['handlers'] = ['console']
     LOGGING['loggers']['unihanko.admin']['handlers'] = ['console']
 
 
 # Application definition
-
 INSTALLED_APPS = [
     'jazzmin',
     'concurrency',
+    'solo',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -109,6 +99,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'django.contrib.flatpages',
     'markdownx',
+    'tinymce',
     'helppages',
     'import_export',
     'simple_history',
@@ -120,10 +111,11 @@ INSTALLED_APPS = [
     'people',
     'finances',
     'employees',
+    'assembly',
 
-    'solo',
     'organisation',
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -139,7 +131,6 @@ MIDDLEWARE = [
 ]
 SITE_ID = 1
 ROOT_URLCONF = 'config.urls'
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -155,13 +146,11 @@ TEMPLATES = [
         },
     },
 ]
-
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -172,7 +161,6 @@ DATABASES = {
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -195,19 +183,15 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = 'en-gb'
 X_FRAME_OPTIONS = "SAMEORIGIN"
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
-
 LANGUAGES = [
-    ("en-gb", "English (UK)"),
-    ("de-at", "Deutsch (Österreich)"),
+    ("en-gb", "English"),
+    ("de-at", "Deutsch"),
 ]
-
 LOCALE_PATHS = [BASE_DIR / "locale"]
 
-
+# markdown configuration
 MARKDOWNX_MARKDOWN_EXTENSIONS = [
     'markdown.extensions.extra',
     'markdown.extensions.nl2br',
@@ -216,146 +200,31 @@ MARKDOWNX_MARKDOWN_EXTENSIONS = [
 MARKDOWNX_MARKDOWN_EXTENSION_CONFIGS = {}
 MARKDOWNX_MEDIA_PATH = 'markdownx/'
 
+
+# TinyMCE configuration (simple WYSIWYG for protocol fields)
+TINYMCE_DEFAULT_CONFIG = {
+    'height': 360,
+    'width': '100%',
+    'menubar': False,
+    'plugins': 'lists link',
+    'toolbar': 'undo redo | bold italic underline | bullist numlist | removeformat',
+    'statusbar': False,
+    'branding': False,
+    'content_style': 'body { font-family: Arial, sans-serif; font-size: 14px; }',
+}
+
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-JAZZMIN_SETTINGS = {
-    # Branding
-    "site_title": "UniHanko Back Office",
-    "site_header": "UniHanko Administration",
-    "site_brand": "UniHanko",
-    "welcome_sign": "Welcome to UniHanko Back Office",
-    "site_logo": "img/unihanko-logo.svg",            # put these under STATIC
-    "login_logo": "img/unihanko-mark.svg",           # optional second logo for login
-    "site_logo_classes": "img-fluid",
 
-    # Quick nav
-    "topmenu_links": [
-        {"name": "Cockpit (Beta)", "url": "/admin/cockpit/", "permissions": ["is_staff"]},
-        {"name": "Onboarding",  "url": "/admin/people/personrole/add/", "permissions": ["people.add_personrole"]},
-        {"name": "Offboarding", "url": "/admin/people/personrole/?active=1", "permissions": ["people.change_personrole"]},
-        {"name": "Fiscal Years", "url": "/admin/finances/fiscalyear/", "permissions": ["finances.view_fiscalyear"]},
-        {"name": "Add Fiscal Year", "url": "/admin/finances/fiscalyear/add/", "permissions": ["finances.add_fiscalyear"]},
-        # examples you can add later:
-        # {"app": "people"},                               # jump to the Personnel section
-        # {"name": "Public site", "url": "/", "new_window": True},
-    ],
-    "usermenu_links": [
-        # {"model": "auth.user"},                         # profile
-        # {"name": "Help", "url": "https://…", "new_window": True},
-    ],
+#jazzmin configuration
+from .settings_jazzmin import JAZZMIN_SETTINGS, JAZZMIN_UI_TWEAKS
 
-    # Icons (Font Awesome 5/6)
-    "icons": {
-        "organisation.orginfo": "fa-solid fa-building-ngo",
-        "people": "fa-solid fa-users-gear",
-        "people.person": "fa-solid fa-user",
-        "people.personrole": "fa-solid fa-user-check",
-        "people.role": "fa-solid fa-id-badge",
-        "people.roletransitionreason": "fa-solid fa-flag",
-        "finances": "fa-solid fa-calculator",
-        "finances.fiscalyear": "fa-solid fa-calendar-check",
-        "finances.paymentplan": "fa-solid fa-money-check-dollar",
-        "employees": "fa-solid fa-address-book",
-        "employees.employee": "fa-solid fa-address-book",
-        "employees.employmentdocument": "fa-solid fa-passport",
-        "employees.timesheet": "fa-solid fa-business-time",
-        "employees.timeentry": "fa-solid fa-calendar-xmark",
-        "employees.holidaycalendar": "fa-solid fa-gift",
-        "hankosign":"fa-solid fa-key",
-        "hankosign.action":"fa-solid fa-layer-group",
-        "hankosign.policy":"fa-solid fa-pen-nib",
-        "hankosign.Signatory":"fa-solid fa-fingerprint",
-        "hankosign.Signature":"fa-solid fa-receipt",
-    },
-
-    # Sidebar ordering within the app
-    "order_with_respect_to": ["organisation", "organisation.orginfo", "people", "people.personrole", "people.person", "people.roletransitionreason", "people.role", "finances", "finances.paymentplan", "finances.fiscalyear", "employees", "employees.timesheet", "employees.employmentdocument", "employees.employee", "employees.holidaycalendar", "hankosign", "hankosign.signatory", "hankosign.policy", "hankosign.action"],
-
-
-    # Hide historical models from menu
-    "hide_models": [
-        "organisation.HistoricalOrgInfo",
-        "people.HistoricalPerson",
-        "people.HistoricalRole",
-        "people.HistoricalPersonRole",
-        "people.HistoricalRoleTransitionReason",
-        "finances.HistoricalFiscalYear",
-        "finances.HistoricalPaymentPlan",
-        "hankosign.Signature",
-        "employees.HistoricalEmployee",
-        "employees.HistoricalEmploymentDocument",
-        "employees.HistoricalHolidayCalendar",
-        "employees.HistoricalTimeSheet",
-        "employees.HistoricalTimeEntry",
-        "hankosign.HistoricalAction",
-        "hankosign.HistoricalPolicy",
-        "hankosign.HistoricalSignatory",
-        "hankosign.HistoricalSignature",
-    ],
-
-    # Quality of life
-    "related_modal_active": True,                    # add related objects in a modal
-    "changeform_format": "collapsible",            # or "horizontal_tabs" / "collapsible"
-    "changeform_format_overrides": {
-        "finances.paymentplan": "single",
-        "organisation.orginfo": "single",
-    },
-    "language_chooser": True,                       # header language switcher
-
-    # Custom assets
-    # "custom_css": "admin/unihanko.css",
-    "custom_css": "admin/uh_new.css",
-    "custom_js": "admin/custom.js",
-
-    # Optional: show Jazzmin UI builder (handy for experimenting)
-    "show_ui_builder": True,
-}
-
-JAZZMIN_UI_TWEAKS = {
-    # Bootswatch theme names: flatly, simplex, cosmo, lumen, slate, darkly, etc.
-    "theme": "superhero",
-    "dark_mode_theme": None,
-
-    # Navbar / sidebar styling
-    "navbar": "navbar-light",
-    "no_navbar_border": True,
-    "brand_small_text": False,
-    "navbar_small_text": False,
-    "footer_small_text": True,
-    "body_small_text": False,
-    "brand_small_text": False,
-    "brand_colour": False,
-    "accent": "accent-orange",
-    "navbar": "navbar-orange navbar-light",
-    "no_navbar_border": True,
-    "navbar_fixed": False,
-    "layout_boxed": False,
-    "footer_fixed": True,
-    "sidebar_fixed": True,
-    "sidebar": "sidebar-dark-orange",
-    "sidebar_nav_small_text": True,
-    "sidebar_disable_expand": False,
-    "sidebar_nav_child_indent": True,
-    "sidebar_nav_compact_style": True,
-    "sidebar_nav_legacy_style": False,
-    "sidebar_nav_flat_style": True,
-    "button_classes": {
-        "primary": "btn-primary",
-        "secondary": "btn-secondary",
-        "info": "btn-outline-info",
-        "warning": "btn-warning",
-        "danger": "btn-danger",
-        "success": "btn-success"
-    },
-    "actions_sticky_top": True
-}
 

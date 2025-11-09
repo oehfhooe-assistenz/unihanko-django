@@ -27,7 +27,6 @@ from core.utils.authz import is_people_manager
 from django.db import transaction
 from django.db.models import Prefetch
 
-
 # =========================
 # Import–Export resources
 # =========================
@@ -80,7 +79,8 @@ class PersonRoleResource(resources.ModelResource):
     person_id = fields.Field(attribute="person_id", column_name="person_id")
     role_id = fields.Field(attribute="role_id", column_name="role_id")
     start_reason_code = fields.Field(column_name="start_reason_code")
-    end_reason_code   = fields.Field(column_name="end_reason_code")
+    end_reason_code = fields.Field(column_name="end_reason_code")
+    elected_via_code = fields.Field(column_name="elected_via_code")  # ← NEW: For export
 
     class Meta:
         model = PersonRole
@@ -93,30 +93,40 @@ class PersonRoleResource(resources.ModelResource):
             "effective_start",
             "effective_end",
             "confirm_date",
-            "confirm_ref",
+            "elected_via_code",  # ← CHANGED: replaced confirm_ref with this
             "start_reason_code",
             "end_reason_code",
             "notes",
         )
         export_order = fields
 
-    # export codes
+    # Export codes
     def dehydrate_start_reason_code(self, obj):
         return obj.start_reason.code if obj.start_reason_id else ""
 
     def dehydrate_end_reason_code(self, obj):
         return obj.end_reason.code if obj.end_reason_id else ""
 
-    # allow import by codes (optional convenience)
+    def dehydrate_elected_via_code(self, obj):
+        """Export elected_via as session item code (e.g., HV25_27_I:or-S002)"""
+        if obj.elected_via_id:
+            return obj.elected_via.full_identifier
+        return ""
+
+    # Allow import by codes (optional convenience)
     def before_import_row(self, row, **kwargs):
         from .models import RoleTransitionReason
         code_s = (row.get("start_reason_code") or "").strip()
         code_e = (row.get("end_reason_code") or "").strip()
+        
+        # Handle start_reason code → ID
         if code_s:
             try:
                 row["start_reason_id"] = RoleTransitionReason.objects.only("id").get(code=code_s).id
             except RoleTransitionReason.DoesNotExist:
                 row["start_reason_id"] = ""
+        
+        # Handle end_reason code → ID
         if code_e:
             try:
                 row["end_reason_id"] = RoleTransitionReason.objects.only("id").get(code=code_e).id
@@ -173,7 +183,7 @@ class PersonRoleInline(admin.StackedInline):
                 "role",
                 ("start_date"), ("effective_start"), ("start_reason"),
                 ("end_date"), ("effective_end"), ("end_reason"),
-                ("confirm_date"), ("confirm_ref"),
+                ("confirm_date"), ("elected_via"),
                 "signatures_box",
                 "notes",
                 "version",
@@ -394,7 +404,7 @@ class PersonAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, D
         )
     lock_person.label = _("Lock record")
     lock_person.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;"}
-
+    #lock_person.attrs = {"class": "max-md:-mt-px max-md:first:rounded-t-default md:last:rounded-r-default md:first:rounded-l-default hover:text-primary-600 dark:hover:text-primary-500 border-base-200 md:-ml-px max-md:last:rounded-b-default border dark:border-base-700"}
 
     @safe_admin_action
     def unlock_person(self, request, obj):
@@ -406,7 +416,7 @@ class PersonAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, D
         )
     unlock_person.label = _("Unlock record")
     unlock_person.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;"}
-
+    
 
     @admin.action(description=_("Lock selected"))
     def lock_selected(self, request, queryset):
@@ -677,9 +687,9 @@ class PersonRoleAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixi
     )
     list_display_links = ("person",)
     list_filter = (ActiveFilter, "role", "start_reason", "end_reason", "start_date", "end_date", "confirm_date")
-    search_fields = ("person__last_name", "person__first_name", "role__name", "confirm_ref", "notes")
-    autocomplete_fields = ("person", "role", "start_reason", "end_reason")
-    readonly_fields = ("signatures_box",)
+    search_fields = ("person__last_name", "person__first_name", "role__name", "notes")
+    autocomplete_fields = ("person", "role", "start_reason", "end_reason", "elected_via")
+    readonly_fields = ("signatures_box", "created_at", "updated_at",)
     actions = ["offboard_today"]
 
     fieldsets = (
@@ -694,7 +704,7 @@ class PersonRoleAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixi
             "fields": ("start_reason", "end_reason"),
         }),
         (_("Confirmation (heads only)"), {
-            "fields": ("confirm_date", "confirm_ref"),
+            "fields": ("confirm_date", "elected_via", "election_reference",),
         }),
         (_("Notes"), {
             "fields": ("notes",),
@@ -783,6 +793,19 @@ class PersonRoleAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixi
             },
         )
         return mark_safe(html)
+    
+
+    @admin.display(description=_("Election reference"))
+    def election_reference(self, obj):
+        """Display the session item code for elected assignments"""
+        if not obj or not obj.pk:
+            return "—"
+        if obj.elected_via:
+            return mark_safe(
+                f'<a href="{reverse("admin:assembly_sessionitem_change", args=[obj.elected_via.pk])}" target="_blank">'
+                f'{obj.elected_via.full_identifier}</a>'
+            )
+        return "—"
 
 
     def get_changelist_row_attrs(self, request, obj):
@@ -922,11 +945,12 @@ class PersonRoleAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixi
         sign_once(request, action, obj.person, note=_("Printed %(what)s") % {"what": "appointment (post-confirmation)"}, window_seconds=10)
         rsname = slugify(obj.role.short_name)[:10]
         lname = slugify(obj.person.last_name)[:20]
+        ref_code = obj.elected_via.item_code if obj.elected_via else ''
         date_str = timezone.localtime().strftime("%Y-%m-%d")
         return self._render_cert(
             request, obj,
             "people/certs/appointment_confirmation.html",
-            f"B_Beschluss_{obj.confirm_ref or ''}_{rsname}_{lname}-{date_str}.pdf"
+            f"B_Beschluss_{ref_code}_{rsname}_{lname}-{date_str}.pdf"
         )
     print_confirmation.label = "☑️ " + _("Print appointment (post-confirmation) PDF")
     print_confirmation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
@@ -990,7 +1014,7 @@ class PersonRoleAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixi
         ro = list(super().get_readonly_fields(request, obj))
         if obj and self._is_locked(request, obj):
             for f in ("person","role","start_date","end_date","effective_start","effective_end",
-                    "start_reason","end_reason","confirm_date","confirm_ref","notes"):
+                    "start_reason","end_reason","confirm_date","elected_via","notes"):
                 if f not in ro: ro.append(f)
         return ro
     

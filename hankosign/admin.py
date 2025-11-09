@@ -7,7 +7,7 @@ from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for
 from .models import Action, Policy, Signatory, Signature
 
 
-class SignatureInline(admin.TabularInline):
+class SignatureInline(admin.StackedInline):
     model = Signature
     extra = 0
     can_delete = False

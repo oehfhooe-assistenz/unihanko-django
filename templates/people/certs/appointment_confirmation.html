@@ -6,8 +6,8 @@
 {% block appoint_kind %}{% endblock %}
 {% block appoint_kind_en %}{% endblock %}
 {% block legal_text %}
-  <p>laut Beschluss der Sitzung <span class="em">{{ pr.confirm_ref|default:"N/A" }}</span> vom <span class="em">{{ pr.confirm_date|default:"N/A"|date:"d.m.Y" }}</span>.</p>
-  <p class="en-em">following resolution of the union assembly <span class="em">{{ pr.confirm_ref|default:"N/A" }}</span>, date <span class="em">{{ pr.confirm_date|default:"N/A"|date:"d.m.Y" }}</span>.</p>
+  <p>laut Beschluss der Sitzung <span class="em">{{ pr.elected_via.full_identifier|default:"N/A" }}</span> vom <span class="em">{{ pr.confirm_date|default:"N/A"|date:"d.m.Y" }}</span>.</p>
+  <p class="en-em">following resolution of the union assembly <span class="em">{{ pr.elected_via.full_identifier|default:"N/A" }}</span>, date <span class="em">{{ pr.confirm_date|default:"N/A"|date:"d.m.Y" }}</span>.</p>
 {% endblock %}
 
 

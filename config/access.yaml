@@ -95,3 +95,39 @@ groups:
       hankosign.Signatory: [view, add, change]
       hankosign.Signature: [view, add, change]
     custom_perms: {}
+
+  "module:helppages:editor":
+    inherits: []
+    models:
+      helppages.HelpPage: [view, change]
+    custom_perms: {}
+
+  "module:helppages:manager":
+    inherits:
+      - "module:helppages:editor"
+    models:
+      helppages.HelpPage: [view, change]
+  custom_perms: {}
+
+  "module:assembly:editor":
+    inherits: []
+    models:
+      assembly.Term: [view]
+      assembly.Composition: [view]
+      assembly.Mandate: [view]
+      assembly.Session: [view, add, change]
+      assembly.SessionItem: [view, add, change, delete]
+      assembly.Vote: [view, add, change]
+    custom_perms: {}
+
+  "module:assembly:manager":
+    inherits:
+      - "module:assembly:editor"
+    models:
+      assembly.Term: [view, add, change]
+      assembly.Composition: [view, add, change]
+      assembly.Mandate: [view, add, change]
+      assembly.Session: [view, add, change]
+      assembly.SessionItem: [view, add, change, delete]
+      assembly.Vote: [view, add, change]
+    custom_perms: {}

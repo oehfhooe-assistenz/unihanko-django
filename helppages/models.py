@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import gettext_lazy as _, get_language
 from markdownx.models import MarkdownxField
+from simple_history.models import HistoricalRecords
 
 class HelpPage(models.Model):
     """Help content for admin pages, with DE/EN support."""
@@ -36,6 +37,8 @@ class HelpPage(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    history = HistoricalRecords()
+
     class Meta:
         verbose_name = _("Help Page")
         verbose_name_plural = _("Help Pages")

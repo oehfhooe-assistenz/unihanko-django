@@ -87,7 +87,13 @@ border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { pos
         </tr>
         <tr>
             <th>{% trans "Confirmation reference (if applicable)" %}</th>
-            <td>{{ pp.person_role.confirm_ref|default:"—" }}</td>
+            <td>
+                {% if pp.person_role.elected_via %}
+                    {{ pp.person_role.elected_via.full_identifier }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
         </tr>
         <tr>
             <th>{% trans "Assignment notes" %}</th>

@@ -1,4 +1,4 @@
-{% extends "pdf/base.html" %} {% load i18n %} 
+{% extends "pdf/base.html" %} {% load i18n static %} 
 {% block extra_styles %} .sig-section { margin-top: 12mm; page-break-inside: avoid; } .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; } .sig-box { height: 28mm; border: 1px dashed #9aa3af;
 border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { position: absolute; top: 4px; left: 6px; font-size: 10px; color: #9aa3af; } .sig-meta { margin-top: 6px; font-size: 11px; color: #6b7280; } 
 {% endblock %}
@@ -94,6 +94,13 @@ border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { pos
 </tr>
 </table>
 </section>
+
+{% block styles %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'hankosign/hs_seal.css' %}">
+{% endblock %}
+
+{% include "hankosign/_attestation_seal.html" with signatures=signatures %}
 
 <div style="color: (--muted)">
 <h4 style="margin:14px 0 6px 0; text-align: center; font-size: 10px;">{% trans "Important notice" %}</h4>

@@ -33,18 +33,6 @@
   max-width: 100% !important;
 }
 
-/* Global floating Help button in admin */
-#uh-help-fab{
-  position: fixed; right: 20px; bottom: 60px;
-  width: 44px; height: 44px; border-radius: 999px;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--uh-accent, #ff8a3d);
-  color: #101010 !important; font-weight: 800; text-decoration: none ;
-  box-shadow: 0 6px 18px rgba(0,0,0,.28);
-  z-index: 5000; transition: transform .15s ease, box-shadow .15s ease;
-}
-#uh-help-fab:hover{ transform: translateY(-1px) scale(1.04); box-shadow: 0 10px 22px rgba(0,0,0,.34); }
-
 /* global nuke (optional): hide related action icons everywhere */
 .related-widget-wrapper .related-widget-wrapper-link { display:none !important; }
 

@@ -21,6 +21,7 @@ from core import views as core_views
 admin.site.index_title = "Dashboard"
 
 urlpatterns = [
+    path('tinymce/', include('tinymce.urls')),
     path('i18n/', include('django.conf.urls.i18n')),
     path('', core_views.home, name='home'),
     path('admin/cockpit/', core_views.admin_cockpit, name='admin_cockpit'),

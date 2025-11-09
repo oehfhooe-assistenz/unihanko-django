@@ -1,0 +1,80 @@
+{% extends "pdf/base.html" %}
+{% load i18n static %}
+
+{% block pdf_title %}{% trans "Higher Ed Representative Assembly — Term overview" %} — {{ term.code }}{% endblock %}
+{% block header_title %}{% trans "Term overview" %}{% endblock %}
+{% block header_subtitle %}{{ term.code }}{% endblock %}
+{% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %}
+{% block extra_styles %}
+.cert-footerbar {
+    position: running(page-footer);
+    font-size: 10px;
+    color: #374151;
+    border-top: 1px solid #ff8a3d;
+    padding-top: 4mm;
+    line-height: 1.3;
+  }
+{% endblock %}
+{% block content %}
+<h2 style="margin:0 0 8px 0;">{% trans "Details" %}</h2>
+<table>
+    <tbody>
+        <tr>
+            <th style="width:160px;">{% trans "Identifier" %}</th>
+            <td>
+                {{ term.code }} <span style="color:var(--brand);"> {{ term.label }}</span>
+            </td>
+        </tr>
+        <tr>
+            <th>{% trans "Start date" %}</th>
+            <td>{{ term.start_date|date:"j. F Y" }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "End date" %}</th>
+            <td>{{ term.end_date|date:"j. F Y" }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Active" %}</th>
+            <td>{% if term.is_active %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
+        </tr>
+        {% if term.notes %}
+        <tr>
+            <th>{% trans "Notes" %}</th>
+            <td><p>{{ term.notes|linebreaks }}</p></td>
+        </tr>
+        {% endif %}
+        <tr>
+            <th>{% trans "Created at" %}</th>
+            <td>{{ fy.created_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+        <tr>
+            <th>{% trans "Updated at" %}</th>
+            <td>{{ fy.updated_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+    </tbody>
+</table>
+
+{% block styles %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'hankosign/hs_seal.css' %}">
+{% endblock %}
+
+{% include "hankosign/_attestation_seal.html" with signatures=signatures %}
+
+    <div class="cert-footerbar">
+        <strong>{{ org.org_name_long_de }}</strong>
+        {% if org.org_address %} • <u>{% trans "Adresse" %}</u> <i>({% trans "Zentralstelle im Büro Linz" %})</i>: {{ org.org_address }}{% endif %}
+        {% if org.bank_name or org.bank_iban or org.bank_bic %}
+        <br><u>Bank</u>: {% if org.bank_name %}{{ org.bank_name }}{% endif %}
+        {% if org.bank_iban %} • IBAN: {{ org.bank_iban }}{% endif %}
+        {% if org.bank_bic %} • BIC: {{ org.bank_bic }}{% endif %}
+        {% endif %}
+    </div>
+
+<div style="color: (--muted)">
+<h4 style="margin:14px 0 6px 0; text-align: center; font-size: 10px;">{% trans "Important notice" %}</h4>
+<p style="font-size:6px; text-align: center;">
+    {% trans "This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited." %}
+</p>
+</div>
+{% endblock %}
