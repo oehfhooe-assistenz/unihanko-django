@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from datetime import date, timedelta
 from decimal import Decimal
 
-from people.models import Person, Role, PersonRole
+from people.models import Person, Role, PersonRole, RoleTransitionReason
 from academia.models import Semester, InboxRequest, InboxCourse
 from .models import AuditSemester, AuditEntry
 from .utils import synchronize_audit_entries
@@ -20,7 +20,6 @@ class AuditSemesterTestCase(TestCase):
             code="WS24",
             display_name="Winter Semester 2024/25",
             start_date=date(2024, 10, 1),
-            end_date=date(2025, 1, 31),
         )
 
     def test_audit_semester_creation(self):
@@ -76,7 +75,7 @@ class AuditEntryTestCase(TestCase):
             code="WS24",
             display_name="Winter Semester 2024/25",
             start_date=date(2024, 10, 1),
-                end_date=date(2025, 1, 31),
+            end_date=date(2025, 1, 31),
             ects_adjustment=Decimal('0.00')
         )
 
@@ -157,11 +156,23 @@ class AuditEntryTestCase(TestCase):
 
 class SynchronizeAuditEntriesTestCase(TestCase):
     def setUp(self):
+        # Create role transition reasons for tests
+        self.start_reason = RoleTransitionReason.objects.create(
+            code="I03",
+            name="Test Entry Audit",
+            name_en="Test Entry Audit"
+        )
+        self.end_reason = RoleTransitionReason.objects.create(
+            code="O03",
+            name="Test Exit Audit",
+            name_en="Test Exit Audit"
+        )
+
         self.semester = Semester.objects.create(
             code="WS24",
             display_name="Winter Semester 2024/25",
             start_date=date(2024, 10, 1),
-                end_date=date(2025, 1, 31),
+            end_date=date(2025, 1, 31),
             ects_adjustment=Decimal('0.00')
         )
 
@@ -189,14 +200,12 @@ class SynchronizeAuditEntriesTestCase(TestCase):
             person=self.person1,
             role=self.role,
             start_date=date(2024, 10, 1),
-            end_date=date(2025, 1, 31),
         )
 
         self.person_role2 = PersonRole.objects.create(
             person=self.person2,
             role=self.role,
             start_date=date(2024, 10, 1),
-            end_date=date(2025, 1, 31),
         )
 
     def test_synchronize_creates_new_entries(self):
@@ -255,7 +264,9 @@ class SynchronizeAuditEntriesTestCase(TestCase):
             person=person3,
             role=self.role,
             start_date=date(2024, 10, 1),
-            end_date=date(2025, 1, 31),
+            start_reason=self.start_reason,
+            end_date=date(2024, 11, 30),
+            end_reason=self.end_reason,
         )
 
         created, updated, skipped = synchronize_audit_entries(self.audit_semester)
@@ -329,7 +340,6 @@ class SynchronizeAuditEntriesTestCase(TestCase):
             person=self.person1,
             role=role2,
             start_date=date(2024, 10, 1),
-            end_date=date(2025, 1, 31),
         )
 
         created, updated, skipped = synchronize_audit_entries(self.audit_semester)
@@ -356,7 +366,6 @@ class SynchronizeAuditEntriesTestCase(TestCase):
             person=person3,
             role=ineligible_role,
             start_date=date(2024, 10, 1),
-            end_date=date(2025, 1, 31),
         )
 
         created, updated, skipped = synchronize_audit_entries(self.audit_semester)
@@ -386,7 +395,6 @@ class AuditEntryM2MTestCase(TestCase):
             code="WS24",
             display_name="Winter Semester 2024/25",
             start_date=date(2024, 10, 1),
-            end_date=date(2025, 1, 31),
         )
 
         self.audit_semester = AuditSemester.objects.create(
