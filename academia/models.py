@@ -75,11 +75,25 @@ class Semester(models.Model):
     start_date = models.DateField(_("Start Date"))
     end_date = models.DateField(_("End Date"))
 
-    # Public filing
+    # Public filing window
+    filing_start = models.DateTimeField(
+        _("Filing Start"),
+        null=True,
+        blank=True,
+        help_text=_("When public filing platform opens for new requests")
+    )
+
+    filing_end = models.DateTimeField(
+        _("Filing End"),
+        null=True,
+        blank=True,
+        help_text=_("When public filing platform closes for new requests")
+    )
+
     is_active = models.BooleanField(
         _("Active for Filing"),
         default=False,
-        help_text=_("Whether public filing platform accepts new requests")
+        help_text=_("DEPRECATED: Use filing_start/filing_end instead")
     )
 
     access_password = models.CharField(
