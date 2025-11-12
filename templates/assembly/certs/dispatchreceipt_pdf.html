@@ -1,0 +1,76 @@
+{% extends "pdf/certificate_base.html" %}
+{% load i18n %}
+
+{% block cert_title %}ENTSENDUNGSDOKUMENT{% endblock %}
+{% block cert_subtitle %}DISPATCH CERTIFICATE{% endblock %}
+
+{% block appointment_body %}
+<div class="legal-text" style="margin-top: 0;">
+    <p class="de">
+        Im Namen der Hochschülerinnen- & Hochschülerschaft der FH Oberösterreich
+        entsenden wir Dich als
+        <span class="emphasis">{% if person_role %}{{ person_role.role.name }}{% else %}[TEMP!] {{ item.elected_role_text_reference }}{% endif %}</span>
+    </p>
+    <p class="bilingual en">
+        On behalf of the University of Upper Austria's Students' Union (by statutory body),
+        we hereby dispatch you as
+        <span class="emphasis">{% if person_role %}{{ person_role.role.name }}{% else %}[TEMP!] {{ item.elected_role_text_reference }}{% endif %}</span>
+    </p>
+</div>
+
+<div style="margin-top: 3mm;">
+    <div class="field-label">
+        <span class="de">Funktionsbezeichnung</span>
+        <span class="bilingual en">function</span>
+    </div>
+    <div class="field-value">{% if person_role %}{{ person_role.role.name }}{% else %}"-"{% endif %}</div>
+</div>
+
+<div class="legal-text" style="margin-top: 8mm;">
+    <p class="de">
+        laut Beschluss der Sitzung
+        <span class="emphasis">{{ item.session.code }}</span>
+        vom
+        <span class="emphasis">{{ item.session.session_date|date:"d.m.Y" }}</span>
+        (Tagesordnungspunkt {{ item.order }}. {{ item.item_code }}).
+    </p>
+    <p class="bilingual en">
+        following resolution of the union assembly
+        <span class="emphasis">{{ item.session.code }}</span>,
+        date
+        <span class="emphasis">{{ item.session.session_date|date:"d.m.Y" }}</span>
+        (agenda item {{ item.order }}. {{ item.item_code }}).
+    </p>
+</div>
+{% endblock %}
+
+{% block effective_date %}{{ item.session.session_date|date:"d.m.Y" }}{% endblock %}
+
+{% block notes_title_de %}Wichtige Hinweise zu Deiner Entsendung{% endblock %}
+{% block notes_title_en %}Important Notice regarding your Dispatch{% endblock %}
+
+{% block notes_list %}
+<li>
+    <span class="de">Diese Entsendung erfolgt auf Basis eines Beschlusses der Hochschulvertretung.</span>
+    <span class="bilingual en">This dispatch is based on a resolution of the students' union assembly.</span>
+</li>
+<li>
+    <span class="de">Als Entsendete*r vertrittst Du die Interessen der Studierenden der FH Oberösterreich.</span>
+    <span class="bilingual en">As a dispatched representative, you represent the interests of students at the UAS Upper Austria.</span>
+</li>
+<li>
+    <span class="de">Die Entsendung endet mit Ablauf der Funktionsperiode oder durch Widerruf seitens der HV.</span>
+    <span class="bilingual en">The dispatch ends with the expiration of the term or by revocation by the assembly.</span>
+</li>
+<li>
+    <span class="de">Bei Rückfragen wende Dich bitte an office@oeh.fh-ooe.at.</span>
+    <span class="bilingual en">For questions, please contact office@oeh.fh-ooe.at.</span>
+</li>
+{% endblock %}
+
+{% block extra_notes %}
+{# Add qualified signature boxes at the bottom of page 2 #}
+<div style="margin-top: 8mm; page-break-inside: avoid;">
+    {% include '_includes/_signature_boxes.html' with count=1 signers=signers %}
+</div>
+{% endblock %}

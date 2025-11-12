@@ -1,81 +1,44 @@
-{% extends "pdf/base.html" %} {% load i18n static %} 
-{% block extra_styles %} .sig-section { margin-top: 12mm; page-break-inside: avoid; } .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; } .sig-box { height: 28mm; border: 1px dashed #9aa3af;
-border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { position: absolute; top: 4px; left: 6px; font-size: 10px; color: #9aa3af; } .sig-meta { margin-top: 6px; font-size: 11px; color: #6b7280; }
-.pac-section { font-family: "DejaVu Sans Mono", monospace; text-transform: uppercase; letter-spacing: 0.6mm; margin-top: 12mm; margin-bottom: 12mm; margin: auto; font-weight: bold; width: 50%; border: 4px solid var(--brand); padding: 10px; font-size: 32px; text-align: center; }
-{% endblock %}
-{% block pdf_title %}{% trans "PAC Info" %} — {{ p.last_name }}, {{ p.first_name }}{% if p.matric_no %}; {{ p.matric_no }}{% endif %}{% endblock %}
-{% block header_title %}{% trans "Personal Access Code Information Sheet" %}{% endblock %} 
-{% block header_subtitle %}{{ p.uuid }}{% endblock %}
-{% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %} 
+{% extends "pdf/base.html" %}
+{% load i18n %}
+
+{% block header_title %}{% trans "Personal Access Code" %} — {{ p.last_name }}{% endblock %}
+
 {% block content %}
-<h2 style="margin:0 0 8px 0;">Personal Access Code {% trans "for" %}:</h2>
-<h3 style="margin:10px 0 6px 0; color:var(--brand);">{{ p.first_name }} {{ p.last_name }}</h3>
-<section>
-    <div style="margin:4mm 0 10mm 0;">
-        <table>
-            <tbody>
-                <tr>
-                    <th>{% trans "Matriculation No." %}</th>
-                    <td>{{ p.matric_no|default:"—" }}</td>
-                </tr>
-                <tr>
-                    <th>{% trans "Email(s)" %}</th>
-                    <td>
-                        {% if p.email %}{{ p.email }}{% else %}—{% endif %} {% if p.student_email %}
-                        <br>{{ p.student_email }}{% endif %}
-                    </td>
-                </tr>
-                <tr>
-                    <th>{% trans "UniHanko ID" %}</th>
-                    <td>{{ p.uuid }}</td>
-                </tr>
-            </tbody>
+{% include '_includes/_org_header.html' with org=org %}
+
+<h1 class="document-title">{% trans "Personal Access Code Notice" %}</h1>
+<p class="text-muted">{% trans "Confidential — For recipient only" %}</p>
+
+<div class="section">
+    <h2 class="section-title">{% trans "Recipient" %}</h2>
+    <div class="section-content">
+        <table class="info-table">
+            <tr>
+                <th>{% trans "Name" %}</th>
+                <td>{{ p.first_name }} {{ p.last_name }}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Email" %}</th>
+                <td>{{ p.email|default:"—" }}</td>
+            </tr>
         </table>
-
-        <div style="margin:4mm 0 4mm 0;">
-            <p style="margin:0 0 4mm 0;"><strong>{% trans "Dear functionary" %},</strong><br></p>
-            <small>
-            {% blocktrans trimmed %}
-            Given your role within the UAS Upper Austria's students' union your personnel information has been stored within UniHanko, our internal personnel management system.
-            While you may not be supplied with an administrative account for UniHanko, you may file or register certain activities (e.g. your 'Funktionsgebühr') via UniHanko's public filing platform.
-            For these activities, you will be asked to provide your Personal Access Code, which you'll find on this sheet.
-            Please safeguard this information.
-            {% endblocktrans %}
-            </small>
-        </div>
     </div>
-</section>
-<section style="margin: 4mm 0 10mm 0;">
-    <div class="pac-section">
-        {{ p.personal_access_code }}
-    </div>
-
-    <div style="margin:4mm 0 4mm 0;">
-    {% if org.org_public_filing_url %}
-    <p style="margin:4mm 0 4mm 0;">
-        <strong>{% trans "Use this code at" %}:
-            <a href="{{ org.org_public_filing_url }}" style="color:#2563eb; text-decoration:underline;">
-                {{ org.org_public_filing_url }}
-            </a>
-        </strong>
-    </p>
-    {% else %}
-    <p style="margin:4mm 0 4mm 0;"><strong>{% trans "Use this code at" %}: —</strong></p>
-    {% endif %}
-    </div>
-</section>
-
-{% block styles %}
-  {{ block.super }}
-  <link rel="stylesheet" href="{% static 'hankosign/hs_seal.css' %}">
-{% endblock %}
-
-{% include "hankosign/_attestation_seal.html" with signatures=signatures %}
-
-<div style="color: (--muted)">
-<h4 style="margin:14px 0 6px 0; text-align: center; font-size: 10px;">{% trans "Important notice" %}</h4>
-<p style="font-size:6px; text-align: center;">
-    {% trans "This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited." %}
-</p>
 </div>
+
+<div class="section">
+    <h2 class="section-title">{% trans "Access Code" %}</h2>
+    <div class="section-content">
+        <p style="font-size: 1.5rem; font-weight: bold; text-align: center; padding: 1rem; background-color: #f8f9fa; border: 2px solid #dee2e6; font-family: 'Courier New', monospace;">
+            {{ p.personal_access_code }}
+        </p>
+        <p class="text-muted mt-2">
+            {% trans "This code allows you to access your personal data and perform certain actions. Keep it confidential and do not share it with others." %}
+        </p>
+    </div>
+</div>
+
+{% include '_includes/_signature_seal.html' with signatures=signatures %}
+
+{% include '_includes/_disclaimer.html' %}
+
 {% endblock %}

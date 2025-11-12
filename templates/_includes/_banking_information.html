@@ -1,0 +1,9 @@
+{# Organization letterhead - used on all PDFs #}
+{% load i18n %}
+
+<div class="bank-footerbar">
+        <strong>{% trans "Bankverbindung der" %} {{ org.org_name_long_de }}:</strong><br>
+        {% if org.bank_name %}{{ org.bank_name }}{% endif %}
+        {% if org.bank_iban %} • IBAN: {{ org.bank_iban }}{% endif %}
+        {% if org.bank_bic %} • BIC: {{ org.bank_bic }}{% endif %}
+</div>

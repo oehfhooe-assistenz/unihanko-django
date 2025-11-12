@@ -5,112 +5,398 @@
 <head>
     <meta charset="utf-8">
     <title>{% block pdf_title %}UniHanko PDF{% endblock %}</title>
-
     <style>
-        /* -------- Paged setup -------- */
-        @page {
-          size: A4;
-          margin: 26mm 15mm 20mm 15mm; /* top, right, bottom, left */
-          @top-center { content: element(header-std); }
-          @bottom-left { content: element(page-footer); }
-          @bottom-right { content: counter(page) " / " counter(pages); }
-        }
-        /* First page gets the hero header */
-        @page:first {
-          margin-top: 42mm;
-          @top-center { content: element(header-hero); }
-        }
-    
-        /* -------- Base tokens -------- */
-        :root{
-          --brand: #f97316; /* UniHanko orange */
-          --ink: #111;
-          --muted: #6b7280;
-          --rule: #e5e7eb;
-        }
-    
-        html, body {
-          font-family: "DejaVu Sans", Arial, sans-serif;
-          color: var(--ink);
-          font-size: 11px;
-          line-height: 1.2;
-        }
-    
-        h1,h2,h3 { margin: 0 0 2px 0; }
-        h1 { font-size: 20px; }
-        h2 { font-size: 16px; }
-        h3 { font-size: 13px; }
-        h4 { font-size: 11px; }
-    
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid var(--rule); padding: 6px; vertical-align: top; font-size: 10px; }
-        th { background: #fafafa; text-align: left; }
-    
-        /* Running header containers (captured by @page) */
-        header.header-hero   { position: running(header-hero); }
-        header.header-std    { position: running(header-std);  }
-        footer.pdf-footer    { position: running(page-footer); }
-    
-        /* -------- Hero header (page 1 only) -------- */
-        .hero-wrap{
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 24px;
-          border-bottom: 2px solid var(--brand);
-          padding: 8px 0 10px 0;
-          box-sizing: border-box;
-        }
-        .brand{
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .brand img{
-          width: 48px; height: 48px; display:block;
-        }
-        .brand .line1{
-          font-size: 22px; font-weight: 800; color: var(--brand); line-height: 1.1;
-        }
-        .brand .line2{
-          font-size: 16px; font-weight: 700; color: var(--brand); line-height: 1.1;
-        }
-        .printer{
-          text-align: center;        /* keeps it on the right side cleanly */
-        }
-        .printer .bot{
-          font-size: 20px; line-height: 1; display: inline-block; margin-bottom: 4px;
-        }
-        .printer .title{
-          font-size: 6px; font-weight: 800; letter-spacing: .2px; line-height: 1.15;
-        }
-        .printer .meta{
-          font-size: 6px; color: var(--muted); margin-top: 2px; line-height: 1.1;
-        }
-    
-        /* -------- Standard header (page ≥ 2) -------- */
-        .std-wrap{
-          border-bottom: 2px solid var(--brand);
-          padding-bottom: 6px;
-        }
-        .std-title{ font-size:16px; font-weight:700; text-align: center; }
-        .std-sub{ font-size:11px; color: var(--muted); }
-    
-        /* Footer */
-        .footer-wrap{
-          border-top: 1px solid var(--rule);
-          margin-top: 6px; padding-top: 4px;
-          font-size: 10px; color: var(--muted);
-        }
-    
-        /* Space below header before content starts */
-        main { margin-top: 12px; }
-    
-        /* Allow per-report extra CSS */
-        {% block extra_styles %}{% endblock %}
+    /* -------- Paged setup -------- */
+    @page {
+        size: A4;
+        margin: 26mm 15mm 20mm 15mm; /* top, right, bottom, left */
+        @top-center { content: element(header-std); }
+        @bottom-left { content: element(page-footer); }
+        @bottom-right { content: counter(page) " / " counter(pages); }
+    }
+    /* First page gets the hero header */
+    @page:first {
+        margin-top: 42mm;
+        @top-center { content: element(header-hero); }
+    }
+
+    /* -------- Base tokens -------- */
+    :root{
+        --brand: #f2a535; /* ÖH orange */
+        --ink: #111;
+        --muted: #6b7280;
+        --rule: #e5e7eb;
+    }
+
+    html, body {
+        font-family: "DejaVu Sans", Arial, sans-serif;
+        color: var(--ink);
+        font-size: 11px;
+        line-height: 1.2;
+    }
+
+    h1,h2,h3 { 
+        margin: 0 0 2px 0;
+    }
+    h1 {
+        font-size: 20px;
+    }
+    h2 {
+        font-size: 16px;
+    }
+    h3 {
+        font-size: 13px;
+    }
+    h4 {
+        font-size: 11px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th, td {
+        border: 1px solid var(--rule);
+        padding: 6px;
+        vertical-align: top;
+        font-size: 10px;
+    }
+    th { background: #fafafa;
+        text-align: left;
+    }
+
+    /* Running header containers (captured by @page) */
+    header.header-hero { 
+        position: running(header-hero);
+    }
+    header.header-std {
+        position: running(header-std);
+    }
+    footer.pdf-footer {
+        position: running(page-footer);
+    }
+
+    /* -------- Hero header (page 1 only) -------- */
+    .hero-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        border-bottom: 2px solid var(--brand);
+        padding: 8px 0 10px 0;
+        box-sizing: border-box;
+    }
+    .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .brand img {
+        width: 48px; height: 48px; display:block;
+    }
+    .brand .line1 {
+        font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 22px; font-weight: 800; color: var(--brand); line-height: 1.1;
+    }
+    .brand .line2 {
+        font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 16px; font-weight: 700; color: var(--brand); line-height: 1.1;
+    }
+    .printer {
+        text-align: center;
+    }
+    .printer .bot {
+        font-size: 20px; line-height: 1; display: inline-block; margin-bottom: 4px;
+    }
+    .printer .title {
+        font-size: 6px; font-weight: 800; letter-spacing: .2px; line-height: 1.15;
+    }
+    .printer .meta {
+        font-size: 6px; color: var(--muted); margin-top: 2px; line-height: 1.1;
+    }
+
+    /* -------- Standard header (page ≥ 2) -------- */
+    .std-wrap {
+        border-bottom: 2px solid var(--brand);
+        padding-bottom: 6px;
+    }
+    .std-title{
+        font-size:16px;
+        font-weight:700;
+        text-align: center;
+    }
+    .std-sub{
+        font-size:11px;
+        color: var(--muted);
+    }
+
+    /* Footer */
+    .footer-wrap{
+        border-top: 1px solid var(--rule);
+        margin-top: 6px; padding-top: 4px;
+        font-size: 10px; color: var(--muted);
+    }
+
+    /* Space below header before content starts */
+    main {
+        margin-top: 12px;
+    }
+
+    /* ========================================
+    SECTION STYLING (left border pattern)
+    ======================================== */
+    .section {
+        margin: 1.5rem 0;
+        page-break-inside: avoid;
+    }
+
+    .section-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--ink);
+        margin: 0 0 0.75rem 0;
+        padding-left: 0.75rem;
+        border-left: 4px solid var(--brand);
+    }
+
+    .section-content {
+        padding-left: 0.75rem;
+    }
+
+    /* ========================================
+      INFO TABLE (key-value pairs)
+      ======================================== */
+    .info-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1rem;
+    }
+
+    .info-table th {
+        text-align: left;
+        font-weight: 600;
+        width: 40%;
+        padding: 0.4rem 0.75rem;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .info-table td {
+        padding: 0.4rem 0.75rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    /* ========================================
+      DATA TABLE (multi-row data)
+      ======================================== */
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1rem;
+    }
+
+    .data-table thead th {
+        background-color: #2c3e50;
+        color: white;
+        font-weight: 600;
+        padding: 0.5rem 0.75rem;
+        text-align: left;
+        border-bottom: 2px solid #34495e;
+    }
+
+    .data-table tbody td {
+        padding: 0.4rem 0.75rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .data-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    /* ========================================
+      ORG HEADER
+      ======================================== */
+    .org-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .org-logo {
+        flex-shrink: 0;
+    }
+
+    .org-info {
+        flex-grow: 1;
+        text-align: right;
+    }
+
+    .org-name {
+        font-size: 0.9rem;
+        font-weight: bold;
+        margin: 0;
+        color: var(--ink);
+    }
+
+    .org-address {
+        font-size: 0.85rem;
+        color: #7f8c8d;
+        margin: 0.5rem 0 0 0;
+    }
+
+    .org-separator {
+        border: none;
+        border-top: 2px var(--muted);
+        margin: 1rem 0 1.5rem 0;
+    }
+
+    /* ========================================
+      UTILITY CLASSES
+      ======================================== */
+    .date-period {
+        white-space: nowrap;
+    }
+
+    .text-muted {
+        color: var(--muted);
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .mb-0 {
+        margin-bottom: 0;
+    }
+    .mb-1 {
+        margin-bottom: 0.5rem;
+    }
+    .mb-2 {
+        margin-bottom: 1rem;
+    }
+    .mb-3 {
+        margin-bottom: 1.5rem;
+    }
+    .mt-0 {
+        margin-top: 0;
+    }
+    .mt-1 {
+        margin-top: 0.5rem;
+    }
+    .mt-2 {
+        margin-top: 1rem;
+    }
+    .mt-3 {
+        margin-top: 1.5rem;
+    }
+
+    /* Disclaimer styling */
+    .disclaimer {
+        margin-top: 3rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--muted);
+        color: var(--muted);
+    }
+
+    .disclaimer-title {
+        margin: 0.75rem 0 0.5rem 0;
+        text-align: center;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .disclaimer-text {
+        font-size: 0.5rem;
+        text-align: center;
+        line-height: 1.3;
+        margin: 0;
+    }
+
+    /* Electronic signature boxes */
+    .esig-section {
+        margin: 2rem 0;
+        page-break-inside: avoid;
+    }
+
+    .esig-title {
+        font-size: 1rem;
+        margin: 0 0 1rem 0;
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .esig-grid {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: space-between;
+    }
+
+    .esig-grid-1 .esig-item {
+        width: 100%;
+    }
+
+    .esig-grid-2 .esig-item {
+        width: 48%;
+    }
+
+    .esig-grid-3 .esig-item {
+        width: 32%;
+    }
+
+    .esig-item {
+        flex-shrink: 0;
+    }
+
+    .esig-box {
+        border: 2px dashed var(--muted);
+        padding: 1rem 1rem;
+        text-align: center;
+        min-height: 90px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .esig-anchor {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        font-size: 1px;
+        color: #fff;
+        opacity: 0.01;
+    }
+
+    .esig-hint {
+        font-size: 0.75rem;
+        color: var(--muted);
+        font-style: italic;
+    }
+
+    .esig-meta {
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--muted);
+        text-align: center;
+    }
+
+    .bank-footerbar {
+        position: running(page-footer);
+        font-size: 9px;
+        color: var(--ink);
+        border-top: 1px solid var(--brand);
+        padding-top: 4mm;
+        line-height: 1.3;
+    }
+
+    /* Allow per-report extra CSS */
+    {% block extra_styles %}
+    {% endblock %}
     </style>
 </head>
-
 <body>
 
     <!-- Hero header (first page only) -->
@@ -126,9 +412,6 @@
             <div class="printer">
                 <div class="bot">🤖</div>
                 <div class="title">MR. PRINTER Mk I</div>
-                <div class="meta">
-                    🖨️ {% trans " for:" %} {% firstof request.user.email request.user.username "—" %} {% if print_ref %}; {{ print_ref }}{% endif %}
-                </div>
             </div>
         </div>
     </header>
@@ -137,14 +420,13 @@
     <header class="header-std">
         <div class="std-wrap">
             <div class="std-title">{% block header_title %}Report{% endblock %}</div>
-            <div class="std-sub">{% block header_subtitle %}—{% endblock %}</div>
         </div>
     </header>
 
     <!-- Running footer -->
     <footer class="pdf-footer">
         <div class="footer-wrap">
-            {% block footer_left %}© UniHanko — {% now "Y-m-d H:i" %}{% endblock %}
+            {% block footer_left %}© UniHanko — {% now "Y-m-d H:i" %}{% endblock %}; {% trans "printed by:" %} {% firstof request.user.email request.user.username "—" %}
         </div>
     </footer>
 
@@ -153,5 +435,4 @@
         {% block content %}{% endblock %}
     </main>
 </body>
-
 </html>

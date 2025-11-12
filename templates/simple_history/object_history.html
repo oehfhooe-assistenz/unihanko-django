@@ -1,0 +1,45 @@
+{% extends "admin/object_history.html" %}
+{% load i18n %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    /* Custom styling for Jazzmin compatibility */
+    .module table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .module table th {
+        background: #f8f9fa;
+        padding: 12px;
+        text-align: left;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+    }
+    .module table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .module table tbody tr:hover {
+        background: #f8f9fa;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    {% if not revert_disabled %}
+    <p>
+        {% blocktrans %}Choose a date from the list below to revert to a previous version of this object.{% endblocktrans %}
+    </p>
+    {% endif %}
+    
+    <div class="module">
+        {% if page_obj.object_list %}
+            {% include object_history_list_template %}
+        {% else %}
+            <p>{% trans "This object doesn't have a change history." %}</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

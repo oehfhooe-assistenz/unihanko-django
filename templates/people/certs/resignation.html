@@ -1,47 +1,52 @@
-{% extends "people/certs/certificate_base.html" %}
+{% extends "pdf/certificate_base.html" %}
 {% load i18n %}
 
 {% block cert_title %}DEIN RÜCKTRITTSDOKUMENT{% endblock %}
 {% block cert_subtitle %}ACKNOWLEDGEMENT OF YOUR RESIGNATION{% endblock %}
 
-{# Name fields use the base blocks; no change needed #}
+{% block appointment_body %}
+<div class="legal-text" style="margin-top: 0;">
+    <p class="de">
+        Im Namen der Hochschülerinnen- & Hochschülerschaft der FH Oberösterreich
+        nehmen wir Deinen Rücktritt in o.g. Funktion zur Kenntnis.
+    </p>
+    <p class="bilingual en">
+        On behalf of the University of Upper Austria's Students' Union (by statutory body)
+        we hereby acknowledge your resignation from the function mentioned above.
+    </p>
+</div>
 
-{% block appoint_kind %}{% endblock %}
-{% block appoint_kind_2 %}{% endblock %}
-
-{# Main body text #}
-{% block appoint_preamble %}{% endblock %}
-{% block legal_text %}
-  <p style="margin-top:8mm; font-size: 14px; font-weight: bold;">
-    Im Namen der Hochschülerinnen- &amp; Hochschülerschaft der FH Oberösterreich
-    nehmen wir Deinen Rücktritt in o.g. Funktion zur Kenntnis.
-  </p>
-  <p class="en-em">
-    On behalf of the University of Upper Austria’s Students’ Union (by statutory body) we hereby
-    acknowledge your resignation from the function mentioned above.
-  </p>
+<div style="margin-top: 3mm;">
+    <div class="field-label">
+        <span class="de">Funktionsbezeichnung</span>
+        <span class="bilingual en">function (german)</span>
+    </div>
+    <div class="field-value">{{ pr.role.name }}</div>
+</div>
 {% endblock %}
 
 {% block effective_date %}{{ pr.effective_end|default:pr.end_date|date:"d.m.Y" }}{% endblock %}
 
-{% block notes_title %} Wichtige Hinweise zu Deinem Rücktritt {% endblock %}
-{% block notes_title_en %} Important Notice regarding your Resignation {% endblock %}
+{% block notes_title_de %}Wichtige Hinweise zu Deinem Rücktritt{% endblock %}
+{% block notes_title_en %}Important Notice regarding your Resignation{% endblock %}
+
 {% block notes_list %}
-  <li>
-    Als Körperschaft des öffentlichen Rechts sind Wir jährlich dazu verpflichtet, alle unsere ausbezahlten Funktionsgebühren an die Finanzverwaltung zu melden.
-    <br><span class="en-em">As a statutory body, we must report all paid stipends annually to the federal revenue service.</span>
-  </li>
-  <li>
-    Sollten sich Deine persönlichen (Kontakt-)Daten geändert haben, bitten Wir Dich um kurze Information an <strong>office@oeh.fh-ooe.at</strong>.
-    <br><span class="en-em">If your personal/contact details changed, please email <strong>office@oeh.fh-ooe.at</strong>.</span>
-  </li>
-  <li>
-    Deine Daten werden in jedem Falle vertraulich behandelt und nach Ende der Mitteilung gelöscht.
-    <br><span class="en-em">Your personal data will be kept confidential and deleted after the reporting is complete.</span>
-  </li>
+<li>
+    <span class="de">Als Körperschaft des öffentlichen Rechts sind Wir jährlich dazu verpflichtet, alle unsere ausbezahlten Funktionsgebühren an die Finanzverwaltung zu melden.</span>
+    <span class="bilingual en">As a statutory body, we must report all paid stipends annually to the federal revenue service.</span>
+</li>
+<li>
+    <span class="de">Sollten sich Deine persönlichen (Kontakt-)Daten geändert haben, bitten Wir Dich um kurze Information an <strong>office@oeh.fh-ooe.at</strong>.</span>
+    <span class="bilingual en">If your personal/contact details changed, please email <strong>office@oeh.fh-ooe.at</strong>.</span>
+</li>
+<li>
+    <span class="de">Deine Daten werden in jedem Falle vertraulich behandelt und nach Ende der Mitteilung gelöscht.</span>
+    <span class="bilingual en">Your personal data will be kept confidential and deleted after the reporting is complete.</span>
+</li>
 {% endblock %}
 
-{# Page 2 notes — a short thank-you line first, keep the standard bullets after #}
 {% block extra_notes %}
-  <p style="margin:4mm 0 2mm 0;">Bei dieser Gelegenheit bedanken Wir Uns herzlich für Dein Engagement!</p>
+<p style="margin: 4mm 0 2mm 0;">
+    Bei dieser Gelegenheit bedanken Wir Uns herzlich für Dein Engagement!
+</p>
 {% endblock %}

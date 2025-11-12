@@ -1,16 +1,25 @@
-{# templates/people/certs/appointment_confirmation.html #}
-{% extends "people/certs/certificate_base.html" %}
+{% extends "pdf/certificate_base.html" %}
 {% load i18n %}
 
 {% block cert_title %}DEIN BESTELLUNGSDOKUMENT{% endblock %}
-{% block appoint_kind %}{% endblock %}
-{% block appoint_kind_en %}{% endblock %}
+{% block cert_subtitle %}YOUR LETTER OF APPOINTMENT{% endblock %}
+
+{% block appointment_type_de %}{% endblock %}
+{% block appointment_type_en %}{% endblock %}
+
 {% block legal_text %}
-  <p>laut Beschluss der Sitzung <span class="em">{{ pr.elected_via.full_identifier|default:"N/A" }}</span> vom <span class="em">{{ pr.confirm_date|default:"N/A"|date:"d.m.Y" }}</span>.</p>
-  <p class="en-em">following resolution of the union assembly <span class="em">{{ pr.elected_via.full_identifier|default:"N/A" }}</span>, date <span class="em">{{ pr.confirm_date|default:"N/A"|date:"d.m.Y" }}</span>.</p>
+<p class="de">
+    laut Beschluss der Sitzung
+    <span class="emphasis">{{ pr.elected_via.full_identifier|default:"N/A" }}</span>
+    vom
+    <span class="emphasis">{{ pr.confirm_date|default:"N/A"|date:"d.m.Y" }}</span>.
+</p>
+<p class="bilingual en">
+    following resolution of the union assembly
+    <span class="emphasis">{{ pr.elected_via.full_identifier|default:"N/A" }}</span>,
+    date
+    <span class="emphasis">{{ pr.confirm_date|default:"N/A"|date:"d.m.Y" }}</span>.
+</p>
 {% endblock %}
 
-
-{% block effective_date %}
-  {{ pr.confirm_date|default:pr.effective_start|default:pr.start_date|date:"d.m.Y" }}
-{% endblock %}
+{% block effective_date %}{{ pr.confirm_date|default:pr.effective_start|default:pr.start_date|date:"d.m.Y" }}{% endblock %}

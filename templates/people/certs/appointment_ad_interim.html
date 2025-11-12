@@ -1,5 +1,19 @@
-{# templates/people/certs/appointment_ad_interim.html #} {% extends "people/certs/certificate_base.html" %} {% load i18n %} {% block cert_title %}DEIN BESTELLUNGSDOKUMENT{% endblock %} {% block appoint_kind %}interimistische{% endblock %} 
-{% block appoint_kind_en %}ad interim{% endblock %} {% block legal_text %}
-<p>Die Bestellung erfolgt iSe vorläufigen Betrauung nach §16 (5) »Satzung der Hochschülerinnen- und Hochschülerschaft der FH Oberösterreich« idgF.</p>
-<p class="en-em">The appointment made ad interim, until revocation or appointment by election pursuant to § 16 (5) of the students’ union’s statutes (»Satzung der Hochschülerinnen- und Hochschülerschaft der FH Oberösterreich«); in its current version.</p>
+{% extends "pdf/certificate_base.html" %}
+{% load i18n %}
+
+{% block cert_title %}DEIN BESTELLUNGSDOKUMENT{% endblock %}
+{% block cert_subtitle %}YOUR LETTER OF APPOINTMENT{% endblock %}
+
+{% block appointment_type_de %}<span class="emphasis">interimistische</span>{% endblock %}
+{% block appointment_type_en %}<span class="emphasis">ad interim</span>{% endblock %}
+
+{% block legal_text %}
+<p class="de">
+    Die Bestellung erfolgt iSe vorläufigen Betrauung nach §16 (5)
+    »Satzung der Hochschülerinnen- und Hochschülerschaft der FH Oberösterreich« idgF.
+</p>
+<p class="bilingual en">
+    The appointment is made ad interim, until revocation or appointment by election
+    pursuant to § 16 (5) of the students' union's statutes; in its current version.
+</p>
 {% endblock %}

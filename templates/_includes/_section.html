@@ -1,0 +1,16 @@
+{# Section wrapper with left border - standard styling #}
+{% load i18n %}
+
+<div class="section">
+    {% if title %}
+        <h2 class="section-title">{{ title }}</h2>
+    {% endif %}
+    <div class="section-content">
+        {% if content %}
+            {{ content|safe }}
+        {% else %}
+            {# Content passed via block #}
+            {{ section_content|default:"" }}
+        {% endif %}
+    </div>
+</div>

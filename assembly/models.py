@@ -175,7 +175,10 @@ class Mandate(models.Model):
         _("Backup person (external)"), max_length=200, blank=True,
         help_text=_("For externals not in the system")
     )
-    
+    party = models.CharField(
+        _("Party affiliation"), max_length=100, blank=True,
+        help_text=_("Wahlwerbende Gruppe/Liste (e.g., VSSTÖ, AG, GRAS)")
+    )
     notes = models.TextField(_("Notes"), blank=True)
     
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
@@ -317,7 +320,7 @@ class SessionItem(models.Model):
     class Kind(models.TextChoices):
         RESOLUTION = "RES", _("Beschluss")
         PROCEDURAL = "PROC", _("Ablaufinformation")
-        ELECTION = "ELEC", _("Wahl")
+        ELECTION = "ELEC", _("Beschluss iSe Personalwahl")
     
     class VotingMode(models.TextChoices):
         NONE = "NONE", _("Keine Abstimmung")
@@ -395,6 +398,20 @@ class SessionItem(models.Model):
         on_delete=models.PROTECT,
         related_name="elected_via_assembly",
         verbose_name=_("Elected person")
+    )
+
+    elected_person_text_reference = models.CharField(
+        _("Elected person (text reference)"),
+        max_length=200,
+        blank=True,
+        help_text=_("Temporary text reference for elected person - to be linked to PersonRole later")
+    )
+
+    elected_role_text_reference = models.CharField(
+        _("Elected role (text reference)"),
+        max_length=200,
+        blank=True,
+        help_text=_("Temporary text reference for elected role - to be linked to PersonRole later")
     )
     
     notes = models.TextField(_("Notes"), blank=True)

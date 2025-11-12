@@ -1,80 +1,48 @@
 {% extends "pdf/base.html" %}
-{% load i18n static %}
+{% load i18n %}
 
-{% block pdf_title %}{% trans "Higher Ed Representative Assembly — Term overview" %} — {{ term.code }}{% endblock %}
-{% block header_title %}{% trans "Term overview" %}{% endblock %}
-{% block header_subtitle %}{{ term.code }}{% endblock %}
-{% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %}
-{% block extra_styles %}
-.cert-footerbar {
-    position: running(page-footer);
-    font-size: 10px;
-    color: #374151;
-    border-top: 1px solid #ff8a3d;
-    padding-top: 4mm;
-    line-height: 1.3;
-  }
-{% endblock %}
+{% block header_title %}{% trans "Assembly Term" %} — {{ term.code }}{% endblock %}
+
 {% block content %}
-<h2 style="margin:0 0 8px 0;">{% trans "Details" %}</h2>
-<table>
-    <tbody>
-        <tr>
-            <th style="width:160px;">{% trans "Identifier" %}</th>
-            <td>
-                {{ term.code }} <span style="color:var(--brand);"> {{ term.label }}</span>
-            </td>
-        </tr>
-        <tr>
-            <th>{% trans "Start date" %}</th>
-            <td>{{ term.start_date|date:"j. F Y" }}</td>
-        </tr>
-        <tr>
-            <th>{% trans "End date" %}</th>
-            <td>{{ term.end_date|date:"j. F Y" }}</td>
-        </tr>
-        <tr>
-            <th>{% trans "Active" %}</th>
-            <td>{% if term.is_active %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
-        </tr>
-        {% if term.notes %}
-        <tr>
-            <th>{% trans "Notes" %}</th>
-            <td><p>{{ term.notes|linebreaks }}</p></td>
-        </tr>
-        {% endif %}
-        <tr>
-            <th>{% trans "Created at" %}</th>
-            <td>{{ fy.created_at|date:"Y-m-d H:i" }}</td>
-        </tr>
-        <tr>
-            <th>{% trans "Updated at" %}</th>
-            <td>{{ fy.updated_at|date:"Y-m-d H:i" }}</td>
-        </tr>
-    </tbody>
-</table>
+{% include '_includes/_org_header.html' with org=org %}
 
-{% block styles %}
-  {{ block.super }}
-  <link rel="stylesheet" href="{% static 'hankosign/hs_seal.css' %}">
-{% endblock %}
+<h1 class="document-title">{% trans "Assembly Term Overview" %}</h1>
 
-{% include "hankosign/_attestation_seal.html" with signatures=signatures %}
-
-    <div class="cert-footerbar">
-        <strong>{{ org.org_name_long_de }}</strong>
-        {% if org.org_address %} • <u>{% trans "Adresse" %}</u> <i>({% trans "Zentralstelle im Büro Linz" %})</i>: {{ org.org_address }}{% endif %}
-        {% if org.bank_name or org.bank_iban or org.bank_bic %}
-        <br><u>Bank</u>: {% if org.bank_name %}{{ org.bank_name }}{% endif %}
-        {% if org.bank_iban %} • IBAN: {{ org.bank_iban }}{% endif %}
-        {% if org.bank_bic %} • BIC: {{ org.bank_bic }}{% endif %}
-        {% endif %}
+<div class="section">
+    <h2 class="section-title">{% trans "Term Details" %}</h2>
+    <div class="section-content">
+        <table class="info-table">
+            <tr>
+                <th>{% trans "Code" %}</th>
+                <td><strong>{{ term.code }}</strong></td>
+            </tr>
+            <tr>
+                <th>{% trans "Label" %}</th>
+                <td>{{ term.label }}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Period" %}</th>
+                <td>{% include '_includes/_date_period.html' with start_date=term.start_date end_date=term.end_date %}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Status" %}</th>
+                <td>{% if term.is_active %}{% trans "Active" %}{% else %}{% trans "Closed" %}{% endif %}</td>
+            </tr>
+        </table>
     </div>
-
-<div style="color: (--muted)">
-<h4 style="margin:14px 0 6px 0; text-align: center; font-size: 10px;">{% trans "Important notice" %}</h4>
-<p style="font-size:6px; text-align: center;">
-    {% trans "This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited." %}
-</p>
 </div>
+
+{% if term.notes %}
+<div class="section">
+    <h2 class="section-title">{% trans "Notes" %}</h2>
+    <div class="section-content">
+        <p>{{ term.notes|linebreaksbr }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% include '_includes/_signature_seal.html' with signatures=signatures %}
+
+{% include '_includes/_disclaimer.html' %}
+
 {% endblock %}

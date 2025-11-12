@@ -1,0 +1,11 @@
+{# Generic key-value info table #}
+{% load i18n %}
+
+<table class="info-table">
+    {% for row in rows %}
+    <tr>
+        <th>{{ row.label }}</th>
+        <td>{{ row.value|default:"—" }}</td>
+    </tr>
+    {% endfor %}
+</table>

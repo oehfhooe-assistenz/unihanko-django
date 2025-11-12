@@ -1,0 +1,13 @@
+{# Organization letterhead - used on all PDFs #}
+{% load i18n static %}
+
+<div class="org-header">
+    <div class="org-info">
+        <h1 class="org-name">{{ org.org_name_long_de }}</h1>
+        {% if org.org_address %}
+            <p class="org-address"><strong>Verwaltung/Office - Hauptbüro Linz</strong><br>
+            {{ org.org_address|linebreaksbr }}</p>
+        {% endif %}
+    </div>
+</div>
+<hr class="org-separator">

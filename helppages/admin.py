@@ -3,12 +3,17 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from markdownx.admin import MarkdownxModelAdmin
-from core.admin_mixins import HelpPageMixin
+from core.admin_mixins import HelpPageMixin, ManagerOnlyHistoryMixin
 from .models import HelpPage
 from simple_history.admin import SimpleHistoryAdmin
 
 @admin.register(HelpPage)
-class HelpPageAdmin(HelpPageMixin, MarkdownxModelAdmin, SimpleHistoryAdmin):
+class HelpPageAdmin(
+    SimpleHistoryAdmin,
+    MarkdownxModelAdmin,
+    HelpPageMixin,
+    ManagerOnlyHistoryMixin
+    ):
     list_display = ('content_type', 'get_title', 'author', 'is_active', 'updated_at')
     list_filter = ('is_active', 'content_type__app_label', 'show_legend')
     search_fields = ('title_de', 'title_en', 'content_de', 'content_en', 'author')

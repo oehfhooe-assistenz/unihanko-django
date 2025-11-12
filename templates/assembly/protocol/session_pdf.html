@@ -1,0 +1,10 @@
+{% extends "pdf/protocol_base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Session Protocol" %} - {{ session.code }}{% endblock %}
+
+{% block protocol_title %}Protokoll{% endblock %}
+{% block protocol_subtitle %}Sitzung der HV am {{ session.session_date|date:"d.m.Y" }}{% endblock %}
+
+{# All the heavy lifting is in protocol_base.html #}
+{# Override blocks only if you need custom behavior #}

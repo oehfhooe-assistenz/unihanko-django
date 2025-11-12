@@ -1,0 +1,57 @@
+{% extends "simple_history/object_history_form.html" %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .submit-row {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0 !important;
+        padding: 15px 0 !important;
+    }
+    
+    .submit-row input[type="submit"],
+    .submit-row .closelink {
+        font-size: .9375rem;
+        display: inline-block !important;
+        width: 100% !important;
+        font-weight: 400 !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+        border: 1px solid transparent !important;
+        padding: .375rem .75rem !important;
+        font-size: 1rem !important;
+        line-height: 1.5 !important;
+        border-radius: 0.25rem !important;
+        text-decoration: none !important;
+        cursor: pointer !important;
+        margin: 0 !important;
+        height: calc(1.5em + .75rem + 2px);
+        vertical-align: middle !important;
+        transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+        margin-bottom: 1rem !important;
+    }
+    
+    .submit-row input[type="submit"] {
+        color: #fff !important;
+        background-color: #28a745 !important;
+        border-color: #28a745 !important;
+    }
+    
+    .submit-row input[type="submit"]:hover {
+        background-color: #218838 !important;
+        border-color: #1e7e34 !important;
+    }
+    
+    .submit-row .closelink {
+        color: #fff !important;
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+    }
+    
+    .submit-row .closelink:hover {
+        background-color: #5a6268 !important;
+        border-color: #545b62 !important;
+    }
+</style>
+{% endblock %}

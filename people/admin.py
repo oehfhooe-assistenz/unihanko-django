@@ -14,7 +14,7 @@ from django.urls import reverse
 from organisation.models import OrgInfo
 from .models import Person, Role, PersonRole, RoleTransitionReason
 from core.pdf import render_pdf_response
-from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action
+from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action, ManagerOnlyHistoryMixin
 from concurrency.admin import ConcurrentModelAdmin
 from hankosign.utils import render_signatures_box, state_snapshot, get_action, record_signature, RID_JS, sign_once, seal_signatures_context
 from django.core.exceptions import PermissionDenied
@@ -234,7 +234,15 @@ class PersonRoleInline(admin.StackedInline):
 # Person Admin
 # =========================
 @admin.register(Person)
-class PersonAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class PersonAdmin(
+    SimpleHistoryAdmin,
+    DjangoObjectActions,
+    ImportExportModelAdmin,
+    ConcurrentModelAdmin,
+    HelpPageMixin,
+    ImportExportGuardMixin,
+    ManagerOnlyHistoryMixin
+    ):
     resource_classes = [PersonResource]
 
     # Helper: who counts as a "manager" for people?
@@ -403,7 +411,7 @@ class PersonAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, D
             level=messages.SUCCESS if changed else messages.INFO
         )
     lock_person.label = _("Lock record")
-    lock_person.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;"}
+    lock_person.attrs = {"class": "btn btn-block btn-secondary", "style": "margin-bottom: 1rem;"}
     #lock_person.attrs = {"class": "max-md:-mt-px max-md:first:rounded-t-default md:last:rounded-r-default md:first:rounded-l-default hover:text-primary-600 dark:hover:text-primary-500 border-base-200 md:-ml-px max-md:last:rounded-b-default border dark:border-base-700"}
 
     @safe_admin_action
@@ -415,7 +423,7 @@ class PersonAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, D
             level=messages.SUCCESS if changed else messages.INFO
         )
     unlock_person.label = _("Unlock record")
-    unlock_person.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;"}
+    unlock_person.attrs = {"class": "btn btn-block btn-warning", "style": "margin-bottom: 1rem;"}
     
 
     @admin.action(description=_("Lock selected"))
@@ -490,11 +498,18 @@ class PersonAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, D
         sign_once(request, action, obj, note=_("Printed personnel dossier PDF"), window_seconds=10)
         date_str = timezone.localtime().strftime("%Y-%m-%d")
         lname = slugify(obj.last_name)[:40]
+        ctx = {
+            "p": obj,
+            "org": OrgInfo.get_solo(),
+            'signers': [
+                {'label': 'i.A. ÖH FH OÖ'},
+            ]
+        }
         return render_pdf_response("people/person_pdf.html",
-            {"p": obj, "org": OrgInfo.get_solo()},
+            ctx,
             request, f"HR-P_AKT_{obj.id}_{lname}_{date_str}.pdf")
     print_person.label = "🖨️ " + _("Print Personnel Record PDF")
-    print_person.attrs = {"class": "btn btn-block btn-info btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
+    print_person.attrs = {"class": "btn btn-block btn-info", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     @safe_admin_action
@@ -514,7 +529,7 @@ class PersonAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, D
             {"p": obj, "signatures": signatures},
             request, f"HR-P_PAC_INFO_{obj.id}_{lname}_{date_str}.pdf")
     print_pac.label = "🖨️ " + _("Print Personal Access Code Info PDF (ext.)")
-    print_pac.attrs = {"class": "btn btn-block btn-info btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
+    print_pac.attrs = {"class": "btn btn-block btn-info", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     @admin.action(description=_("Print selected as roster PDF"))
@@ -550,7 +565,7 @@ class PersonAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, D
     lazy_escapejs = lazy(escapejs, str)
     regenerate_access_code.label = "🔐 " + _("Regenerate access code")
     regenerate_access_code.attrs = {
-        "class": "btn btn-block btn-info btn-sm",
+        "class": "btn btn-block btn-info",
         # Simple JS confirm; keeps UX tight without extra templates
         "onclick": format_lazy("return confirm('{0}');", lazy_escapejs(_REGEN_MESSAGE)),
         "style": "margin-bottom: 1rem;",
@@ -599,7 +614,14 @@ class PersonAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, D
 # Role Admin
 # =========================
 @admin.register(Role)
-class RoleAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, ImportExportModelAdmin, SimpleHistoryAdmin):
+class RoleAdmin(
+    SimpleHistoryAdmin,
+    ImportExportModelAdmin,
+    ConcurrentModelAdmin,
+    HelpPageMixin,
+    ImportExportGuardMixin,
+    ManagerOnlyHistoryMixin
+    ):
     resource_classes = [RoleResource]
     list_display = ("name", "short_name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind_text", "is_system")
     search_fields = ("name",)
@@ -639,7 +661,11 @@ class RoleAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, Imp
 # Reason Admin (dictionary)
 # =========================
 @admin.register(RoleTransitionReason)
-class ReasonAdmin(HelpPageMixin, ImportExportGuardMixin, ImportExportModelAdmin):
+class ReasonAdmin(
+    ImportExportModelAdmin,
+    HelpPageMixin,
+    ImportExportGuardMixin
+    ):
     resource_classes = [RoleTransitionReasonResource]
     list_display = ("code", "name_localized", "active")
     list_filter = ("active",)
@@ -672,7 +698,15 @@ from finances.models import FiscalYear
 # PersonRole Admin
 # =========================
 @admin.register(PersonRole)
-class PersonRoleAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class PersonRoleAdmin(
+    SimpleHistoryAdmin,
+    DjangoObjectActions,
+    ImportExportModelAdmin,
+    ConcurrentModelAdmin,
+    HelpPageMixin,
+    ImportExportGuardMixin,
+    ManagerOnlyHistoryMixin
+    ):
     resource_classes = [PersonRoleResource]
     list_display = (
         "person",
@@ -689,7 +723,7 @@ class PersonRoleAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixi
     list_filter = (ActiveFilter, "role", "start_reason", "end_reason", "start_date", "end_date", "confirm_date")
     search_fields = ("person__last_name", "person__first_name", "role__name", "notes")
     autocomplete_fields = ("person", "role", "start_reason", "end_reason", "elected_via")
-    readonly_fields = ("signatures_box", "created_at", "updated_at",)
+    readonly_fields = ("signatures_box", "election_reference", "created_at", "updated_at",)
     actions = ["offboard_today"]
 
     fieldsets = (
@@ -889,8 +923,8 @@ class PersonRoleAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixi
             "people/certs/appointment_regular.html",
             f"B_{rsname}_{lname}-{date_str}.pdf"
         )
-    print_appointment_regular.label = "🧾 " + _("Print appointment (non-confirmation) PDF")
-    print_appointment_regular.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
+    print_appointment_regular.label = "🧾 " + _("Print certifcate (non-conf.) PDF")
+    print_appointment_regular.attrs = {"class": "btn btn-block btn-warning", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     @safe_admin_action
@@ -910,8 +944,8 @@ class PersonRoleAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixi
             "people/certs/appointment_ad_interim.html",
             f"B_interim_{rsname}_{lname}-{date_str}.pdf"
         )
-    print_appointment_ad_interim.label = "💥 " + _("Print appointment (ad interim) PDF")
-    print_appointment_ad_interim.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
+    print_appointment_ad_interim.label = "💥 " + _("Print certificate (ad interim) PDF")
+    print_appointment_ad_interim.attrs = {"class": "btn btn-block btn-warning", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     @safe_admin_action
@@ -952,8 +986,8 @@ class PersonRoleAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixi
             "people/certs/appointment_confirmation.html",
             f"B_Beschluss_{ref_code}_{rsname}_{lname}-{date_str}.pdf"
         )
-    print_confirmation.label = "☑️ " + _("Print appointment (post-confirmation) PDF")
-    print_confirmation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
+    print_confirmation.label = "☑️ " + _("Print certificate (post-conf.) PDF")
+    print_confirmation.attrs = {"class": "btn btn-block btn-warning", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
     @safe_admin_action
     def print_resignation(self, request, obj):
@@ -973,7 +1007,7 @@ class PersonRoleAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixi
             f"R_{rsname}_{lname}-{date_str}.pdf"
         )
     print_resignation.label = "🏁 " + _("Print resignation PDF")
-    print_resignation.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
+    print_resignation.attrs = {"class": "btn btn-block btn-warning", "style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     # --- Visibility gates (buttons appear only when True) ---

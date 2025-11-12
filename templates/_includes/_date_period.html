@@ -1,0 +1,16 @@
+{# Date range display helper #}
+{% load i18n %}
+
+<span class="date-period">
+    {% if start_date %}
+        {{ start_date|date:"Y-m-d" }}
+    {% else %}
+        —
+    {% endif %}
+    →
+    {% if end_date %}
+        {{ end_date|date:"Y-m-d" }}
+    {% else %}
+        {% trans "ongoing" %}
+    {% endif %}
+</span>

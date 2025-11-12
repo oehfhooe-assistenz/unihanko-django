@@ -1,115 +1,210 @@
-{% extends "pdf/base.html" %} {% load i18n static %} 
-{% block extra_styles %} .sig-section { margin-top: 12mm; page-break-inside: avoid; } .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; } .sig-box { height: 28mm; border: 1px dashed #9aa3af;
-border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { position: absolute; top: 4px; left: 6px; font-size: 10px; color: #9aa3af; } .sig-meta { margin-top: 6px; font-size: 11px; color: #6b7280; } 
-.cert-footerbar {
-    position: running(page-footer);
-    font-size: 10px;
-    color: #374151;
-    border-top: 1px solid #ff8a3d;
-    padding-top: 4mm;
-    line-height: 1.3;
-  }
-{% endblock %}
-{% block pdf_title %}{% trans "Session item receipt" %} — {{ item.full_identifier }} — {{ item.title }}{% endblock %}
-{% block header_title %}{% trans "Session item" %}{% endblock %} 
-{% block header_subtitle %}{{ item.full_identifier }}{% endblock %}
-{% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %} 
+{% extends "pdf/base.html" %}
+{% load i18n %}
+
+{% block header_title %}{{ item.full_identifier }} — {{ item.title }}{% endblock %}
+
 {% block content %}
-<h2 style="margin:0 0 8px 0;">{% trans "Session item receipt" %} — {{ item.full_identifier }} {{ item.title }}</h2>
+{% include '_includes/_org_header.html' with org=org %}
 
-<section style="border-left: 3px solid var(--rule); padding: 1mm 1mm 1mm 2mm;">
-  <h4>{% trans "Item information" %}</h4>
-<table>
-        <tr>
-            <th>{% trans "Session" %}</th>
-            <td>{{ item.session.code }} ({{ item.session.session_date|date:"j. F Y" }})</td>
-        </tr>
-        <tr>
-            <th>{% trans "Type" %}</th>
-            <td>{{ item.get_kind_display }}</td>
-        </tr>
-</table>
-</section>
-<section>
-    {% if item.kind == 'PROC' %}
-        <h4>{% trans "Content" %}</h4>
-        <p>{{ item.content|linebreaks }}</p>
-    {% else %}
-        {% if item.subject %}
-        <h4>{% trans "Subject" %}</h4>
-        <div>{{ item.subject|safe }}</div>
-        {% endif %}
-        
-        {% if item.discussion %}
-        <h4>{% trans "Discussion" %}</h4>
-        <div>{{ item.discussion|safe }}</div>
-        {% endif %}
-        
-        {% if item.outcome %}
-        <h4>{% trans "Outcome" %}</h4>
-        <div>{{ item.outcome|safe }}</div>
-        {% endif %}
-    {% endif %}
-    
-    {% if item.voting_mode != 'NONE' %}
-    <h4>{% trans "Voting Result" %}</h4>
-    <table>
-        <tr>
-            <th>{% trans "For" %}</th>
-            <td>{{ item.votes_for }}</td>
-        </tr>
-        <tr>
-            <th>{% trans "Against" %}</th>
-            <td>{{ item.votes_against }}</td>
-        </tr>
-        <tr>
-            <th>{% trans "Abstentions" %}</th>
-            <td>{{ item.votes_abstain }}</td>
-        </tr>
-        <tr>
-            <th>{% trans "Result" %}</th>
-            <td>{% if item.passed %}{% trans "PASSED" %}{% else %}{% trans "REJECTED" %}{% endif %}</td>
-        </tr>
-    </table>
-    {% endif %}
-</section>
+<h1 class="document-title">{{ item.full_identifier }}</h1>
+<p class="document-subtitle">{{ item.title }}</p>
 
-<section style="border-left: 3px solid var(--rule); padding: 1mm 1mm 1mm 2mm;">
-  <h4>{% trans "System Information" %}</h4>
-<table>
-        <tr>
-            <th>{% trans "Created at" %}</th>
-            <td>{{ item.created_at|date:"Y-m-d H:i" }}</td>
-        </tr>
-        <tr>
-            <th>{% trans "Updated at" %}</th>
-            <td>{{ item.updated_at|date:"Y-m-d H:i" }}</td>
-        </tr>
-</table>
-</section>
+<div class="section">
+    <h2 class="section-title">{% trans "Item Details" %}</h2>
+    <div class="section-content">
+        <table class="info-table">
+            <tr>
+                <th>{% trans "Session" %}</th>
+                <td>{{ item.session.code }} ({{ item.session.session_date|date:"Y-m-d" }})</td>
+            </tr>
+            <tr>
+                <th>{% trans "Type" %}</th>
+                <td>{{ item.get_kind_display }}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Order" %}</th>
+                <td>{{ item.order }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
 
-{% block styles %}
-  {{ block.super }}
-  <link rel="stylesheet" href="{% static 'hankosign/hs_seal.css' %}">
-{% endblock %}
-
-{% include "hankosign/_attestation_seal.html" with signatures=signatures %}
-
-    <div class="cert-footerbar">
-        <strong>{{ org.org_name_long_de }}</strong>
-        {% if org.org_address %} • <u>{% trans "Adresse" %}</u> <i>({% trans "Zentralstelle im Büro Linz" %})</i>: {{ org.org_address }}{% endif %}
-        {% if org.bank_name or org.bank_iban or org.bank_bic %}
-        <br><u>Bank</u>: {% if org.bank_name %}{{ org.bank_name }}{% endif %}
-        {% if org.bank_iban %} • IBAN: {{ org.bank_iban }}{% endif %}
-        {% if org.bank_bic %} • BIC: {{ org.bank_bic }}{% endif %}
-        {% endif %}
+{% if item.kind == 'PROC' %}
+    <div class="section">
+        <h2 class="section-title">{% trans "Content" %}</h2>
+        <div class="section-content">
+            {{ item.content|linebreaksbr }}
+        </div>
     </div>
 
-<div style="color: (--muted)">
-<h4 style="margin:14px 0 6px 0; text-align: center; font-size: 10px;">{% trans "Important notice" %}</h4>
-<p style="font-size:6px; text-align: center;">
-    {% trans "This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited. If accompanied by a valid electronic signature, this document may constitute a temporary certification of employment with the students’ union." %}
-</p>
+{% elif item.kind == 'RES' %}
+    {% if item.subject %}
+    <div class="section">
+        <h2 class="section-title">{% trans "Subject" %}</h2>
+        <div class="section-content">
+            {{ item.subject|safe }}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if item.discussion %}
+    <div class="section">
+        <h2 class="section-title">{% trans "Discussion" %}</h2>
+        <div class="section-content">
+            {{ item.discussion|safe }}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if item.voting_mode != 'NONE' %}
+    <div class="section">
+        <h2 class="section-title">{% trans "Voting Result" %}</h2>
+        <div class="section-content">
+            <table class="info-table">
+                <tr>
+                    <th>{% trans "Voting Mode" %}</th>
+                    <td>{{ item.get_voting_mode_display }}</td>
+                </tr>
+                {% if item.voting_mode == 'COUNT' %}
+                <tr>
+                    <th>{% trans "For" %}</th>
+                    <td><strong>{{ item.votes_for }}</strong></td>
+                </tr>
+                <tr>
+                    <th>{% trans "Against" %}</th>
+                    <td><strong>{{ item.votes_against }}</strong></td>
+                </tr>
+                <tr>
+                    <th>{% trans "Abstentions" %}</th>
+                    <td><strong>{{ item.votes_abstain }}</strong></td>
+                </tr>
+                {% elif item.voting_mode == 'NAMED' %}
+                <tr>
+                    <td colspan="2">
+                        <table class="data-table" style="margin-top: 0.5rem;">
+                            <thead>
+                                <tr>
+                                    <th>{% trans "Mandate" %}</th>
+                                    <th>{% trans "Vote" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vote in item.named_votes.all %}
+                                <tr>
+                                    <td>{{ vote.mandate.person_role.person }}</td>
+                                    <td>{{ vote.get_vote_display }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <th>{% trans "Result" %}</th>
+                    <td>
+                        {% if item.passed %}
+                            <span style="color: #27ae60; font-weight: bold;">✓ {% trans "PASSED" %}</span>
+                        {% else %}
+                            <span style="color: #e74c3c; font-weight: bold;">✗ {% trans "REJECTED" %}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if item.outcome %}
+    <div class="section">
+        <h2 class="section-title">{% trans "Outcome" %}</h2>
+        <div class="section-content">
+            {{ item.outcome|safe }}
+        </div>
+    </div>
+    {% endif %}
+
+{% elif item.kind == 'ELEC' %}
+    {% if item.subject %}
+    <div class="section">
+        <h2 class="section-title">{% trans "Subject" %}</h2>
+        <div class="section-content">
+            {{ item.subject|safe }}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if item.elected_person_role %}
+    <div class="section">
+        <h2 class="section-title">{% trans "Elected Person" %}</h2>
+        <div class="section-content">
+            <table class="info-table">
+                <tr>
+                    <th>{% trans "Name" %}</th>
+                    <td>{{ item.elected_person_role.person }}</td>
+                </tr>
+                <tr>
+                    <th>{% trans "Role" %}</th>
+                    <td>{{ item.elected_person_role.role.name }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if item.voting_mode != 'NONE' %}
+    <div class="section">
+        <h2 class="section-title">{% trans "Voting Result" %}</h2>
+        <div class="section-content">
+            <table class="info-table">
+                <tr>
+                    <th>{% trans "For" %}</th>
+                    <td><strong>{{ item.votes_for }}</strong></td>
+                </tr>
+                <tr>
+                    <th>{% trans "Against" %}</th>
+                    <td><strong>{{ item.votes_against }}</strong></td>
+                </tr>
+                <tr>
+                    <th>{% trans "Abstentions" %}</th>
+                    <td><strong>{{ item.votes_abstain }}</strong></td>
+                </tr>
+                <tr>
+                    <th>{% trans "Result" %}</th>
+                    <td>
+                        {% if item.passed %}
+                            <span style="color: #27ae60; font-weight: bold;">✓ {% trans "ELECTED" %}</span>
+                        {% else %}
+                            <span style="color: #e74c3c; font-weight: bold;">✗ {% trans "NOT ELECTED" %}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if item.outcome %}
+    <div class="section">
+        <h2 class="section-title">{% trans "Outcome" %}</h2>
+        <div class="section-content">
+            {{ item.outcome|safe }}
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
+
+{% if item.notes %}
+<div class="section">
+    <h2 class="section-title">{% trans "Notes" %}</h2>
+    <div class="section-content">
+        <p>{{ item.notes|linebreaksbr }}</p>
+    </div>
 </div>
+{% endif %}
+
+{% include '_includes/_signature_seal.html' with signatures=signatures %}
+
+{% include '_includes/_disclaimer.html' %}
 
 {% endblock %}

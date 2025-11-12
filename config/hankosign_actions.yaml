@@ -133,7 +133,7 @@ actions:
     stage: "ASS"
     scope: employees.EmploymentDocument
     human_label: "Submit Employment Document (ASS)"
-    is_repeatable: false
+    is_repeatable: true
     require_distinct_signer: false
     comment: "Submit employment contract/document for approval"
 
@@ -141,7 +141,7 @@ actions:
     stage: "ASS"
     scope: employees.EmploymentDocument
     human_label: "Withdraw Employment Document"
-    is_repeatable: false
+    is_repeatable: true
     require_distinct_signer: false
     comment: "Withdraw submitted document (before approvals)"
 
@@ -192,7 +192,7 @@ actions:
     stage: "ASS"
     scope: employees.TimeSheet
     human_label: "Submit Timesheet (ASS)"
-    is_repeatable: false
+    is_repeatable: true
     require_distinct_signer: false
     comment: "Employee submits timesheet for approval"
 
@@ -200,7 +200,7 @@ actions:
     stage: "ASS"
     scope: employees.TimeSheet
     human_label: "Withdraw Timesheet"
-    is_repeatable: false
+    is_repeatable: true
     require_distinct_signer: false
     comment: "Employee withdraws submitted timesheet (before approvals)"
 
@@ -305,7 +305,7 @@ actions:
     stage: "ASS"
     scope: assembly.Session
     human_label: "Submit Session Protocol (ASS)"
-    is_repeatable: false
+    is_repeatable: true
     require_distinct_signer: false
     comment: "Submit session protocol for chair approval"
 
@@ -313,7 +313,7 @@ actions:
     stage: "ASS"
     scope: assembly.Session
     human_label: "Withdraw Session Protocol"
-    is_repeatable: false
+    is_repeatable: true
     require_distinct_signer: false
     comment: "Withdraw submitted protocol (before approval)"
 

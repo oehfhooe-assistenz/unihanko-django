@@ -1,0 +1,19 @@
+{# Qualified electronic signature placement boxes #}
+{% load i18n %}
+
+<div class="esig-section">
+    <h3 class="esig-title">{% trans "Qualified Signatures" %}</h3>
+    <div class="esig-grid esig-grid-{{ count|default:"3" }}">
+        {% for signer in signers %}
+        <div class="esig-item">
+            <div class="esig-box">
+                <span class="esig-anchor">SIG_{{ forloop.counter|upper }}_ANCHOR</span>
+                <div class="esig-hint">{% trans "Place electronic signature here" %}</div>
+            </div>
+            <div class="esig-meta">
+                <strong>{% trans "Signer" %}:</strong> {{ signer.label }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>

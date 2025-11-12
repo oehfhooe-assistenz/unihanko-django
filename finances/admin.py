@@ -14,7 +14,7 @@ from django.utils.safestring import mark_safe
 from organisation.models import OrgInfo
 from .models import FiscalYear, PaymentPlan, default_start, auto_end_from_start, stored_code_from_dates
 from core.pdf import render_pdf_response
-from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action
+from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action, ManagerOnlyHistoryMixin
 from core.utils.authz import is_finances_manager
 from hankosign.utils import render_signatures_box, state_snapshot, get_action, record_signature, has_sig, sign_once, RID_JS, object_status_span, seal_signatures_context
 from finances.models import paymentplan_status
@@ -175,7 +175,15 @@ class FYChipsFilter(admin.SimpleListFilter):
 
 # =============== PaymentPlan Admin ===============
 @admin.register(PaymentPlan)
-class PaymentPlanAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class PaymentPlanAdmin(
+    SimpleHistoryAdmin,
+    DjangoObjectActions,
+    ImportExportModelAdmin,
+    ConcurrentModelAdmin,
+    HelpPageMixin,
+    ImportExportGuardMixin,
+    ManagerOnlyHistoryMixin
+    ):
     resource_classes = [PaymentPlanResource]
     form = PaymentPlanForm
     actions = ("export_selected_pdf",)
@@ -547,7 +555,7 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMix
         messages.success(request, _("Submitted."))
     submit_plan.label = _("Submit")
     submit_plan.attrs = {
-        "class": "btn btn-block btn-warning btn-sm",
+        "class": "btn btn-block btn-warning",
         "style": "margin-bottom: 1rem;",
     }
 
@@ -571,7 +579,7 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMix
         messages.success(request, _("Withdrawn."))
     withdraw_plan.label = _("Withdraw")
     withdraw_plan.attrs = {
-        "class": "btn btn-block btn-secondary btn-sm",
+        "class": "btn btn-block btn-secondary",
         "style": "margin-bottom: 1rem;",
     }
 
@@ -594,7 +602,7 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMix
         messages.success(request, _("Approved (WiRef)."))
     approve_wiref.label = _("Approve (WiRef)")
     approve_wiref.attrs = {
-        "class": "btn btn-block btn-success btn-sm",
+        "class": "btn btn-block btn-success",
         "style": "margin-bottom: 1rem;",
     }
 
@@ -617,7 +625,7 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMix
         messages.success(request, _("Approved (Chair)."))
     approve_chair.label = _("Approve (Chair)")
     approve_chair.attrs = {
-        "class": "btn btn-block btn-success btn-sm",
+        "class": "btn btn-block btn-success",
         "style": "margin-bottom: 1rem;",
     }
 
@@ -641,7 +649,7 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMix
         messages.success(request, _("Banking verified. Plan is now ACTIVE."))
     verify_banking.label = _("Verify banking")
     verify_banking.attrs = {
-        "class": "btn btn-block btn-primary btn-sm",
+        "class": "btn btn-block btn-primary",
         "style": "margin-bottom: 1rem;",
     }
 
@@ -657,7 +665,7 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMix
         messages.success(request, _("Cancelled."))
     cancel_plan.label = _("Cancel plan")
     cancel_plan.attrs = {
-        "class": "btn btn-block btn-danger btn-sm",
+        "class": "btn btn-block btn-danger",
         "style": "margin-bottom: 1rem;",
     }
 
@@ -672,7 +680,16 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMix
         date_str = timezone.localtime().strftime("%Y-%m-%d")
         lname = slugify(obj.person_role.person.last_name)[:20]
         rsname = slugify(obj.person_role.role.short_name)[:10]
-        ctx = {"pp": obj, "signatures": signatures, "org": OrgInfo.get_solo(), }
+        ctx = {
+            "pp": obj,
+            "signatures": signatures,
+            "org": OrgInfo.get_solo(),
+            'signers': [
+                {'label': obj.person_role.person.last_name},
+                {'label': 'WiRef'},
+                {'label': 'Chair'},
+            ]
+        }
         return render_pdf_response(
             "finances/paymentplan_pdf.html",
             ctx,
@@ -681,7 +698,7 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMix
         )
     print_paymentplan.label = "🖨️ " + _("Print PDF")
     print_paymentplan.attrs = {
-        "class": "btn btn-block btn-info btn-sm",
+        "class": "btn btn-block btn-info",
         "style": "margin-bottom: 1rem;",
         "data-action": "post-object",
         "onclick": RID_JS,
@@ -800,7 +817,14 @@ class PaymentPlanAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMix
 
 # =============== FiscalYear Admin ===============
 @admin.register(FiscalYear)
-class FiscalYearAdmin(HelpPageMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class FiscalYearAdmin(
+    SimpleHistoryAdmin,
+    DjangoObjectActions,
+    ImportExportModelAdmin,
+    HelpPageMixin,
+    ImportExportGuardMixin,
+    ManagerOnlyHistoryMixin
+    ):
     resource_classes = [FiscalYearResource]
     form = FiscalYearForm
 
@@ -905,7 +929,7 @@ class FiscalYearAdmin(HelpPageMixin, ImportExportGuardMixin, DjangoObjectActions
         )
     print_fiscalyear.label = "🖨️ " + _("Print receipt PDF")
     print_fiscalyear.attrs = {
-        "class": "btn btn-block btn-secondary btn-sm",
+        "class": "btn btn-block btn-secondary",
         "style": "margin-bottom: 1rem;",
         "data-action": "post-object",
         "onclick": RID_JS,
@@ -1031,7 +1055,7 @@ class FiscalYearAdmin(HelpPageMixin, ImportExportGuardMixin, DjangoObjectActions
         messages.success(request, _("Fiscal year locked."))
     lock_year.label = _("Lock year")
     lock_year.attrs = {
-        "class": "btn btn-block btn-warning btn-sm",
+        "class": "btn btn-block btn-warning",
         "style": "margin-bottom: 1rem;",
     }
 
@@ -1055,7 +1079,7 @@ class FiscalYearAdmin(HelpPageMixin, ImportExportGuardMixin, DjangoObjectActions
         messages.success(request, _("Fiscal year unlocked."))
     unlock_year.label = _("Unlock year")
     unlock_year.attrs = {
-        "class": "btn btn-block btn-success btn-sm",
+        "class": "btn btn-block btn-success",
         "style": "margin-bottom: 1rem;",
     }
 

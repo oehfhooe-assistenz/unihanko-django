@@ -1,26 +1,26 @@
 /* Scoped styles — safe for PDF, light/dark friendly */
 .hs-seal {
   display: grid;
-  grid-template-columns: 30mm 1fr;
-  gap: 2mm 4mm;
+  grid-template-columns: 20mm 1fr;
+  gap: 2mm 2mm;
   padding: 3mm;
   border: 1px solid var(--uh-border, #d1d5db);
   border-radius: 6px;
   background: var(--uh-surface, #ffffff);
   color: var(--uh-ink, #111827);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   page-break-inside: avoid;
   margin-top: 2mm;
 }
 
 .hs-seal__left { display: flex; align-items: start; justify-content: center; }
 .hs-seal__logo {
-  width: 20mm; height: 20mm;
+  width: 16mm; height: 16mm;
 }
 
 .hs-seal__right { display: block; }
 .hs-seal__title {
-  font-size: 8pt; font-weight: 600; margin: 0 0 1mm 0;
+  font-size: 9pt; font-weight: 600; margin: 0 0 1mm 0;
 }
 
 .hs-seal__table {
@@ -29,17 +29,17 @@
   border: 1px solid var(--uh-border, #d1d5db);
   border-radius: 4px; /* some PDF renderers ignore radius on tables, that's fine */
   background: var(--uh-tile, #ffffff);
-  font-size: 6pt !important;
+  font-size: 5pt !important;
 }
 .hs-seal__table thead th {
-  text-align: left; font-weight: 600; padding: 1mm 1mm;
+  text-align: left; font-weight: 600; padding: 0.5mm 0.5mm;
   border-bottom: 1px solid var(--uh-border, #d1d5db);
   background: color-mix(in oklab, var(--uh-ink, #111827) 6%, transparent);
-  font-size: 6pt !important;
+  font-size: 5pt !important;
 }
 .hs-seal__table td {
-  padding: 2mm 1mm; vertical-align: top; border-top: 1px solid #e5e7eb;
-  font-size: 6pt !important;
+  padding: 0.5mm 0.5mm; vertical-align: top; border-top: 1px solid #e5e7eb;
+  font-size: 5pt !important;
 }
 .hs-seal__table tbody tr:first-child td { border-top: 0; }
 

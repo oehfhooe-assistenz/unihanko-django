@@ -61,8 +61,6 @@ def is_finances_manager(user) -> bool:
 def is_employees_manager(user) -> bool:
     return is_module_manager(user, "employees")
 
-# ADD this function:
-
 def is_assembly_manager(user) -> bool:
     return is_module_manager(user, "assembly")
 

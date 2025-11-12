@@ -105,6 +105,7 @@ INSTALLED_APPS = [
     'simple_history',
     'django_object_actions',
     'django_renderpdf',
+    'adminsortable2',
 
     'core',
     'hankosign',

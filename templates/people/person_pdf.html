@@ -1,121 +1,56 @@
-{% extends "pdf/base.html" %} {% load i18n %} 
-{% block extra_styles %} .sig-section { margin-top: 12mm; page-break-inside: avoid; } .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; } .sig-box { height: 28mm; border: 1px dashed #9aa3af;
-border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { position: absolute; top: 4px; left: 6px; font-size: 10px; color: #9aa3af; } .sig-meta { margin-top: 6px; font-size: 11px; color: #6b7280; } 
-{% endblock %}
-{% block pdf_title %}{% trans "Person" %} — {{ p.last_name }}, {{ p.first_name }}{% if p.matric_no %}; {{ p.matric_no }}{% endif %}{% endblock %}
-{% block header_title %}{% trans "Standardised Personnel Information" %}{% endblock %} 
-{% block header_subtitle %}{{ p.uuid }}{% endblock %}
-{% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %} 
+{% extends "pdf/base.html" %}
+{% load i18n %}
+
+{% block header_title %}{% trans "Personnel Record" %} — {{ p.last_name }}{% endblock %}
+
 {% block content %}
-<h2 style="margin:0 0 8px 0;">{% trans "Personnel Record" %}</h2>
-<table>
-    <tbody>
-        <tr>
-            <th style="width:160px;">{% trans "First name" %}</th>
-            <td>{{ p.first_name }}</td>
-        </tr>
-        <tr>
-            <th>{% trans "Last name" %}</th>
-            <td>{{ p.last_name }}</td>
-        </tr>
-        <tr>
-            <th>{% trans "Matriculation No." %}</th>
-            <td>{{ p.matric_no|default:"—" }}</td>
-        </tr>
-        <tr>
-            <th>{% trans "Gender" %}</th>
-            <td>{{ p.get_gender_display }}</td>
-        </tr>
-        <tr>
-            <th>{% trans "Email(s)" %}</th>
-            <td>
-                {% if p.email %}{{ p.email }}{% else %}—{% endif %} {% if p.student_email %}
-                <br>{{ p.student_email }}{% endif %}
-            </td>
-        </tr>
-        <tr>
-            <th>{% trans "Active" %}</th>
-            <td>{{ p.is_active|yesno:_("Yes,No") }}</td>
-        </tr>
-        <tr>
-            <th>{% trans "Created at" %}</th>
-            <td>{{ p.created_at|date:"Y-m-d H:i" }}</td>
-        </tr>
-        <tr>
-            <th>{% trans "Last updated" %}</th>
-            <td>{{ p.updated_at|date:"Y-m-d H:i" }}</td>
-        </tr>
-        <tr>
-            <th>{% trans "UniHanko ID" %}</th>
-            <td>{{ p.uuid }}</td>
-        </tr>
-        <tr>
-            <th>{% trans "UniHanko Account" %}</th>
-            <td>{{ p.user|default:"—" }}</td>
-        </tr>
-        <tr>
-            <th>Personal Access Code</th>
-            <td>{{ p.personal_access_code }}</td>
-        </tr>
-    </tbody>
-</table>
+{% include '_includes/_org_header.html' with org=org %}
 
-<h3 style="margin:10px 0 6px 0;">{% trans "Notes" %}</h3>
-<div>
-    <p>{{ p.notes|default:_("No notes.") }}</p>
-</div>
+<h1 class="document-title">{% trans "Personnel Record" %}</h1>
 
-<h3 style="margin:10px 0 6px 0;">{% trans "Assignments" %}</h3> {% if p.role_assignments.all %}
-<table>
-    <thead>
-        <tr>
-            <th>{% trans "Role" %}</th>
-            <th>{% trans "Start date" %}</th>
-            <th>{% trans "End date" %}</th>
-            <th>{% trans "Effective start" %}</th>
-            <th>{% trans "Effective end" %}</th>
-            <th>{% trans "Start reason" %}</th>
-            <th>{% trans "End reason" %}</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for a in p.role_assignments.all %}
-        <tr>
-            <td>{{ a.role.name }}</td>
-            <td>{{ a.start_date|date:"j. F Y" }}</td>
-            <td>{{ a.end_date|date:"j. F Y"|default:"—" }}</td>
-            <td>{{ a.effective_start|date:"j. F Y"|default:"—" }}</td>
-            <td>{{ a.effective_end|date:"j. F Y"|default:"—" }}</td>
-            {# shows "R_01 — Eintritt" via __str__; use .name if you want just the label #}
-            <td>{{ a.start_reason|default:"—" }}</td>
-            <td>{{ a.end_reason|default:"—" }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p class="text-muted">{% trans "No assignments." %}</p>
-{% endif %}
+{% include '_includes/_person_info_section.html' with person=p show_uuid=True %}
 
-<div style="color: (--muted)">
-<h4 style="margin:14px 0 6px 0; text-align: center; font-size: 10px;">{% trans "Important notice" %}</h4>
-<p style="font-size:6px; text-align: center;">
-    {% trans "This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited. If accompanied by a valid electronic signature, this document may constitute a temporary certification of affiliation with the students’ union under HSG 2014." %}
-</p>
-</div>
-
-<h3 style="margin:12px 0 6px 0;">{% trans "Signature" %}</h3>
-<div class="sig-section">
-    <div class="sig-grid">
-        <div>
-            <div class="sig-box">
-                <span style="font-size:1px;color:#fff">SIG_MAIN_ANCHOR</span>
-                <div class="hint">{% trans "Place electronic signature here" %}</div>
-            </div>
-            <div class="sig-meta">
-                {% trans "Signer" %}: {{ request.user.email }} {{ request.user.username }}
-            </div>
-        </div>
+<div class="section">
+    <h2 class="section-title">{% trans "Role Assignments" %}</h2>
+    <div class="section-content">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>{% trans "Role" %}</th>
+                    <th>{% trans "Period" %}</th>
+                    <th>{% trans "Start Reason" %}</th>
+                    <th>{% trans "End Reason" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pr in p.role_assignments.all %}
+                <tr>
+                    <td>{{ pr.role.name }}</td>
+                    <td>{% include '_includes/_date_period.html' with start_date=pr.start_date end_date=pr.end_date %}</td>
+                    <td>{{ pr.start_reason.display_name|default:"—" }}</td>
+                    <td>{{ pr.end_reason.display_name|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted">{% trans "No assignments" %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
+
+{% if p.notes %}
+<div class="section">
+    <h2 class="section-title">{% trans "Notes" %}</h2>
+    <div class="section-content">
+        <p>{{ p.notes|linebreaksbr }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% include '_includes/_signature_boxes.html' with count=1 signers=signers %}
+
+{% include '_includes/_disclaimer.html' %}
+
 {% endblock %}

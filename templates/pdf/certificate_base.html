@@ -1,0 +1,483 @@
+{% extends "pdf/base.html" %}
+{% load static i18n tz %}
+
+{% block extra_styles %}
+/* Certificate-specific overrides */
+@page {
+    size: A4;
+    margin: 30mm 14mm 18mm 14mm;
+    @top-center { content: none; }
+    @bottom-left { content: none; }
+    @bottom-right { content: none; }
+}
+
+@page:first {
+    margin: 0mm 14mm 18mm 14mm;
+    @top-center { content: none; }
+    @bottom-center { content: element(cert_footer); }
+}
+
+/* Hide standard headers/footers */
+.header-hero, .header-std, .pdf-footer {
+    display: none !important;
+}
+
+main {
+    margin-top: 0 !important;
+}
+
+/* Certificate color scheme */
+:root {
+    --cert-brand: #f2a535;
+    --cert-highlight: #2390cc;
+    --cert-contrast: #ffffff;
+    --cert-ink: #111;
+    --cert-muted: #6b7280;
+    --cert-rule: #e5e7eb;
+}
+
+/* Typography */
+.cert-page {
+    font-family: "DejaVu Sans", Arial, sans-serif;
+    color: var(--cert-ink);
+}
+
+.bilingual {
+    display: block;
+    margin-top: 0.25rem;
+}
+
+.de {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.en {
+    font-size: 9px;
+    font-style: italic;
+    color: #9ca3af;
+    line-height: 1.3;
+}
+
+.emphasis {
+    font-style: italic;
+    color: var(--cert-highlight);
+    font-weight: 600;
+}
+
+/* Masthead (orange band) */
+.cert-masthead {
+    position: relative;
+    background: var(--cert-brand);
+    color: var(--cert-contrast);
+    margin-left: -14mm;
+    margin-right: -14mm;
+    padding: 14mm 14mm 10mm 14mm;
+}
+
+.cert-masthead h1 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    margin: 0;
+}
+
+.cert-masthead .subtitle {
+    font-size: 20px;
+    font-weight: 800;
+    opacity: 0.9;
+    margin-top: 2px;
+}
+
+.cert-masthead .logo {
+    position: absolute;
+    right: 14mm;
+    top: 3mm;
+    width: 32mm;
+    height: auto;
+}
+
+/* Field sections */
+.cert-section {
+    margin-top: 10mm;
+}
+
+.field-label {
+    font-size: 14px;
+    color: var(--cert-muted);
+    margin-bottom: 3mm;
+}
+
+.field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8mm;
+}
+
+.field-value {
+    font-size: 16px;
+    padding: 4px 6px;
+    border: 1px solid var(--cert-rule);
+    border-radius: 4px;
+    margin-top: 2mm;
+}
+
+/* Legal/appointment text */
+.appointment-text {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.legal-text {
+    margin-top: 8mm;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Date stamp */
+.date-stamp {
+    text-align: right;
+    margin-top: 8mm;
+}
+
+.date-pill {
+    display: inline-block;
+    border: 1px solid var(--cert-ink);
+    padding: 2mm 4mm;
+    border-radius: 3px;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+/* Signature section */
+.signature-section {
+    margin-top: 10mm;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8mm;
+    align-items: end;
+}
+
+.signature-box {
+    height: 40mm;
+    width: 120mm;
+    border: 1px solid var(--cert-ink);
+    border-radius: 2px;
+    position: relative;
+}
+
+.signature-anchor {
+    position: absolute;
+    bottom: 4mm;
+    left: 4mm;
+    font-size: 9px;
+    color: #9ca3af;
+}
+
+.signature-stamp {
+    position: absolute;
+    right: -30mm;
+    bottom: -10mm;
+    width: 34mm;
+    height: auto;
+    opacity: 0.98;
+}
+
+.signature-caption {
+    margin-top: 2mm;
+    font-size: 10px;
+    color: #555;
+}
+
+.signature-meta {
+    text-align: right;
+}
+
+.signature-meta .label {
+    font-weight: 700;
+    margin-bottom: 2mm;
+}
+
+/* Page 2: Notes & contacts */
+.notes-page {
+    display: grid;
+    grid-template-columns: 1fr 55mm;
+    gap: 10mm;
+    align-items: start;
+}
+
+.notes-box {
+    border: 1px dashed #9ca3af;
+    padding: 4mm;
+}
+
+.notes-box h3 {
+    font-size: 16px;
+    margin: 0 0 3mm 0;
+}
+
+.notes-box ul {
+    margin: 0;
+    padding-left: 5mm;
+    font-size: 10px;
+}
+
+.notes-box li {
+    margin: 1.5mm 0;
+}
+
+.notes-footer {
+    margin-top: 6mm;
+    font-size: 9px;
+    display: flex;
+    gap: 6mm;
+    flex-wrap: wrap;
+}
+
+.inline-field {
+    border: 1px solid var(--cert-ink);
+    padding: 1mm 3mm;
+    min-width: 35mm;
+    display: inline-block;
+}
+
+.contacts-sidebar h4 {
+    font-size: 10px;
+    margin: 0 0 2mm 0;
+    color: var(--cert-brand);
+}
+
+.contacts-sidebar {
+    font-size: 10px;
+    line-height: 1.35;
+    color: #374151;
+}
+
+.contacts-sidebar .office {
+    margin-top: 4mm;
+}
+
+/* Footer bar */
+.cert-footerbar {
+    position: running(cert_footer);
+    font-size: 10px;
+    color: #374151;
+    border-top: 1px solid #ff8a3d;
+    padding-top: 4mm;
+    line-height: 1.3;
+}
+
+/* Utility */
+.page-break {
+    break-before: page;
+    page-break-before: always;
+}
+
+.motto {
+    font-size: 10px;
+    color: var(--cert-muted);
+    margin-top: 4mm;
+}
+{% endblock %}
+
+{% block content %}
+<!-- ===== PAGE 1: CERTIFICATE ===== -->
+<div class="cert-page">
+    <!-- Masthead -->
+    <div class="cert-masthead">
+        <h1>{% block cert_title %}DEIN BESTELLUNGSDOKUMENT{% endblock %}</h1>
+        <div class="subtitle">{% block cert_subtitle %}YOUR LETTER OF APPOINTMENT{% endblock %}</div>
+        <img class="logo" src="{% static 'img/unihanko-mark.svg' %}" alt="ÖH FH OÖ">
+    </div>
+
+    <!-- Recipient -->
+    <section class="cert-section">
+        <div class="field-label">
+            <span class="de">Liebe/lieber/*</span>
+            <span class="bilingual en">Dear</span>
+        </div>
+        <div class="field-grid">
+            <div>
+                <div class="field-label">
+                    <span class="de">Vorname</span>
+                    <span class="bilingual en">given name(s)</span>
+                </div>
+                <div class="field-value">{{ pr.person.first_name }}</div>
+            </div>
+            <div>
+                <div class="field-label">
+                    <span class="de">Nachname</span>
+                    <span class="bilingual en">surname(s)</span>
+                </div>
+                <div class="field-value">{{ pr.person.last_name }}</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Appointment text -->
+    <section class="cert-section">
+        {% block appointment_body %}
+        <p class="appointment-text">
+            <span class="de">
+                Hiermit informieren wir Dich über die
+                {% block appointment_type_de %}<span class="emphasis">interimistische</span>{% endblock %}
+                Bestellung zum/zur:
+            </span>
+            <span class="bilingual en">
+                We hereby inform you of your appointment
+                {% block appointment_type_en %}<span class="emphasis">ad interim</span>{% endblock %}
+                as:
+            </span>
+        </p>
+
+        <div style="margin-top: 3mm;">
+            <div class="field-label">
+                <span class="de">Funktionsbezeichnung</span>
+                <span class="bilingual en">function (german)</span>
+            </div>
+            <div class="field-value">{{ pr.role.name }}</div>
+        </div>
+
+        <p class="appointment-text" style="margin-top: 5mm;">
+            <span class="de">der Hochschülerinnen- & Hochschülerschaft der FH Oberösterreich.</span>
+            <span class="bilingual en">of the University of Upper Austria's Students' Union (by statutory body).</span>
+        </p>
+
+        <div class="legal-text">
+            {% block legal_text %}
+            <p class="de">
+                Die Bestellung erfolgt iSe vorläufigen Betrauung nach §16 (5)
+                »Satzung der Hochschülerinnen- und Hochschülerschaft der FH Oberösterreich« idgF.
+            </p>
+            <p class="bilingual en">
+                The appointment is made ad interim, until revocation or appointment by election
+                pursuant to § 16 (5) of the students' union's statutes; in its current version.
+            </p>
+            {% endblock %}
+        </div>
+        {% endblock %}
+
+        <div class="date-stamp">
+            <span class="appointment-text">
+                <strong>— mit Wirkung zum</strong>
+                <span class="bilingual en">— effective</span>
+            </span>
+            <span class="date-pill">{% block effective_date %}{{ pr.effective_start|default:pr.start_date|date:"d.m.Y" }}{% endblock %}</span>
+        </div>
+    </section>
+
+    <!-- Signature -->
+    <section class="signature-section">
+        <div>
+            <div class="signature-box">
+                <span class="signature-anchor">electronic signature</span>
+                <img class="signature-stamp" src="{% static 'img/oeh_document_seal.png' %}" alt="Siegel">
+            </div>
+            <div class="signature-caption">
+                <strong>{{ org.org_chair.person.first_name }} {{ org.org_chair.person.last_name }}</strong>
+                <br><span class="de">Der*die Vorsitzende der HV FH Oberösterreich</span>
+                <br><span class="bilingual en">The chairperson of the UAS Upper Austria's Students' Union</span>
+            </div>
+        </div>
+
+        <div class="signature-meta">
+            <div class="label">GEZEICHNET I.V.</div>
+            <div class="bilingual en">undersigned per pro</div>
+        </div>
+    </section>
+
+    <!-- Footer bar -->
+    <div class="cert-footerbar">
+        <strong>{{ org.org_name_long_de }}</strong>
+        {% if org.org_address %}
+            • <u>{% trans "Adresse" %}</u> <i>({% trans "Zentralstelle im Büro Linz" %})</i>: {{ org.org_address|striptags }}
+        {% endif %}
+        {% if org.bank_name or org.bank_iban or org.bank_bic %}
+        <br><u>Bank</u>:
+        {% if org.bank_name %}{{ org.bank_name }}{% endif %}
+        {% if org.bank_iban %} • IBAN: {{ org.bank_iban }}{% endif %}
+        {% if org.bank_bic %} • BIC: {{ org.bank_bic }}{% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== PAGE 2: NOTES ===== -->
+<div class="cert-page page-break">
+    <div class="notes-page">
+        <section class="notes-box">
+            <h3>
+                {% block notes_title_de %}Wichtige Hinweise zu Deiner Bestellung als Funktionär:in{% endblock %}
+                <br><span class="bilingual en">{% block notes_title_en %}Important notice regarding your appointment{% endblock %}</span>
+            </h3>
+
+            <ul>
+                {% block notes_list %}
+                <li>
+                    <span class="de">Du unterstützt die ÖH FH OÖ als Ehrenamt bis auf Widerruf durch Dich oder Uns.</span>
+                    <span class="bilingual en">You support the students' union as a volunteer until revocation of your appointment by either yourself or the chair.</span>
+                </li>
+                <li>
+                    <span class="de">Bei der ÖH FH OÖ begegnen Wir einander mit gegenseitigem Respekt und Fair Play.</span>
+                    <span class="bilingual en">At the students' union, we meet one another with mutual respect and fair play.</span>
+                </li>
+                <li>
+                    <span class="de">Wir sind unterstützend für Dich da – bei der ÖH FH OÖ helfen Wir alle nach bestem Wissen und Gewissen mit.</span>
+                    <span class="bilingual en">We're here to support you – at the students' union we all help out to the best of our abilities.</span>
+                </li>
+                <li>
+                    <span class="de">Bei Deiner Tätigkeit beachtest Du vor allem die Satzung, die Gebarungsordnung und andere Weisungen des/der Vorsitzenden.</span>
+                    <span class="bilingual en">While working for the students' union, you observe the statutes, the financial codes of conduct and all other instructions by the chair.</span>
+                </li>
+                <li>
+                    <span class="de">Für Dein Ehrenamt bei der ÖH FH OÖ erhältst Du nach Beantragung eine monatliche Aufwandsentschädigung (die Funktionsgebühr), außerdem hast Du Anspruch auf eine Ersetzung von ECTS gemäß aktueller Vereinbarungen.</span>
+                    <span class="bilingual en">For your work at the students' union you're allowed a monthly stipend (after having applied for it); additionally you're eligible for reimbursement of your allotted ECTS as per the current covenants.</span>
+                </li>
+                <li>
+                    <span class="de">Solltest Du von Deinem Amt (aus welchen Gründen auch immer) zurücktreten wollen, gib Uns bitte 2 Wochen vorher Bescheid.</span>
+                    <span class="bilingual en">Should you decide to revoke your appointment (no matter the reason), we ask to be given two weeks' notice.</span>
+                </li>
+                {% endblock %}
+            </ul>
+
+            {% block extra_notes %}{% endblock %}
+
+            <div class="motto">FÜR EIN GUTES MITEINANDER IN DER ÖH</div>
+
+            <div class="notes-footer">
+                <div>Linz, am <span class="inline-field">{% block issue_date %}{% now "d.m.Y" %}{% endblock %}</span></div>
+                {% block notes_footer_extra %}{% endblock %}
+            </div>
+        </section>
+
+        <aside class="contacts-sidebar">
+            {% block sidebar_contacts %}
+            <h4>Zentralstelle im Büro Linz</h4>
+            <div>
+                +43 (0) 50804-55401<br>
+                office@oeh.fh-ooe.at
+            </div>
+
+            <div class="office">
+                <h4>Büro Hagenberg</h4>
+                <div>Softwarepark 11<br>4232 Hagenberg</div>
+            </div>
+
+            <div class="office">
+                <h4>Büro Linz</h4>
+                <div>Garnisonstraße 21<br>4020 Linz</div>
+            </div>
+
+            <div class="office">
+                <h4>Büro Steyr</h4>
+                <div>Wehrgrabengasse 1–3<br>4400 Steyr</div>
+            </div>
+
+            <div class="office">
+                <h4>Büro Wels</h4>
+                <div>Stelzhamerstraße 23<br>4600 Wels</div>
+            </div>
+            {% endblock %}
+        </aside>
+    </div>
+</div>
+{% endblock %}

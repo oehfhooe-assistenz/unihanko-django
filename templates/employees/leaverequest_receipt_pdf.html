@@ -1,112 +1,57 @@
 {% extends "pdf/base.html" %}
-{% load i18n static %} 
+{% load i18n %}
 
-{% block extra_styles %} .sig-section { margin-top: 1mm; page-break-inside: avoid; } .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; } .sig-box { width: 100%; height: 28mm; border: 1px dashed #9aa3af;
-border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { position: absolute; top: 4px; left: 6px; font-size: 10px; color: #9aa3af; } .sig-meta { margin-top: 6px; font-size: 11px; color: #6b7280; } 
-{% endblock %}
+{% block header_title %}{% trans "Leave Request" %} — {{ doc.code }}{% endblock %}
 
-{% block pdf_title %}{{ doc.code }} — {% trans "Leave request receipt" %}{% endblock %}
-{% block header_title %}{% trans "Leave request receipt" %}{% endblock %} 
-{% block header_subtitle %}{{ person.first_name }} {{ person.last_name }} | {{ doc.start_date|date:"j. F Y"|default:"—" }} — {{ doc.end_date|date:"j. F Y"|default:"—" }}{% endblock %}
-{% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %} 
 {% block content %}
-<h2 style="margin:0 0 8px 0;">
-  {% trans "Leave request receipt: " %} <span>{{ person.first_name }} {{ person.last_name }}</span>
-</h2>
-<h3 style="margin:10px 0 6px 0;">
-  {{ role.name }} — <span style="color: var(--brand);">{{ doc.start_date|date:"j. F Y"|default:"—" }} </span> | <span style="color: var(--brand);">{{ doc.end_date|date:"j. F Y"|default:"—" }}</span>
-</h3>
+{% include '_includes/_org_header.html' with org=org %}
 
+<h1 class="document-title">{% trans "Leave Request" %}</h1>
+<p class="document-code">{{ doc.code }}</p>
 
-<h4 style="text-align: center;">{% trans "Leave has been requested from" %} <span>{{ doc.start_date|date:"j. F Y"|default:"—" }}</span> {% trans "to" %} <span>{{ doc.end_date|date:"j. F Y"|default:"—" }}</span>.
-<br>{% trans "The employee has confirmed sufficient paid leave is available for the requested period." %}</h4>
-<section style="border-left: 3px solid var(--brand); padding: 1mm 1mm 1mm 2mm;">
-<table>
-<tr>
-<th style="width: 60%;">{% trans "Number of days (nominal, per request)" %}</th>
-<td style="width: 40%;">{{ doc.duration_days_inclusive|default:"—" }} d</td>
-</tr>
-<tr>
-<th style="width: 60%;">{% trans "Number of weekdays (nominal, per request)" %}</th>
-<td style="width: 40%;">{{ doc.duration_weekdays_inclusive|default:"—" }} d</td>
-</tr>
-<tr>
-<th style="width: 60%;">{% trans "Nominal expected workday" %}</th>
-<td style="width: 40%;">{{ emp.daily_expected_minutes }} min | {{ daily_expected_h|default:"—" }} h</td>
-</tr>
-<tr>
-<th style="width: 60%;">{% trans "Leave duration (weekdays, nominal, per request)" %}</th>
-<td style="width: 40%;">{{ leave_amount_m|default:"—" }} min | {{ leave_amount_h|default:"—" }} h</td>
-</tr>
-</table>
-</section>
-<br>
-<section style="border-left: 3px solid var(--rule); padding: 1mm 1mm 1mm 2mm;">
-  <h4>{% trans "Document Information" %}</h4>
-<table>
-<tr>
-<th style="width: 30%;">{% trans "Document code and type" %}</th>
-<td style="width: 70%;">{{ doc.code }}; {{ doc.kind }} | {{ doc.get_kind_display }}</td>
-</tr>
-<tr>
-<th style="width: 30%;">{% trans "Document title (internal)" %}</th>
-<td style="width: 70%;">{{ doc.title }}</td>
-</tr>
-<tr>
-<th style="width: 30%;">{% trans "Document notes (internal)" %}</th>
-<td style="width: 70%; text-overflow: ellipsis;">{{ doc.details }}</td>
-</tr>
-<tr>
-<th style="width: 30%;">{% trans "Created at" %}</th>
-<td style="width: 70%;">{{ doc.created_at }}</td>
-</tr>
-<tr>
-<th style="width: 30%;">{% trans "Updated at" %}</th>
-<td style="width: 70%;">{{ doc.updated_at }}</td>
-</tr>
-</table>
-</section>
+{% include '_includes/_person_info_section.html' with person=person %}
 
-{% block styles %}
-  {{ block.super }}
-  <link rel="stylesheet" href="{% static 'hankosign/hs_seal.css' %}">
-{% endblock %}
-
-{% include "hankosign/_attestation_seal.html" with signatures=signatures %}
-
-<h3 style="margin:6px 0 6px 0;">{% trans "Qualified Signatures" %}</h3>
-<div class="sig-section">
-  <div class="sig-grid">
-    <div class="sig-item">
-      <div class="sig-box">
-        <span style="font-size:1px;color:#fff">SIG_A_ANCHOR</span>
-        <div class="hint">{% trans "Place electronic signature here" %}</div>
-      </div>
-      <div class="sig-meta">{% trans "Signer" %}: {{ person.first_name }} {{ person.last_name }}</div>
+<div class="section">
+    <h2 class="section-title">{% trans "Leave Period" %}</h2>
+    <div class="section-content">
+        <table class="info-table">
+            <tr>
+                <th>{% trans "Start Date" %}</th>
+                <td>{{ doc.start_date|date:"Y-m-d" }}</td>
+            </tr>
+            <tr>
+                <th>{% trans "End Date" %}</th>
+                <td>{{ doc.end_date|date:"Y-m-d" }}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Weekdays (inclusive)" %}</th>
+                <td>{{ doc.duration_weekdays_inclusive }} {% trans "days" %}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Daily Expected" %}</th>
+                <td>{{ daily_expected_h }} h</td>
+            </tr>
+            <tr>
+                <th>{% trans "Total Leave Amount" %}</th>
+                <td><strong>{{ leave_amount_h }} h</strong> ({{ leave_amount_m }} min)</td>
+            </tr>
+        </table>
     </div>
-
-    <div class="sig-item">
-      <div class="sig-box">
-        <span style="font-size:1px;color:#fff">SIG_B_ANCHOR</span>
-        <div class="hint">{% trans "Place electronic signature here" %}</div>
-      </div>
-      <div class="sig-meta">{% trans "Signer" %}: {% trans "WiRef" %}</div>
-    </div>
-
-    <div class="sig-item">
-      <div class="sig-box">
-        <span style="font-size:1px;color:#fff">SIG_C_ANCHOR</span>
-        <div class="hint">{% trans "Place electronic signature here" %}</div>
-      </div>
-      <div class="sig-meta">{% trans "Signer" %}: {% trans "Chair" %}</div>
-    </div>
-  </div>
 </div>
 
-<div style="color: (--muted)">
-<h4 style="margin:14px 0 6px 0; text-align: center; font-size: 10px;">{% trans "Important notice" %}</h4>
-<p style="font-size:6px; text-align: center;">
-    {% trans "This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited." %}
-</p>
+{% if doc.details %}
+<div class="section">
+    <h2 class="section-title">{% trans "Notes" %}</h2>
+    <div class="section-content">
+        <p>{{ doc.details|linebreaks }}</p>
+    </div>
 </div>
+{% endif %}
+
+{% include '_includes/_signature_seal.html' with signatures=signatures %}
+
+{% include '_includes/_signature_boxes.html' with count=3 signers=signers %}
+
+{% include '_includes/_disclaimer.html' %}
+
 {% endblock %}

@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from solo.admin import SingletonModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
 from .models import OrgInfo
-from core.admin_mixins import HelpPageMixin
+from core.admin_mixins import HelpPageMixin, ManagerOnlyHistoryMixin
 
 class OrgInfoForm(forms.ModelForm):
     class Meta:
@@ -15,7 +15,10 @@ class OrgInfoForm(forms.ModelForm):
             "bank_address": forms.Textarea(attrs={"rows": 3}),
         }
 
-class OrgInfoAdmin(HelpPageMixin, SingletonModelAdmin, SimpleHistoryAdmin):
+class OrgInfoAdmin(
+    SingletonModelAdmin,
+    HelpPageMixin
+    ):
     form = OrgInfoForm
     autocomplete_fields = (
         "org_chair",

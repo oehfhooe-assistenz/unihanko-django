@@ -83,6 +83,7 @@ def safe_admin_action(func):
             return HttpResponseRedirect(request.path)
     return wrapper
 
+
 class HelpPageMixin:
     """Mixin to add help widget to admin changelist."""
     
@@ -95,3 +96,20 @@ class HelpPageMixin:
         extra_context = extra_context or {}
         extra_context['show_help_widget'] = True
         return super().changeform_view(request, object_id, form_url, extra_context=extra_context)
+    
+
+class ManagerOnlyHistoryMixin:
+    """Show history link only to managers/superusers"""
+    
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        
+        # Check if user can see history
+        show_history = (
+            request.user.is_superuser or 
+            request.user.groups.filter(name__icontains='manager').exists()
+        )
+        
+        extra_context['show_history_link'] = show_history
+        
+        return super().change_view(request, object_id, form_url, extra_context)

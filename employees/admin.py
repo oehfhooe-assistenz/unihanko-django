@@ -7,7 +7,7 @@ from django_object_actions import DjangoObjectActions
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
-from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action
+from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action, ManagerOnlyHistoryMixin
 from core.pdf import render_pdf_response
 from organisation.models import OrgInfo
 from decimal import Decimal, ROUND_HALF_UP
@@ -240,8 +240,15 @@ class EmployeeLeaveYearInline(admin.StackedInline):
 
 @admin.register(Employee)
 class EmployeeAdmin(
-    HelpPageMixin, ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
-):
+    SimpleHistoryAdmin,
+    DjangoObjectActions,
+    ImportExportModelAdmin,
+    #no concurrency,
+    HelpPageMixin,
+    ManagerGateMixin, 
+    ImportExportGuardMixin,
+    ManagerOnlyHistoryMixin
+    ):
     resource_classes = [EmployeeResource]
     list_display = (
         "person_role",
@@ -321,7 +328,7 @@ class EmployeeAdmin(
         return render_pdf_response("employees/employee_pdf.html", ctx, request, f"EMP_{obj.id}.pdf")
     print_employee.label = "🖨️ " + _("Print Employee PDF")
     print_employee.attrs = {
-        "class": "btn btn-block btn-info btn-sm",
+        "class": "btn btn-block btn-info",
         "style": "margin-bottom: 1rem;",
         "data-action": "post-object",
         "onclick": RID_JS,
@@ -397,8 +404,14 @@ class EmploymentDocumentAdminForm(forms.ModelForm):
 
 @admin.register(EmploymentDocument)
 class EmploymentDocumentAdmin(
-    ConcurrentModelAdmin, HelpPageMixin, ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
-):
+    SimpleHistoryAdmin,
+    DjangoObjectActions,
+    ImportExportModelAdmin,
+    ConcurrentModelAdmin,
+    HelpPageMixin,
+    ImportExportGuardMixin,
+    ManagerOnlyHistoryMixin
+    ):
     form = EmploymentDocumentAdminForm
     resource_classes = [EmploymentDocumentResource]
     list_display = ("status_text", "code", "employee", "kind_text", "title", "period_display", "updated_at")
@@ -547,7 +560,18 @@ class EmploymentDocumentAdmin(
             Employee.objects.select_related("person_role__person", "person_role__role").get(pk=obj.employee_id)
         )
         signatures = seal_signatures_context(obj)
-        ctx = {"doc": obj, "org": OrgInfo.get_solo(), "emp": emp, "person": emp.person_role.person, "role": emp.person_role.role, "signatures": signatures}
+        ctx = {
+            "doc": obj,
+            "org": OrgInfo.get_solo(),
+            "emp": emp, "person": emp.person_role.person,
+            "role": emp.person_role.role,
+            "signatures": signatures,
+            'signers': [
+                {'label': emp.person_role.person.last_name},
+                {'label': 'WiRef'},
+                {'label': 'Chair'},
+            ]
+        }
         return render_pdf_response(
             "employees/document_receipt_pdf.html",
             ctx,
@@ -555,7 +579,7 @@ class EmploymentDocumentAdmin(
             filename=f"EDOC__{obj.code}.pdf",
         )
     print_receipt.label = "🖨️ " + _("Print document receipt PDF")
-    print_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
+    print_receipt.attrs = {"class": "btn btn-block btn-info","style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     @safe_admin_action
@@ -586,11 +610,26 @@ class EmploymentDocumentAdmin(
 
         leave_amount_hours = to_hours(leave_amount_minutes)
         daily_expected_hours = to_hours(int(daily_minutes)) if daily_minutes else Decimal("0.00")
-        ctx = {"doc": obj, "org": OrgInfo.get_solo(), "emp": emp, "person": emp.person_role.person, "role": emp.person_role.role, "leave_amount_m": leave_amount_minutes, "leave_amount_h": leave_amount_hours, "daily_expected_h": daily_expected_hours, "signatures": signatures}
+        ctx = {
+            "doc": obj,
+            "org": OrgInfo.get_solo(),
+            "emp": emp,
+            "person": emp.person_role.person,
+            "role": emp.person_role.role,
+            "leave_amount_m": leave_amount_minutes,
+            "leave_amount_h": leave_amount_hours,
+            "daily_expected_h": daily_expected_hours,
+            "signatures": signatures,
+            'signers': [
+                {'label': emp.person_role.person.last_name},
+                {'label': 'WiRef'},
+                {'label': 'Chair'},
+            ]
+        }
         
         return render_pdf_response("employees/leaverequest_receipt_pdf.html", ctx, request, filename=f"EDOC_{obj.code}.pdf",)
     print_leaverequest_receipt.label = "🖨️ " + _("Print leave request receipt PDF")
-    print_leaverequest_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
+    print_leaverequest_receipt.attrs = {"class": "btn btn-block btn-info","style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     @safe_admin_action
@@ -609,10 +648,22 @@ class EmploymentDocumentAdmin(
         )
         signatures = seal_signatures_context(obj)
         duration_days_incl = getattr(obj, "duration_weekdays_inclusive", None) or 0
-        ctx = {"doc": obj, "org": OrgInfo.get_solo(), "emp": emp, "person": emp.person_role.person, "role": emp.person_role.role, "signatures": signatures}
+        ctx = {
+            "doc": obj,
+            "org": OrgInfo.get_solo(),
+            "emp": emp,
+            "person": emp.person_role.person,
+            "role": emp.person_role.role,
+            "signatures": signatures,
+            'signers': [
+                {'label': emp.person_role.person.last_name},
+                {'label': 'WiRef'},
+                {'label': 'Chair'},
+            ]
+        }
         return render_pdf_response("employees/sicknote_receipt_pdf.html", ctx, request, filename=f"EDOC_{obj.code}.pdf")
     print_sicknote_receipt.label = "🖨️ " + _("Print sick note receipt PDF")
-    print_sicknote_receipt.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
+    print_sicknote_receipt.attrs = {"class": "btn btn-block btn-info","style": "margin-bottom: 1rem;", "data-action": "post-object", "onclick": RID_JS}
 
 
     @transaction.atomic
@@ -629,7 +680,7 @@ class EmploymentDocumentAdmin(
         record_signature(request.user, action, obj, note=_("Document %(code)s submitted") % {"code": f"{obj.code}"})
         messages.success(request, _("Submitted."))
     submit_doc.label = _("Submit")
-    submit_doc.attrs = {"class": "btn btn-block btn-warning btn-sm","style": "margin-bottom: 1rem;",}
+    submit_doc.attrs = {"class": "btn btn-block btn-warning","style": "margin-bottom: 1rem;",}
 
 
     @transaction.atomic
@@ -649,7 +700,7 @@ class EmploymentDocumentAdmin(
         record_signature(request.user, action, obj, note=_("Document %(code)s withdrawn") % {"code": f"{obj.code}"})
         messages.success(request, _("Withdrawn."))
     withdraw_doc.label = _("Withdraw submission")
-    withdraw_doc.attrs = {"class": "btn btn-block btn-secondary btn-sm","style": "margin-bottom: 1rem;",}
+    withdraw_doc.attrs = {"class": "btn btn-block btn-secondary","style": "margin-bottom: 1rem;",}
 
 
     @transaction.atomic
@@ -669,7 +720,7 @@ class EmploymentDocumentAdmin(
         record_signature(request.user, action, obj, note=_("Document %(code)s approved (WiRef)") % {"code": f"{obj.code}"})
         messages.success(request, _("Approved (WiRef)."))
     approve_wiref_doc.label = _("Approve (WiRef)")
-    approve_wiref_doc.attrs = {"class": "btn btn-block btn-success btn-sm","style": "margin-bottom: 1rem;",}
+    approve_wiref_doc.attrs = {"class": "btn btn-block btn-success","style": "margin-bottom: 1rem;",}
 
 
     @transaction.atomic
@@ -689,7 +740,7 @@ class EmploymentDocumentAdmin(
         record_signature(request.user, action, obj, note=_("Document %(code)s approved (Chair)") % {"code": f"{obj.code}"})
         messages.success(request, _("Approved (Chair)."))
     approve_chair_doc.label = _("Approve (Chair)")
-    approve_chair_doc.attrs = {"class": "btn btn-block btn-success btn-sm","style": "margin-bottom: 1rem;",}
+    approve_chair_doc.attrs = {"class": "btn btn-block btn-success","style": "margin-bottom: 1rem;",}
 
 
     @transaction.atomic
@@ -709,7 +760,7 @@ class EmploymentDocumentAdmin(
         record_signature(request.user, action, obj, note=_("Document %(code)s rejected (WiRef)") % {"code": f"{obj.code}"})
         messages.success(request, _("Rejected (WiRef)."))
     reject_wiref_doc.label = _("Reject (WiRef)")
-    reject_wiref_doc.attrs = {"class": "btn btn-block btn-danger btn-sm","style": "margin-bottom: 1rem;",}
+    reject_wiref_doc.attrs = {"class": "btn btn-block btn-danger","style": "margin-bottom: 1rem;",}
 
 
     @transaction.atomic
@@ -729,7 +780,7 @@ class EmploymentDocumentAdmin(
         record_signature(request.user, action, obj, note=_("Document %(code)s rejected (Chair)") % {"code": f"{obj.code}"})
         messages.success(request, _("Rejected (Chair)."))
     reject_chair_doc.label = _("Reject (Chair)")
-    reject_chair_doc.attrs = {"class": "btn btn-block btn-danger btn-sm","style": "margin-bottom: 1rem;",}
+    reject_chair_doc.attrs = {"class": "btn btn-block btn-danger","style": "margin-bottom: 1rem;",}
 
 
 # =========================
@@ -820,8 +871,14 @@ class TimeSheetStateFilter(admin.SimpleListFilter):
 
 @admin.register(TimeSheet)
 class TimeSheetAdmin(
-    ConcurrentModelAdmin, HelpPageMixin, ManagerGateMixin, ImportExportGuardMixin, DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin
-):
+    SimpleHistoryAdmin,
+    DjangoObjectActions,
+    ImportExportModelAdmin,
+    ConcurrentModelAdmin,
+    HelpPageMixin,
+    ImportExportGuardMixin,
+    ManagerOnlyHistoryMixin
+    ):
     resource_classes = [TimeSheetResource]
     list_display = (
         "status_text",        
@@ -1174,6 +1231,11 @@ class TimeSheetAdmin(
             "leave_year_label": ly_label,
             "entries": entries,
             "signatures": signatures,
+            'signers': [
+                {'label': emp.person_role.person.last_name},
+                {'label': 'WiRef'},
+                {'label': 'Chair'},
+            ]
         }
         return render_pdf_response(
             "employees/timesheet_pdf.html",
@@ -1182,7 +1244,7 @@ class TimeSheetAdmin(
             f"JOURNAL_{emp.person_role.person.last_name}_{obj.year}-{obj.month:02d}.pdf",
         )
     print_timesheet.label = "🖨️ " + _("Print Timesheet PDF")
-    print_timesheet.attrs = {"class": "btn btn-block btn-info btn-sm","style": "margin-bottom: 1rem;","data-action": "post-object", "onclick": RID_JS}
+    print_timesheet.attrs = {"class": "btn btn-block btn-info","style": "margin-bottom: 1rem;","data-action": "post-object", "onclick": RID_JS}
 
 
     # --- workflow transitions ---
@@ -1201,7 +1263,7 @@ class TimeSheetAdmin(
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s submitted") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Timesheet submitted."))
     submit_timesheet.label = _("Submit")
-    submit_timesheet.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;",}
+    submit_timesheet.attrs = {"class": "btn btn-block btn-warning", "style": "margin-bottom: 1rem;",}
 
 
     # WITHDRAW by ASS (only if no approvals yet)
@@ -1222,7 +1284,7 @@ class TimeSheetAdmin(
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s withdrawn") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Submission withdrawn."))
     withdraw_timesheet.label = _("Withdraw submission")
-    withdraw_timesheet.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;",}
+    withdraw_timesheet.attrs = {"class": "btn btn-block btn-secondary", "style": "margin-bottom: 1rem;",}
 
 
     # APPROVE by WIREF
@@ -1243,7 +1305,7 @@ class TimeSheetAdmin(
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s approved") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Approved by WiRef."))
     approve_wiref.label = _("Approve (WiRef)")
-    approve_wiref.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-bottom: 1rem;",}
+    approve_wiref.attrs = {"class": "btn btn-block btn-success", "style": "margin-bottom: 1rem;",}
 
 
     # APPROVE by CHAIR
@@ -1264,7 +1326,7 @@ class TimeSheetAdmin(
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s approved") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Approved by Chair."))
     approve_chair.label = _("Approve (Chair)")
-    approve_chair.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-bottom: 1rem;",}
+    approve_chair.attrs = {"class": "btn btn-block btn-success", "style": "margin-bottom: 1rem;",}
 
 
     # REJECT by WIREF
@@ -1285,7 +1347,7 @@ class TimeSheetAdmin(
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s rejected") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Rejected by WiRef."))
     reject_wiref.label = _("Reject (WiRef)")
-    reject_wiref.attrs = {"class": "btn btn-block btn-danger btn-sm", "style": "margin-bottom: 1rem;",}
+    reject_wiref.attrs = {"class": "btn btn-block btn-danger", "style": "margin-bottom: 1rem;",}
 
 
     # REJECT by CHAIR
@@ -1306,7 +1368,7 @@ class TimeSheetAdmin(
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s rejected") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Rejected by Chair."))
     reject_chair.label = _("Reject (Chair)")
-    reject_chair.attrs = {"class": "btn btn-block btn-danger btn-sm", "style": "margin-bottom: 1rem;",}
+    reject_chair.attrs = {"class": "btn btn-block btn-danger", "style": "margin-bottom: 1rem;",}
 
 
     # LOCK Timesheet (CHAIR or WIREF)
@@ -1327,7 +1389,7 @@ class TimeSheetAdmin(
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s locked") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Locked."))
     lock_timesheet.label = _("Lock")
-    lock_timesheet.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;"}
+    lock_timesheet.attrs = {"class": "btn btn-block btn-secondary", "style": "margin-bottom: 1rem;"}
 
 
     @transaction.atomic
@@ -1344,7 +1406,7 @@ class TimeSheetAdmin(
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s unlocked") % {"period": f"{obj.year}-{obj.month:02d}"})
         messages.success(request, _("Unlocked."))
     unlock_timesheet.label = _("Unlock")
-    unlock_timesheet.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;"}
+    unlock_timesheet.attrs = {"class": "btn btn-block btn-warning", "style": "margin-bottom: 1rem;"}
 
 
     def get_readonly_fields(self, request, obj=None):
@@ -1372,7 +1434,13 @@ class TimeSheetAdmin(
 # =========================
 
 @admin.register(HolidayCalendar)
-class HolidayCalendarAdmin(ImportExportGuardMixin, ImportExportModelAdmin, SimpleHistoryAdmin):
+class HolidayCalendarAdmin(
+    SimpleHistoryAdmin,
+    ImportExportModelAdmin,
+    ImportExportGuardMixin,
+    ManagerGateMixin,
+    ManagerOnlyHistoryMixin
+    ):
     resource_classes = [HolidayCalendarResource]
     list_display = ("name", "is_active", "updated_at")
     list_filter = ("is_active",)
@@ -1397,7 +1465,14 @@ class HolidayCalendarAdmin(ImportExportGuardMixin, ImportExportModelAdmin, Simpl
 # =========================
 
 @admin.register(TimeEntry)
-class TimeEntryAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, ImportExportModelAdmin):
+class TimeEntryAdmin(
+    SimpleHistoryAdmin,
+    ImportExportModelAdmin,
+    ConcurrentModelAdmin,
+    HelpPageMixin,
+    ImportExportGuardMixin,
+    ManagerOnlyHistoryMixin
+    ):
     resource_classes = [TimeEntryResource]
     form = TimeEntryAdminForm
     list_display = ("timesheet", "date", "minutes", "kind", "short_comment", "updated_at")

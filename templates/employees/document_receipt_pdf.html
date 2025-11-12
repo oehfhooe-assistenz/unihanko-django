@@ -1,105 +1,61 @@
 {% extends "pdf/base.html" %}
-{% load i18n static %} 
+{% load i18n %}
 
-{% block extra_styles %} .sig-section { margin-top: 1mm; page-break-inside: avoid; } .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; } .sig-box { width: 100%; height: 28mm; border: 1px dashed #9aa3af;
-border-radius: 4px; position: relative; background: #fff; } .sig-box .hint { position: absolute; top: 4px; left: 6px; font-size: 10px; color: #9aa3af; } .sig-meta { margin-top: 6px; font-size: 11px; color: #6b7280; } 
-{% endblock %}
+{% block header_title %}{% trans "Employment Document Receipt" %} — {{ doc.code }}{% endblock %}
 
-{% block pdf_title %}{{ doc.code }} — {% trans "Employee document receipt" %}{% endblock %}
-{% block header_title %}{% trans "Employee document receipt" %}{% endblock %} 
-{% block header_subtitle %}{{ person.first_name }} {{ person.last_name }} {% if doc.start_date %} | {{ doc.start_date|date:"j. F Y"|default:"—" }} — {% endif %}{% if doc.end_date %}{{ doc.end_date|date:"j. F Y"|default:"—" }}{% endif %}{% endblock %}
-{% block footer_left %}© UniHanko — {{ now|date:"Y-m-d H:i" }}{% endblock %} 
 {% block content %}
-<h2 style="margin:0 0 8px 0;">
-  {% trans "Employee document receipt: " %} <span>{{ person.first_name }} {{ person.last_name }}</span>
-</h2>
-<h3 style="margin:10px 0 6px 0;">
-  {{ role.name }}
-</h3>
+{% include '_includes/_org_header.html' with org=org %}
 
+<h1 class="document-title">{% trans "Employment Document Receipt" %}</h1>
+<p class="document-code">{{ doc.code }}</p>
 
-<h4>{% trans "Document Title | Subject: " %} <span style="color: (--ink);">{{ doc.title }}</span></h4>
-<br>
-<section style="border-left: 3px solid var(--brand); padding: 1mm 1mm 1mm 2mm;">
-<span style="text-align: justify; color: (--brand);"><h4>{% trans "Matter: " %}</h4></span> <p style="text-align: justify;">{{ doc.details }}</p>
-</section>
-<br>
-<section style="border-left: 3px solid var(--rule); padding: 1mm 1mm 1mm 2mm;">
-  <h4>{% trans "Document Information" %}</h4>
-<table>
-<tr>
-<th style="width: 30%;">{% trans "Document code and type" %}</th>
-<td style="width: 70%;">{{ doc.code }}; {{ doc.kind }} | {{ doc.get_kind_display }}</td>
-</tr>
-<tr>
-<th style="width: 30%;">{% trans "Document for submission to" %}</th>
-<td style="width: 70%;">{{ doc.relevant_third_party }}</td>
-</tr>
-{% if doc.pdf_upload %}
-<tr>
-<th style="width: 30%;">{% trans "Relevant PDF attachment(s)" %}</th>
-<td style="width: 70%;"><a href="{{ doc.pdf_upload.url }}">{{ doc.pdf_upload.name }}</a></td>
-</tr>
+{% include '_includes/_person_info_section.html' with person=person %}
+
+<div class="section">
+    <h2 class="section-title">{% trans "Document Details" %}</h2>
+    <div class="section-content">
+        <table class="info-table">
+            <tr>
+                <th>{% trans "Type" %}</th>
+                <td>{{ doc.get_kind_display }}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Title" %}</th>
+                <td>{{ doc.title }}</td>
+            </tr>
+            {% if doc.start_date or doc.end_date %}
+            <tr>
+                <th>{% trans "Period" %}</th>
+                <td>{% include '_includes/_date_period.html' with start_date=doc.start_date end_date=doc.end_date %}</td>
+            </tr>
+            {% endif %}
+            {% if doc.relevant_third_party %}
+            <tr>
+                <th>{% trans "Relevant Third Party" %}</th>
+                <td>{{ doc.relevant_third_party }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <th>{% trans "Status" %}</th>
+                <td>{% if doc.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+{% if doc.details %}
+<div class="section">
+    <h2 class="section-title">{% trans "Details" %}</h2>
+    <div class="section-content">
+        <p>{{ doc.details|linebreaksbr }}</p>
+    </div>
+</div>
 {% endif %}
-<tr>
-<th style="width: 30%;">{% trans "Document matter start date" %}</th>
-<td style="width: 70%;">{{ doc.start_date|date:"j. F Y"|default:"—" }}</td>
-</tr>
-<tr>
-<th style="width: 30%;">{% trans "Document matter end date" %}</th>
-<td style="width: 70%;">{{ doc.end_date|date:"j. F Y"|default:"—" }}</td>
-</tr>
-<tr>
-<th style="width: 30%;">{% trans "Created at" %}</th>
-<td style="width: 70%;">{{ doc.created_at }}</td>
-</tr>
-<tr>
-<th style="width: 30%;">{% trans "Updated at" %}</th>
-<td style="width: 70%;">{{ doc.updated_at }}</td>
-</tr>
-</table>
-</section>
 
-{% block styles %}
-  {{ block.super }}
-  <link rel="stylesheet" href="{% static 'hankosign/hs_seal.css' %}">
-{% endblock %}
+{% include '_includes/_signature_seal.html' with signatures=signatures %}
 
-{% include "hankosign/_attestation_seal.html" with signatures=signatures %}
+{% include '_includes/_signature_boxes.html' with count=3 signers=signers %}
 
-<h3 style="margin:6px 0 6px 0;">{% trans "Qualified Signatures" %}</h3>
-<div class="sig-section">
-  <div class="sig-grid">
-    <div class="sig-item">
-      <div class="sig-box">
-        <span style="font-size:1px;color:#fff">SIG_A_ANCHOR</span>
-        <div class="hint">{% trans "Place electronic signature here" %}</div>
-      </div>
-      <div class="sig-meta">{% trans "Signer" %}: {{ person.first_name }} {{ person.last_name }}</div>
-    </div>
+{% include '_includes/_disclaimer.html' %}
 
-    <div class="sig-item">
-      <div class="sig-box">
-        <span style="font-size:1px;color:#fff">SIG_B_ANCHOR</span>
-        <div class="hint">{% trans "Place electronic signature here" %}</div>
-      </div>
-      <div class="sig-meta">{% trans "Signer" %}: {% trans "WiRef" %}</div>
-    </div>
-
-    <div class="sig-item">
-      <div class="sig-box">
-        <span style="font-size:1px;color:#fff">SIG_C_ANCHOR</span>
-        <div class="hint">{% trans "Place electronic signature here" %}</div>
-      </div>
-      <div class="sig-meta">{% trans "Signer" %}: {% trans "Chair" %}</div>
-    </div>
-  </div>
-</div>
-
-<div style="color: (--muted)">
-<h4 style="margin:14px 0 6px 0; text-align: center; font-size: 10px;">{% trans "Important notice" %}</h4>
-<p style="font-size:6px; text-align: center;">
-    {% trans "This document is confidential and intended solely for the named recipient. Any review, distribution or use by others is prohibited." %}
-</p>
-</div>
 {% endblock %}

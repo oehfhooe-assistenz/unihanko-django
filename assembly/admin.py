@@ -4,14 +4,16 @@ from django.utils.safestring import mark_safe
 from django.template.loader import render_to_string
 from django.db import transaction
 from django import forms
-
+from django.utils import timezone
+from django.utils.text import slugify
 from django_object_actions import DjangoObjectActions
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
 from concurrency.admin import ConcurrentModelAdmin
+from adminsortable2.admin import SortableInlineAdminMixin, SortableAdminBase
 
-from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action
+from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action, ManagerOnlyHistoryMixin
 from core.pdf import render_pdf_response
 from core.utils.authz import is_assembly_manager  # You'll need to create this
 from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for_boolean
@@ -65,7 +67,11 @@ class SessionItemResource(resources.ModelResource):
 # ============================================================================
 
 @admin.register(Mandate)
-class MandateAdmin(ConcurrentModelAdmin, SimpleHistoryAdmin):
+class MandateAdmin(
+    SimpleHistoryAdmin, 
+    ConcurrentModelAdmin,
+    ManagerOnlyHistoryMixin
+    ):
     list_display = ('position', 'person_role', 'officer_role', 'start_date', 'end_date', 'composition')
     list_filter = ('officer_role', 'composition__term')
     search_fields = ('person_role__person__first_name', 'person_role__person__last_name', 
@@ -85,7 +91,7 @@ class MandateInline(admin.StackedInline):
     model = Mandate
     extra = 1
     max_num = 9
-    fields = ('position', 'person_role', 'officer_role', 'start_date', 'end_date', 
+    fields = ('position', 'person_role', 'officer_role', 'party', 'start_date', 'end_date', 
               'backup_person_role', 'backup_person_text')
     autocomplete_fields = ('person_role', 'backup_person_role')
     ordering = ('position',)
@@ -98,10 +104,10 @@ class VoteInline(admin.StackedInline):
     autocomplete_fields = ('mandate',)
 
 
-class SessionItemInline(admin.StackedInline):
+class SessionItemInline(SortableInlineAdminMixin, ManagerOnlyHistoryMixin, admin.StackedInline):
     model = SessionItem
     extra = 0
-    fields = ('order', 'kind', 'title', 'item_code')
+    fields = ('kind', 'title', 'item_code')
     readonly_fields = ('item_code',)
     show_change_link = True
     can_delete = False
@@ -115,8 +121,15 @@ class SessionItemInline(admin.StackedInline):
 # ============================================================================
 
 @admin.register(Term)
-class TermAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin, 
-                DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class TermAdmin(
+    SimpleHistoryAdmin,
+    DjangoObjectActions,
+    ImportExportModelAdmin,
+    ConcurrentModelAdmin,
+    HelpPageMixin,
+    ImportExportGuardMixin,
+    ManagerOnlyHistoryMixin,
+    ):
     resource_classes = [TermResource]
     
     list_display = ('display_code', 'label', 'start_date', 'end_date', 'is_active', 
@@ -204,7 +217,7 @@ class TermAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin,
         record_signature(request.user, action, obj, note=_("Term %(code)s locked") % {"code": obj.code})
         messages.success(request, _("Term locked."))
     lock_term.label = _("Lock term")
-    lock_term.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;"}
+    lock_term.attrs = {"class": "btn btn-block btn-warning", "style": "margin-bottom: 1rem;"}
     
     @transaction.atomic
     @safe_admin_action
@@ -223,7 +236,7 @@ class TermAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin,
         record_signature(request.user, action, obj, note=_("Term %(code)s unlocked") % {"code": obj.code})
         messages.success(request, _("Term unlocked."))
     unlock_term.label = _("Unlock term")
-    unlock_term.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-bottom: 1rem;"}
+    unlock_term.attrs = {"class": "btn btn-block btn-success", "style": "margin-bottom: 1rem;"}
     
     @safe_admin_action
     def print_term(self, request, obj):
@@ -240,7 +253,7 @@ class TermAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin,
         )
     print_term.label = "🖨️ " + _("Print Term PDF")
     print_term.attrs = {
-        "class": "btn btn-block btn-info btn-sm",
+        "class": "btn btn-block btn-info",
         "style": "margin-bottom: 1rem;",
         "data-action": "post-object",
         "onclick": RID_JS
@@ -255,8 +268,15 @@ class TermAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin,
 # ============================================================================
 
 @admin.register(Composition)
-class CompositionAdmin(ConcurrentModelAdmin, HelpPageMixin, DjangoObjectActions, 
-                       ImportExportGuardMixin, SimpleHistoryAdmin):
+class CompositionAdmin(
+    SimpleHistoryAdmin,
+    DjangoObjectActions,
+    ImportExportModelAdmin,
+    ConcurrentModelAdmin,
+    HelpPageMixin,
+    ImportExportGuardMixin,
+    ManagerOnlyHistoryMixin
+    ):
     list_display = ('term', 'active_mandates_display', 'updated_at')
     list_display_links = ('term',)
     autocomplete_fields = ('term',)
@@ -305,7 +325,7 @@ class CompositionAdmin(ConcurrentModelAdmin, HelpPageMixin, DjangoObjectActions,
         )
     print_composition.label = "🖨️ " + _("Print Board Roster PDF")
     print_composition.attrs = {
-        "class": "btn btn-block btn-info btn-sm",
+        "class": "btn btn-block btn-info",
         "style": "margin-bottom: 1rem;",
         "data-action": "post-object",
         "onclick": RID_JS
@@ -320,10 +340,17 @@ class CompositionAdmin(ConcurrentModelAdmin, HelpPageMixin, DjangoObjectActions,
 # ============================================================================
 
 @admin.register(Session)
-class SessionAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin,
-                   DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class SessionAdmin(
+    SimpleHistoryAdmin,
+    DjangoObjectActions,
+    SortableAdminBase,
+    ImportExportModelAdmin,
+    ConcurrentModelAdmin,
+    HelpPageMixin,
+    ImportExportGuardMixin,
+    ManagerOnlyHistoryMixin
+    ):
     resource_classes = [SessionResource]
-    
     list_display = ('status_text', 'code', 'session_date', 'session_type', 
                     'location', 'updated_at')
     list_display_links = ('code',)
@@ -435,7 +462,7 @@ class SessionAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin,
         record_signature(request.user, action, obj, note=_("Session %(code)s submitted") % {"code": obj.code})
         messages.success(request, _("Submitted."))
     submit_session.label = _("Submit")
-    submit_session.attrs = {"class": "btn btn-block btn-warning btn-sm", "style": "margin-bottom: 1rem;"}
+    submit_session.attrs = {"class": "btn btn-block btn-warning", "style": "margin-bottom: 1rem;"}
     
     @transaction.atomic
     @safe_admin_action
@@ -454,7 +481,7 @@ class SessionAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin,
         record_signature(request.user, action, obj, note=_("Session %(code)s withdrawn") % {"code": obj.code})
         messages.success(request, _("Withdrawn."))
     withdraw_session.label = _("Withdraw")
-    withdraw_session.attrs = {"class": "btn btn-block btn-secondary btn-sm", "style": "margin-bottom: 1rem;"}
+    withdraw_session.attrs = {"class": "btn btn-block btn-secondary", "style": "margin-bottom: 1rem;"}
     
     @transaction.atomic
     @safe_admin_action
@@ -473,7 +500,7 @@ class SessionAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin,
         record_signature(request.user, action, obj, note=_("Session %(code)s approved") % {"code": obj.code})
         messages.success(request, _("Approved."))
     approve_session.label = _("Approve (Chair)")
-    approve_session.attrs = {"class": "btn btn-block btn-success btn-sm", "style": "margin-bottom: 1rem;"}
+    approve_session.attrs = {"class": "btn btn-block btn-success", "style": "margin-bottom: 1rem;"}
     
     @transaction.atomic
     @safe_admin_action
@@ -492,7 +519,7 @@ class SessionAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin,
         record_signature(request.user, action, obj, note=_("Session %(code)s rejected") % {"code": obj.code})
         messages.success(request, _("Rejected."))
     reject_session.label = _("Reject")
-    reject_session.attrs = {"class": "btn btn-block btn-danger btn-sm", "style": "margin-bottom: 1rem;"}
+    reject_session.attrs = {"class": "btn btn-block btn-danger", "style": "margin-bottom: 1rem;"}
     
     @transaction.atomic
     @safe_admin_action
@@ -516,7 +543,7 @@ class SessionAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin,
         record_signature(request.user, action, obj, note=_("Session %(code)s sent to KoKo/HSG") % {"code": obj.code})
         messages.success(request, _("Verified and sent to KoKo/HSG."))
     verify_session.label = _("Verify (Sent to KoKo/HSG)")
-    verify_session.attrs = {"class": "btn btn-block btn-primary btn-sm", "style": "margin-bottom: 1rem;"}
+    verify_session.attrs = {"class": "btn btn-block btn-primary", "style": "margin-bottom: 1rem;"}
     
     @safe_admin_action
     def print_session(self, request, obj):
@@ -529,12 +556,12 @@ class SessionAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin,
         items = obj.items.all().order_by('order')
         ctx = {"session": obj, "items": items, "org": OrgInfo.get_solo(), "signatures": signatures}
         return render_pdf_response(
-            "assembly/certs/session_pdf.html", ctx, request,
+            "assembly/protocol/session_pdf.html", ctx, request,
             f"HV-PROTOCOL_{obj.code}.pdf"
         )
     print_session.label = "🖨️ " + _("Print Protocol PDF")
     print_session.attrs = {
-        "class": "btn btn-block btn-info btn-sm",
+        "class": "btn btn-block btn-info",
         "style": "margin-bottom: 1rem;",
         "data-action": "post-object",
         "onclick": RID_JS
@@ -578,8 +605,15 @@ class SessionItemAdminForm(forms.ModelForm):
 
 
 @admin.register(SessionItem)
-class SessionItemAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMixin,
-                       DjangoObjectActions, ImportExportModelAdmin, SimpleHistoryAdmin):
+class SessionItemAdmin(
+    SimpleHistoryAdmin,
+    DjangoObjectActions,
+    ImportExportModelAdmin,
+    ConcurrentModelAdmin,
+    HelpPageMixin,
+    ImportExportGuardMixin,
+    ManagerOnlyHistoryMixin
+    ):
     resource_classes = [SessionItemResource]
     form = SessionItemAdminForm
     
@@ -609,7 +643,7 @@ class SessionItemAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMix
             'classes': ('collapse',)
         }),
         (_("Election"), {
-            'fields': ('elected_person_role',),
+            'fields': ('elected_person_role', 'elected_person_text_reference', 'elected_role_text_reference',),
             'classes': ('collapse',)
         }),
         (_("Notes"), {
@@ -623,12 +657,70 @@ class SessionItemAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMix
         }),
     )
     
-    change_actions = ('print_item',)
+    change_actions = ('print_item', 'print_dispatch_document')
     
     @admin.display(description=_("Signatures"))
     def signatures_box(self, obj):
         return render_signatures_box(obj)
     
+    def get_change_actions(self, request, object_id, form_url):
+        """Show dispatch print only for ELEC items"""
+        actions = super().get_change_actions(request, object_id, form_url)
+        
+        obj = self.get_object(request, object_id)
+        if obj:
+            # Only show dispatch print for election items
+            if obj.kind != SessionItem.Kind.ELECTION or SessionItem.Kind.RESOLUTION:
+                if 'print_dispatch_document' in actions:
+                    actions = [a for a in actions if a != 'print_dispatch_document']
+        
+        return actions
+    
+    @safe_admin_action
+    def print_dispatch_document(self, request, obj):
+        """Print dispatch/appointment document for special roles (Kollegiumsmitglied, Kurator)"""
+        
+        if obj.kind != SessionItem.Kind.ELECTION:
+            messages.error(request, _("Only election items can generate dispatch documents."))
+            return
+        
+        if not obj.elected_person_role or obj.elected_person_text_reference or obj.elected_role_text_reference:
+            messages.error(request, _("No person elected or temporary placeholders - cannot generate document."))
+            return
+        
+        action = get_action("RELEASE:-@assembly.sessionitem")
+        if not action:
+            messages.error(request, _("Release action not configured."))
+            return
+        sign_once(request, action, obj, note=_("Printed dispatch document"), window_seconds=10)
+        signatures = seal_signatures_context(obj)
+        ctx = {
+            "item": obj,
+            "session": obj.session,
+            "person_role": obj.elected_person_role,
+            "org": OrgInfo.get_solo(),
+            "signatures": signatures,
+            # Prepare signers for qualified signature boxes
+            "signers": [
+                {'label': _("per pro, the ÖH FH OÖ")},
+            ]
+        }
+        if obj.elected_person_role:
+            fname = slugify(obj.elected_person_role.person.last_name)[:40]
+        else:
+            fname = 'TEMPREF'
+        return render_pdf_response(
+            "assembly/certs/dispatchreceipt_pdf.html", ctx, request,
+            f"DISPATCH_{fname}_{obj.item_code}.pdf"
+        )
+    print_dispatch_document.label = "📜 " + _("Print Dispatch Document")
+    print_dispatch_document.attrs = {
+        "class": "btn btn-block btn-success",
+        "style": "margin-bottom: 1rem;",
+        "data-action": "post-object",
+        "onclick": RID_JS
+    }
+
     @safe_admin_action
     def print_item(self, request, obj):
         action = get_action("RELEASE:-@assembly.sessionitem")
@@ -644,7 +736,7 @@ class SessionItemAdmin(ConcurrentModelAdmin, HelpPageMixin, ImportExportGuardMix
         )
     print_item.label = "🖨️ " + _("Print Item PDF")
     print_item.attrs = {
-        "class": "btn btn-block btn-info btn-sm",
+        "class": "btn btn-block btn-info",
         "style": "margin-bottom: 1rem;",
         "data-action": "post-object",
         "onclick": RID_JS

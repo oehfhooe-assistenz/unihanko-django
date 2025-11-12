@@ -33,8 +33,23 @@
   max-width: 100% !important;
 }
 
+.field-elected_person_text_reference input {
+    background-color: #fff3cd !important;
+    border: 2px solid #ffc107 !important;
+}
+
+.field-elected_role_text_reference input {
+    background-color: #fff3cd !important;
+    border: 2px solid #ffc107 !important;
+}
+
 /* global nuke (optional): hide related action icons everywhere */
 .related-widget-wrapper .related-widget-wrapper-link { display:none !important; }
+
+input[name="_addanother"],
+button[name="_addanother"] {
+    display: none !important;
+}
 
 
 /* === Workflow state (LEFT border) === */
