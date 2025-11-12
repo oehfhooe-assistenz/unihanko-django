@@ -114,6 +114,7 @@ INSTALLED_APPS = [
     'employees',
     'assembly',
     'academia',
+    'academia_audit',
 
     'organisation',
 ]
