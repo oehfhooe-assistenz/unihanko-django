@@ -1,13 +1,13 @@
 {% extends "pdf/base.html" %}
 {% load i18n %}
 
-{% block header_title %}{% trans "ECTS Reimbursement Request" %} — {{ request.reference_code }}{% endblock %}
+{% block header_title %}{% trans "ECTS Reimbursement Request" %} — {{ request_obj.reference_code }}{% endblock %}
 
 {% block content %}
 {% include '_includes/_org_header.html' with org=org %}
 
 <h1 class="document-title">{% trans "ECTS Reimbursement Request Form" %}</h1>
-<p class="document-code">{{ request.reference_code }}</p>
+<p class="document-code">{{ request_obj.reference_code }}</p>
 
 <div class="section">
     <h2 class="section-title">{% trans "Request Details" %}</h2>
@@ -15,23 +15,23 @@
         <table class="info-table">
             <tr>
                 <th>{% trans "Reference Code" %}</th>
-                <td><strong>{{ request.reference_code }}</strong></td>
+                <td><strong>{{ request_obj.reference_code }}</strong></td>
             </tr>
             <tr>
                 <th>{% trans "Semester" %}</th>
-                <td>{{ request.semester.code }} — {{ request.semester.label }}</td>
+                <td>{{ request_obj.semester.code }} — {{ request_obj.semester.display_name }}</td>
             </tr>
             <tr>
                 <th>{% trans "Person" %}</th>
-                <td>{{ request.person.first_name }} {{ request.person.last_name }}</td>
+                <td>{{ request_obj.person_role.person.first_name }} {{ request_obj.person_role.person.last_name }}</td>
             </tr>
             <tr>
                 <th>{% trans "Submission Date" %}</th>
-                <td>{{ request.created_at|date:"d.m.Y H:i" }}</td>
+                <td>{{ request_obj.created_at|date:"d.m.Y H:i" }}</td>
             </tr>
             <tr>
                 <th>{% trans "Status" %}</th>
-                <td>{{ request.get_stage_display }}</td>
+                <td>{{ request_obj.get_stage_display }}</td>
             </tr>
         </table>
     </div>
@@ -49,7 +49,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for course in request.courses.all %}
+                {% for course in request_obj.courses.all %}
                 <tr>
                     <td>{{ course.course_code|default:"—" }}</td>
                     <td>{{ course.course_name|default:"—" }}</td>
@@ -62,7 +62,7 @@
                 {% endfor %}
                 <tr class="total-row">
                     <td colspan="2" class="text-right"><strong>{% trans "Total ECTS" %}</strong></td>
-                    <td class="text-right"><strong>{{ request.total_ects|floatformat:2 }}</strong></td>
+                    <td class="text-right"><strong>{{ request_obj.total_ects|floatformat:2 }}</strong></td>
                 </tr>
             </tbody>
         </table>
@@ -76,7 +76,7 @@
             <tr>
                 <th>{% trans "Person Roles" %}</th>
                 <td>
-                    {% for pr in request.person.person_roles.all %}
+                    {% for pr in request_obj.person_role.person.person_roles.all %}
                         {% if pr.role.is_eligible_for_ects %}
                             {{ pr.role.name }}
                             ({% include '_includes/_date_period.html' with start_date=pr.start_date end_date=pr.end_date %})
@@ -100,8 +100,8 @@
             <p>{{ org.ects_affidavit_1|linebreaksbr|default:"—" }}</p>
             <p class="signature-line">
                 <label>{% trans "Confirmed" %}:</label>
-                {% if request.affidavit_1_at %}
-                    {{ request.affidavit_1_at|date:"d.m.Y H:i" }}
+                {% if request_obj.affidavit1_confirmed_at %}
+                    {{ request_obj.affidavit1_confirmed_at|date:"d.m.Y H:i" }}
                 {% else %}
                     {% trans "Not confirmed" %}
                 {% endif %}
@@ -113,8 +113,8 @@
             <p>{{ org.ects_affidavit_2|linebreaksbr|default:"—" }}</p>
             <p class="signature-line">
                 <label>{% trans "Confirmed" %}:</label>
-                {% if request.affidavit_2_at %}
-                    {{ request.affidavit_2_at|date:"d.m.Y H:i" }}
+                {% if request_obj.affidavit2_confirmed_at %}
+                    {{ request_obj.affidavit2_confirmed_at|date:"d.m.Y H:i" }}
                 {% else %}
                     {% trans "Not confirmed" %}
                 {% endif %}
@@ -123,29 +123,29 @@
     </div>
 </div>
 
-{% if request.signed_form %}
+{% if request_obj.uploaded_form %}
 <div class="section">
     <h2 class="section-title">{% trans "Uploaded Form" %}</h2>
     <div class="section-content">
         <table class="info-table">
             <tr>
                 <th>{% trans "File" %}</th>
-                <td>{{ request.signed_form.name }}</td>
+                <td>{{ request_obj.uploaded_form.name }}</td>
             </tr>
             <tr>
                 <th>{% trans "Upload Date" %}</th>
-                <td>{{ request.form_uploaded_at|date:"d.m.Y H:i"|default:"—" }}</td>
+                <td>{{ request_obj.uploaded_form_at|date:"d.m.Y H:i"|default:"—" }}</td>
             </tr>
         </table>
     </div>
 </div>
 {% endif %}
 
-{% if request.notes %}
+{% if request_obj.notes %}
 <div class="section">
     <h2 class="section-title">{% trans "Notes" %}</h2>
     <div class="section-content">
-        <p>{{ request.notes|linebreaksbr }}</p>
+        <p>{{ request_obj.notes|linebreaksbr }}</p>
     </div>
 </div>
 {% endif %}
