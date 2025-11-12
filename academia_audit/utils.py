@@ -45,7 +45,7 @@ def synchronize_audit_entries(audit_semester):
     person_roles = PersonRole.objects.filter(
         Q(start_date__lte=semester.end_date),
         Q(end_date__gte=semester.start_date) | Q(end_date__isnull=True),
-        role__is_eligible_for_ects=True
+        role__ects_cap__gt=0
     ).select_related('person', 'role')
 
     # Group by person
@@ -79,7 +79,7 @@ def synchronize_audit_entries(audit_semester):
             role_calcs.append({
                 'role_name': pr.role.name,
                 'person_role_id': pr.id,
-                'nominal_ects': float(pr.role.max_ects_per_semester),
+                'nominal_ects': float(pr.role.ects_cap),
                 'held_from': pr.start_date.isoformat(),
                 'held_to': pr.end_date.isoformat() if pr.end_date else 'ongoing',
                 'aliquoted_ects': float(aliquoted),

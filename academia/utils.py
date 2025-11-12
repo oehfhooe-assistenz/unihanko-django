@@ -90,7 +90,7 @@ def calculate_aliquoted_ects(person_role, semester):
     percentage = Decimal(days_worked) / Decimal(semester_days)
 
     # Apply to role's max ECTS
-    max_ects = Decimal(str(person_role.role.max_ects_per_semester))
+    max_ects = Decimal(str(person_role.role.ects_cap))
     aliquoted = (max_ects * percentage).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     return aliquoted
@@ -132,6 +132,12 @@ def calculate_overlap_percentage(person_role, semester):
 @transaction.atomic
 def synchronize_audit_entries(semester):
     """
+    DEPRECATED: Use academia_audit.utils.synchronize_audit_entries() instead.
+
+    This function works with the deprecated SemesterAuditEntry model.
+    For new audit workflows, use AuditSemester and AuditEntry models
+    in the academia_audit app.
+
     Create or update SemesterAuditEntry records for a semester.
 
     This function:
@@ -151,6 +157,14 @@ def synchronize_audit_entries(semester):
     Returns:
         tuple: (created_count, skipped_count)
     """
+    import warnings
+    warnings.warn(
+        "synchronize_audit_entries in academia.utils is deprecated. "
+        "Use academia_audit.utils.synchronize_audit_entries() instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+
     from people.models import PersonRole, Person
     from academia.models import InboxRequest, SemesterAuditEntry
     from hankosign.utils import has_sig
@@ -192,7 +206,7 @@ def synchronize_audit_entries(semester):
             role_calcs.append({
                 'role_name': pr.role.name,
                 'person_role_id': pr.id,
-                'nominal_ects': float(pr.role.max_ects_per_semester),
+                'nominal_ects': float(pr.role.ects_cap),
                 'held_from': pr.start_date.isoformat(),
                 'held_to': pr.end_date.isoformat() if pr.end_date else 'ongoing',
                 'aliquoted_ects': float(aliquoted),
