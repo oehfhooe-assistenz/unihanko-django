@@ -5,10 +5,85 @@ Utility functions for Academia Audit module.
 Includes audit synchronization and ECTS calculation helpers.
 """
 from __future__ import annotations
+from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 from django.db import models, transaction
 from django.utils import timezone
 from django.db.models import Q
+
+
+# --- ECTS Calculation --------------------------------------------------------
+
+def calculate_aliquoted_ects(person_role, semester):
+    """
+    Calculate aliquoted ECTS for a PersonRole during a semester window.
+
+    Accounts for partial semester overlap by prorating based on the
+    number of days the person worked in their role during the semester.
+
+    Args:
+        person_role: PersonRole instance
+        semester: Semester instance
+
+    Returns:
+        Decimal: Aliquoted ECTS amount (rounded to 2 decimal places)
+    """
+    from people.models import PersonRole
+    from academia.models import Semester
+
+    # Find overlap between PersonRole dates and Semester dates
+    pr_start = max(person_role.start_date, semester.start_date)
+    pr_end = min(
+        person_role.end_date if person_role.end_date else date.max,
+        semester.end_date
+    )
+
+    # If no overlap, return 0
+    if pr_start > pr_end:
+        return Decimal('0.00')
+
+    # Calculate percentage of semester worked
+    days_worked = (pr_end - pr_start).days + 1  # Inclusive
+    semester_days = (semester.end_date - semester.start_date).days + 1
+
+    percentage = Decimal(days_worked) / Decimal(semester_days)
+
+    # Apply to role's max ECTS
+    max_ects = Decimal(str(person_role.role.ects_cap))
+    aliquoted = (max_ects * percentage).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    return aliquoted
+
+
+def calculate_overlap_percentage(person_role, semester):
+    """
+    Calculate what percentage of the semester a PersonRole was active.
+
+    Args:
+        person_role: PersonRole instance
+        semester: Semester instance
+
+    Returns:
+        Decimal: Percentage (0-1) of semester overlap
+    """
+    pr_start = max(person_role.start_date, semester.start_date)
+    pr_end = min(
+        person_role.end_date if person_role.end_date else date.max,
+        semester.end_date
+    )
+
+    if pr_start > pr_end:
+        return Decimal('0.00')
+
+    days_worked = (pr_end - pr_start).days + 1
+    semester_days = (semester.end_date - semester.start_date).days + 1
+
+    percentage = (Decimal(days_worked) / Decimal(semester_days)).quantize(
+        Decimal('0.0001'),
+        rounding=ROUND_HALF_UP
+    )
+
+    return percentage
 
 
 @transaction.atomic
@@ -35,7 +110,6 @@ def synchronize_audit_entries(audit_semester):
     """
     from people.models import PersonRole, Person
     from academia.models import InboxRequest
-    from academia.utils import calculate_aliquoted_ects
     from academia_audit.models import AuditEntry
     from hankosign.utils import has_sig
 

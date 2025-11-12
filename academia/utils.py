@@ -57,6 +57,11 @@ def get_random_words(count=2):
 
 def calculate_aliquoted_ects(person_role, semester):
     """
+    DEPRECATED: Moved to academia_audit.utils.calculate_aliquoted_ects()
+
+    This function is only used for audit calculations and has been moved to
+    the academia_audit app. For inbox validation, use role.ects_cap directly.
+
     Calculate aliquoted ECTS for a PersonRole during a semester window.
 
     Accounts for partial semester overlap by prorating based on the
@@ -69,35 +74,25 @@ def calculate_aliquoted_ects(person_role, semester):
     Returns:
         Decimal: Aliquoted ECTS amount (rounded to 2 decimal places)
     """
-    from people.models import PersonRole
-    from academia.models import Semester
-
-    # Find overlap between PersonRole dates and Semester dates
-    pr_start = max(person_role.start_date, semester.start_date)
-    pr_end = min(
-        person_role.end_date if person_role.end_date else date.max,
-        semester.end_date
+    import warnings
+    warnings.warn(
+        "calculate_aliquoted_ects in academia.utils is deprecated. "
+        "Use academia_audit.utils.calculate_aliquoted_ects() instead.",
+        DeprecationWarning,
+        stacklevel=2
     )
 
-    # If no overlap, return 0
-    if pr_start > pr_end:
-        return Decimal('0.00')
-
-    # Calculate percentage of semester worked
-    days_worked = (pr_end - pr_start).days + 1  # Inclusive
-    semester_days = (semester.end_date - semester.start_date).days + 1
-
-    percentage = Decimal(days_worked) / Decimal(semester_days)
-
-    # Apply to role's max ECTS
-    max_ects = Decimal(str(person_role.role.ects_cap))
-    aliquoted = (max_ects * percentage).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
-    return aliquoted
+    from academia_audit.utils import calculate_aliquoted_ects as calc_aliquoted
+    return calc_aliquoted(person_role, semester)
 
 
 def calculate_overlap_percentage(person_role, semester):
     """
+    DEPRECATED: Moved to academia_audit.utils.calculate_overlap_percentage()
+
+    This function is only used for audit calculations and has been moved to
+    the academia_audit app.
+
     Calculate what percentage of the semester a PersonRole was active.
 
     Args:
@@ -107,24 +102,16 @@ def calculate_overlap_percentage(person_role, semester):
     Returns:
         Decimal: Percentage (0-1) of semester overlap
     """
-    pr_start = max(person_role.start_date, semester.start_date)
-    pr_end = min(
-        person_role.end_date if person_role.end_date else date.max,
-        semester.end_date
+    import warnings
+    warnings.warn(
+        "calculate_overlap_percentage in academia.utils is deprecated. "
+        "Use academia_audit.utils.calculate_overlap_percentage() instead.",
+        DeprecationWarning,
+        stacklevel=2
     )
 
-    if pr_start > pr_end:
-        return Decimal('0.00')
-
-    days_worked = (pr_end - pr_start).days + 1
-    semester_days = (semester.end_date - semester.start_date).days + 1
-
-    percentage = (Decimal(days_worked) / Decimal(semester_days)).quantize(
-        Decimal('0.0001'),
-        rounding=ROUND_HALF_UP
-    )
-
-    return percentage
+    from academia_audit.utils import calculate_overlap_percentage as calc_overlap
+    return calc_overlap(person_role, semester)
 
 
 # --- Audit Synchronization ---------------------------------------------------
@@ -277,7 +264,11 @@ def synchronize_audit_entries(semester):
 
 def validate_ects_total(inbox_request):
     """
-    Validate that total ECTS from courses doesn't exceed max entitled.
+    Validate that total ECTS from courses doesn't exceed the role's nominal ECTS cap.
+
+    This is a formal validation only - checks against the role's max ECTS without
+    aliquotation. The actual earned ECTS calculation (with aliquotation based on
+    work period) happens during the audit phase.
 
     Args:
         inbox_request: InboxRequest instance
@@ -287,19 +278,9 @@ def validate_ects_total(inbox_request):
     """
     from academia.models import InboxRequest
 
-    # Calculate max entitled ECTS for this person role during semester
+    # Get the role's nominal ECTS cap (formal limit, no aliquotation)
     person_role = inbox_request.person_role
-    semester = inbox_request.semester
-
-    # Calculate aliquoted ECTS
-    aliquoted = calculate_aliquoted_ects(person_role, semester)
-
-    # Apply semester bonus/malus
-    max_ects = aliquoted + Decimal(str(semester.ects_adjustment))
-
-    # Ensure not negative
-    if max_ects < 0:
-        max_ects = Decimal('0.00')
+    max_ects = Decimal(str(person_role.role.ects_cap))
 
     # Calculate total from courses
     total_ects = Decimal('0.00')
@@ -309,8 +290,8 @@ def validate_ects_total(inbox_request):
     is_valid = total_ects <= max_ects
 
     if not is_valid:
-        message = f"Total ECTS ({total_ects}) exceeds maximum entitled ({max_ects}) for this role."
+        message = f"Total ECTS ({total_ects}) exceeds role's maximum ({max_ects})."
     else:
-        message = f"Total ECTS ({total_ects}) is within limit ({max_ects})."
+        message = f"Total ECTS ({total_ects}) is within role's limit ({max_ects})."
 
     return is_valid, max_ects, total_ects, message

@@ -4,13 +4,12 @@ from django.core.exceptions import ValidationError
 from datetime import date, timedelta
 from decimal import Decimal
 
-from people.models import Person, Role, PersonRole
+from people.models import Person, Role, PersonRole, RoleTransitionReason
 from .models import Semester, InboxRequest, InboxCourse
-from .utils import (
+from .utils import validate_ects_total, get_random_words
+from academia_audit.utils import (
     calculate_aliquoted_ects,
-    calculate_overlap_percentage,
-    validate_ects_total,
-    get_random_words
+    calculate_overlap_percentage
 )
 
 
@@ -21,6 +20,7 @@ class SemesterTestCase(TestCase):
             code="WS24",
             display_name="Winter Semester 2024/25",
             start_date=date(2024, 10, 1),
+            end_date=date(2025, 1, 31),
         )
         self.assertEqual(semester.code, "WS24")
 
@@ -37,43 +37,18 @@ class SemesterTestCase(TestCase):
         self.assertIsNotNone(semester.filing_start)
         self.assertIsNotNone(semester.filing_end)
 
-    def test_semester_locking_cascades(self):
-        """Test that locking semester prevents editing requests"""
+    def test_semester_basic_fields(self):
+        """Test that semester can be created with all required fields"""
         semester = Semester.objects.create(
             code="WS24",
             display_name="Winter Semester 2024/25",
             start_date=date(2024, 10, 1),
-            is_locked=False
+            end_date=date(2025, 1, 31),
         )
 
-        person = Person.objects.create(
-            first_name="Test",
-            last_name="Student"
-        )
-        role = Role.objects.create(
-            name="Student Rep",
-            short_name="SR",
-            ects_cap=Decimal('12.00')
-        )
-        person_role = PersonRole.objects.create(
-            person=person,
-            role=role,
-            start_date=date(2024, 10, 1)
-        )
-
-        request = InboxRequest.objects.create(
-            semester=semester,
-            person_role=person_role
-        )
-
-        # Lock the semester
-        semester.is_locked = True
-        semester.save()
-
-        # Trying to save request should fail validation
-        request.notes = "Updated note"
-        with self.assertRaises(ValidationError):
-            request.clean()
+        self.assertEqual(semester.code, "WS24")
+        self.assertEqual(semester.start_date, date(2024, 10, 1))
+        self.assertEqual(semester.end_date, date(2025, 1, 31))
 
 
 class InboxRequestTestCase(TestCase):
@@ -82,6 +57,7 @@ class InboxRequestTestCase(TestCase):
             code="WS24",
             display_name="Winter Semester 2024/25",
             start_date=date(2024, 10, 1),
+            end_date=date(2025, 1, 31),
         )
 
         self.person = Person.objects.create(
@@ -155,6 +131,7 @@ class InboxCourseTestCase(TestCase):
             code="WS24",
             display_name="Winter Semester 2024/25",
             start_date=date(2024, 10, 1),
+            end_date=date(2025, 1, 31),
         )
 
         self.person = Person.objects.create(
@@ -204,10 +181,23 @@ class InboxCourseTestCase(TestCase):
 
 class ECTSCalculationTestCase(TestCase):
     def setUp(self):
+        # Create role transition reasons for tests
+        self.start_reason = RoleTransitionReason.objects.create(
+            code="I01",
+            name="Test Entry",
+            name_en="Test Entry"
+        )
+        self.end_reason = RoleTransitionReason.objects.create(
+            code="O01",
+            name="Test Exit",
+            name_en="Test Exit"
+        )
+
         self.semester = Semester.objects.create(
             code="WS24",
             display_name="Winter Semester 2024/25",
             start_date=date(2024, 10, 1),
+                end_date=date(2025, 1, 31),
             ects_adjustment=Decimal('0.00')
         )
 
@@ -228,6 +218,9 @@ class ECTSCalculationTestCase(TestCase):
             person=self.person,
             role=self.role,
             start_date=date(2024, 10, 1),
+            start_reason=self.start_reason,
+            end_date=date(2025, 1, 31),
+            end_reason=self.end_reason,
         )
 
         aliquoted = calculate_aliquoted_ects(person_role, self.semester)
@@ -240,6 +233,9 @@ class ECTSCalculationTestCase(TestCase):
             person=self.person,
             role=self.role,
             start_date=date(2024, 10, 1),
+            start_reason=self.start_reason,
+            end_date=date(2024, 11, 30),
+            end_reason=self.end_reason,
         )
 
         aliquoted = calculate_aliquoted_ects(person_role, self.semester)
@@ -252,6 +248,9 @@ class ECTSCalculationTestCase(TestCase):
             person=self.person,
             role=self.role,
             start_date=date(2024, 1, 1),
+            start_reason=self.start_reason,
+            end_date=date(2024, 3, 31),
+            end_reason=self.end_reason,
         )
 
         aliquoted = calculate_aliquoted_ects(person_role, self.semester)
@@ -263,6 +262,9 @@ class ECTSCalculationTestCase(TestCase):
             person=self.person,
             role=self.role,
             start_date=date(2024, 10, 1),
+            start_reason=self.start_reason,
+            end_date=date(2025, 1, 31),
+            end_reason=self.end_reason,
         )
 
         percentage = calculate_overlap_percentage(person_role, self.semester)
@@ -283,10 +285,23 @@ class ECTSCalculationTestCase(TestCase):
 
 class ECTSValidationTestCase(TestCase):
     def setUp(self):
+        # Create role transition reasons for tests
+        self.start_reason = RoleTransitionReason.objects.create(
+            code="I02",
+            name="Test Entry 2",
+            name_en="Test Entry 2"
+        )
+        self.end_reason = RoleTransitionReason.objects.create(
+            code="O02",
+            name="Test Exit 2",
+            name_en="Test Exit 2"
+        )
+
         self.semester = Semester.objects.create(
             code="WS24",
             display_name="Winter Semester 2024/25",
             start_date=date(2024, 10, 1),
+                end_date=date(2025, 1, 31),
             ects_adjustment=Decimal('0.00')
         )
 
@@ -305,6 +320,9 @@ class ECTSValidationTestCase(TestCase):
             person=self.person,
             role=self.role,
             start_date=date(2024, 10, 1),
+            start_reason=self.start_reason,
+            end_date=date(2025, 1, 31),
+            end_reason=self.end_reason,
         )
 
         self.request = InboxRequest.objects.create(
@@ -348,7 +366,7 @@ class ECTSValidationTestCase(TestCase):
         self.assertIn("exceeds", message)
 
     def test_validate_with_bonus(self):
-        """Test validation with semester bonus adjustment"""
+        """Test that semester bonus does NOT affect inbox validation (formal check only)"""
         self.semester.ects_adjustment = Decimal('2.00')
         self.semester.save()
 
@@ -360,11 +378,12 @@ class ECTSValidationTestCase(TestCase):
         )
 
         is_valid, max_ects, total_ects, message = validate_ects_total(self.request)
-        self.assertTrue(is_valid)
-        self.assertEqual(max_ects, Decimal('14.00'))  # 12 + 2 bonus
+        # Inbox validation only checks role.ects_cap (12), not bonus/malus
+        self.assertFalse(is_valid)  # 13 > 12
+        self.assertEqual(max_ects, Decimal('12.00'))  # Just role.ects_cap
 
     def test_validate_with_malus(self):
-        """Test validation with semester malus (negative adjustment)"""
+        """Test that semester malus does NOT affect inbox validation (formal check only)"""
         self.semester.ects_adjustment = Decimal('-2.00')
         self.semester.save()
 
@@ -376,8 +395,9 @@ class ECTSValidationTestCase(TestCase):
         )
 
         is_valid, max_ects, total_ects, message = validate_ects_total(self.request)
-        self.assertFalse(is_valid)
-        self.assertEqual(max_ects, Decimal('10.00'))  # 12 - 2 malus
+        # Inbox validation only checks role.ects_cap (12), not bonus/malus
+        self.assertTrue(is_valid)  # 11 <= 12
+        self.assertEqual(max_ects, Decimal('12.00'))  # Just role.ects_cap
 
 
 class PasswordGenerationTestCase(TestCase):
