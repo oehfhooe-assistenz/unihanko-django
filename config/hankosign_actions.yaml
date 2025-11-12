@@ -382,18 +382,18 @@ actions:
   - verb: VERIFY
     stage: ""
     scope: academia.Semester
-    human_label: "Verify Complete Audit"
+    human_label: "Verify Audit Complete"
     is_repeatable: false
     require_distinct_signer: false
-    comment: "Verifies audit is complete and correct (locks all audit entries)"
+    comment: "Verifies audit calculations are complete and correct (locks all audit entries)"
 
-  - verb: RELEASE
-    stage: ""
+  - verb: VERIFY
+    stage: "SENT"
     scope: academia.Semester
-    human_label: "Send to University/Print Audit"
-    is_repeatable: true
+    human_label: "Verify Audit Sent to University"
+    is_repeatable: false
     require_distinct_signer: false
-    comment: "Records sending audit to university (repeatable for reprints)"
+    comment: "Confirms audit report was sent to university administration"
 
   # ========================================
   # ACADEMIA MODULE - Inbox Requests

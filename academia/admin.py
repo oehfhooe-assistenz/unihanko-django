@@ -236,9 +236,9 @@ class SemesterAdmin(
         'lock_semester',
         'unlock_semester',
         'synchronize_audit',
+        'verify_audit_complete',
         'generate_audit_pdf',
-        'verify_audit',
-        'send_to_university',
+        'verify_audit_sent',
     )
 
     def get_change_actions(self, request, object_id, form_url):
@@ -264,16 +264,16 @@ class SemesterAdmin(
             drop('lock_semester')
             # Audit actions only when locked
         else:
-            drop('unlock_semester', 'synchronize_audit', 'generate_audit_pdf', 'verify_audit', 'send_to_university')
+            drop('unlock_semester', 'synchronize_audit', 'verify_audit_complete', 'generate_audit_pdf', 'verify_audit_sent')
             return actions
 
-        # Verify only if PDF exists
-        if not obj.audit_pdf:
-            drop('verify_audit')
+        # Verify complete only if audit entries exist
+        if not obj.audit_entries.exists():
+            drop('verify_audit_complete')
 
-        # Send only if verified
+        # Can only verify sent after audit is verified complete
         if not has_sig(obj, 'VERIFY', ''):
-            drop('send_to_university')
+            drop('verify_audit_sent')
 
         return actions
 
