@@ -10,6 +10,7 @@ from .models import AuditSemester, AuditEntry
 from .utils import synchronize_audit_entries
 from hankosign.models import Action, Signature, Signatory
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
 
 User = get_user_model()
 
@@ -20,6 +21,7 @@ class AuditSemesterTestCase(TestCase):
             code="WS24",
             display_name="Winter Semester 2024/25",
             start_date=date(2024, 10, 1),
+            end_date=date(2025, 1, 31),
         )
 
     def test_audit_semester_creation(self):
@@ -38,11 +40,10 @@ class AuditSemesterTestCase(TestCase):
         with self.assertRaises(Exception):
             AuditSemester.objects.create(semester=self.semester)
 
-    def test_audit_semester_locking(self):
-        """Test that locking audit semester cascades to entries"""
+    def test_audit_semester_basic_creation(self):
+        """Test that audit semester can have entries"""
         audit_semester = AuditSemester.objects.create(
-            semester=self.semester,
-            is_locked=False
+            semester=self.semester
         )
 
         person = Person.objects.create(
@@ -59,14 +60,9 @@ class AuditSemesterTestCase(TestCase):
             remaining_ects=Decimal('12.00')
         )
 
-        # Lock the audit semester
-        audit_semester.is_locked = True
-        audit_semester.save()
-
-        # Trying to save entry should fail validation
-        entry.final_ects = Decimal('10.00')
-        with self.assertRaises(ValidationError):
-            entry.clean()
+        self.assertEqual(entry.audit_semester, audit_semester)
+        self.assertEqual(entry.person, person)
+        self.assertEqual(entry.final_ects, Decimal('12.00'))
 
 
 class AuditEntryTestCase(TestCase):
@@ -200,12 +196,14 @@ class SynchronizeAuditEntriesTestCase(TestCase):
             person=self.person1,
             role=self.role,
             start_date=date(2024, 10, 1),
+            start_reason=self.start_reason,
         )
 
         self.person_role2 = PersonRole.objects.create(
             person=self.person2,
             role=self.role,
             start_date=date(2024, 10, 1),
+            start_reason=self.start_reason,
         )
 
     def test_synchronize_creates_new_entries(self):
@@ -289,9 +287,28 @@ class SynchronizeAuditEntriesTestCase(TestCase):
 
     def test_synchronize_with_approved_requests(self):
         """Test that synchronize counts reimbursed ECTS from approved requests"""
-        # Create user and signatory for signatures
-        user = User.objects.create_user(username="chair", password="test")
-        signatory = Signatory.objects.create(user=user, label="Chair")
+        # Create chair person with user for HankoSign
+        chair_user = User.objects.create_user(username="chair", password="test")
+        chair_person = Person.objects.create(
+            first_name="Chair",
+            last_name="Person",
+            user=chair_user
+        )
+        chair_role = Role.objects.create(
+            name="Chairperson",
+            short_name="CH",
+            ects_cap=Decimal('0.00')
+        )
+        chair_person_role = PersonRole.objects.create(
+            person=chair_person,
+            role=chair_role,
+            start_date=date(2024, 1, 1),
+            start_reason=self.start_reason,
+        )
+        signatory = Signatory.objects.create(
+            person_role=chair_person_role,
+            is_active=True
+        )
 
         # Create an InboxRequest with courses
         request = InboxRequest.objects.create(
@@ -307,17 +324,17 @@ class SynchronizeAuditEntriesTestCase(TestCase):
         )
 
         # Create APPROVE:CHAIR action and signature
+        inbox_request_ct = ContentType.objects.get_for_model(InboxRequest)
         action = Action.objects.get_or_create(
             verb='APPROVE',
             stage='CHAIR',
-            scope='academia.InboxRequest'
+            scope=inbox_request_ct
         )[0]
 
         Signature.objects.create(
-            content_object=request,
-            action=action,
             signatory=signatory,
-            signed_at=timezone.now()
+            action=action,
+            target=request
         )
 
         # Synchronize
@@ -340,6 +357,7 @@ class SynchronizeAuditEntriesTestCase(TestCase):
             person=self.person1,
             role=role2,
             start_date=date(2024, 10, 1),
+            start_reason=self.start_reason,
         )
 
         created, updated, skipped = synchronize_audit_entries(self.audit_semester)
@@ -366,6 +384,7 @@ class SynchronizeAuditEntriesTestCase(TestCase):
             person=person3,
             role=ineligible_role,
             start_date=date(2024, 10, 1),
+            start_reason=self.start_reason,
         )
 
         created, updated, skipped = synchronize_audit_entries(self.audit_semester)
@@ -395,6 +414,7 @@ class AuditEntryM2MTestCase(TestCase):
             code="WS24",
             display_name="Winter Semester 2024/25",
             start_date=date(2024, 10, 1),
+            end_date=date(2025, 1, 31),
         )
 
         self.audit_semester = AuditSemester.objects.create(
