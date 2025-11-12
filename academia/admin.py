@@ -23,7 +23,7 @@ from core.admin_mixins import (
     safe_admin_action,
     ManagerOnlyHistoryMixin
 )
-from core.utils.authz import is_module_manager
+# Authz imported below
 from core.utils.bool_admin_status import boolean_status_span
 from hankosign.utils import (
     render_signatures_box,
@@ -35,7 +35,8 @@ from hankosign.utils import (
     object_status_span,
     seal_signatures_context
 )
-from .utils import synchronize_audit_entries, validate_ects_total
+from .utils import validate_ects_total
+from core.utils.authz import is_academia_manager
 
 
 # =============== Import-Export Resources ===============
@@ -179,7 +180,7 @@ class SemesterAdmin(
     form = SemesterForm
 
     def _is_manager(self, request) -> bool:
-        return is_module_manager(request.user, 'academia')
+        return is_academia_manager(request.user)
 
     list_display = (
         'status_text',
@@ -235,10 +236,6 @@ class SemesterAdmin(
         'regenerate_password',
         'lock_semester',
         'unlock_semester',
-        'synchronize_audit',
-        'verify_audit_complete',
-        'generate_audit_pdf',
-        'verify_audit_sent',
     )
 
     def get_change_actions(self, request, object_id, form_url):
@@ -262,18 +259,8 @@ class SemesterAdmin(
         # Lock/unlock based on state
         if st.get('explicit_locked'):
             drop('lock_semester')
-            # Audit actions only when locked
         else:
-            drop('unlock_semester', 'synchronize_audit', 'verify_audit_complete', 'generate_audit_pdf', 'verify_audit_sent')
-            return actions
-
-        # Verify complete only if audit entries exist
-        if not obj.audit_entries.exists():
-            drop('verify_audit_complete')
-
-        # Can only verify sent after audit is verified complete
-        if not has_sig(obj, 'VERIFY', ''):
-            drop('verify_audit_sent')
+            drop('unlock_semester')
 
         return actions
 
@@ -344,63 +331,6 @@ class SemesterAdmin(
     unlock_semester.label = _("Unlock Semester")
     unlock_semester.attrs = {
         "class": "btn btn-block btn-success",
-        "style": "margin-bottom: 1rem;",
-    }
-
-    @transaction.atomic
-    @safe_admin_action
-    def synchronize_audit(self, request, obj):
-        if not self._is_manager(request):
-            raise PermissionDenied(_("Not authorized"))
-        created, skipped = synchronize_audit_entries(obj)
-        messages.success(
-            request,
-            _("Audit synchronized: %(created)d entries created, %(skipped)d existing.") % {
-                'created': created,
-                'skipped': skipped
-            }
-        )
-
-    synchronize_audit.label = _("Synchronize Audit Entries")
-    synchronize_audit.attrs = {
-        "class": "btn btn-block btn-primary",
-        "style": "margin-bottom: 1rem;",
-    }
-
-    @transaction.atomic
-    @safe_admin_action
-    def generate_audit_pdf(self, request, obj):
-        if not self._is_manager(request):
-            raise PermissionDenied(_("Not authorized"))
-
-        # Get all audit entries for this semester
-        entries = obj.audit_entries.all().select_related('person', 'semester').prefetch_related('person_roles', 'inbox_requests')
-
-        if not entries:
-            messages.warning(request, _("No audit entries found. Run synchronization first."))
-            return
-
-        date_str = timezone.localtime().strftime("%Y-%m-%d")
-        signatures = seal_signatures_context(obj)
-
-        ctx = {
-            'semester': obj,
-            'entries': entries,
-            'org': OrgInfo.get_solo(),
-            'signatures': signatures,
-            'generated_date': timezone.localdate(),
-        }
-
-        return render_pdf_response(
-            "academia/semester_audit_pdf.html",
-            ctx,
-            request,
-            f"ECTS-AUDIT_{obj.code}_{date_str}.pdf"
-        )
-
-    generate_audit_pdf.label = "🖨️ " + _("Generate Audit PDF")
-    generate_audit_pdf.attrs = {
-        "class": "btn btn-block btn-info",
         "style": "margin-bottom: 1rem;",
     }
 
@@ -521,7 +451,7 @@ class InboxRequestAdmin(
     inlines = [InboxCourseInline]
 
     def _is_manager(self, request) -> bool:
-        return is_module_manager(request.user, 'academia')
+        return is_academia_manager(request.user)
 
     list_display = (
         'status_text',
@@ -817,7 +747,7 @@ class SemesterAuditEntryAdmin(
     form = SemesterAuditEntryForm
 
     def _is_manager(self, request) -> bool:
-        return is_module_manager(request.user, 'academia')
+        return is_academia_manager(request.user)
 
     list_display = (
         'status_text',

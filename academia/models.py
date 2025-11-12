@@ -494,17 +494,17 @@ class SemesterAuditEntry(models.Model):
     # Many-to-many relationships
     person_roles = models.ManyToManyField(
         PersonRole,
-        related_name='audit_entries',
+        related_name='semester_audit_entries',
         verbose_name=_("Person Roles"),
-        help_text=_("All roles this person held during the semester")
+        help_text=_("All roles this person held during the semester (DEPRECATED)")
     )
 
     inbox_requests = models.ManyToManyField(
         InboxRequest,
         blank=True,
-        related_name='audit_entries',
+        related_name='semester_audit_entries',
         verbose_name=_("Inbox Requests"),
-        help_text=_("Approved reimbursement requests for this person")
+        help_text=_("Approved reimbursement requests for this person (DEPRECATED)")
     )
 
     # Calculated ECTS
