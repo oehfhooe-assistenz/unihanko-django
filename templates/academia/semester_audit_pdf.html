@@ -1,0 +1,150 @@
+{% extends "pdf/base.html" %}
+{% load i18n %}
+
+{% block header_title %}{% trans "ECTS Audit Report" %} — {{ semester.code }}{% endblock %}
+
+{% block content %}
+{% include '_includes/_org_header.html' with org=org %}
+
+<h1 class="document-title">{% trans "ECTS Reimbursement Audit" %}</h1>
+<p class="document-code">{{ semester.code }}</p>
+
+<div class="section">
+    <h2 class="section-title">{% trans "Semester Details" %}</h2>
+    <div class="section-content">
+        <table class="info-table">
+            <tr>
+                <th>{% trans "Code" %}</th>
+                <td><strong>{{ semester.code }}</strong></td>
+            </tr>
+            <tr>
+                <th>{% trans "Label" %}</th>
+                <td>{{ semester.label }}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Period" %}</th>
+                <td>{% include '_includes/_date_period.html' with start_date=semester.start_date end_date=semester.end_date %}</td>
+            </tr>
+            <tr>
+                <th>{% trans "ECTS Adjustment" %}</th>
+                <td>{% if semester.ects_bonus_malus >= 0 %}+{% endif %}{{ semester.ects_bonus_malus }}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Generated" %}</th>
+                <td>{{ generated_date|date:"d.m.Y" }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="section">
+    <h2 class="section-title">{% trans "Audit Summary" %}</h2>
+    <div class="section-content">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>{% trans "Student Name" %}</th>
+                    <th>{% trans "Role(s)" %}</th>
+                    <th>{% trans "Aliquoted ECTS" %}</th>
+                    <th>{% trans "Final ECTS" %}</th>
+                    <th>{% trans "Reimbursed" %}</th>
+                    <th>{% trans "Remaining" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td>{{ entry.person.first_name }} {{ entry.person.last_name }}</td>
+                    <td>
+                        {% for pr in entry.person_roles.all %}
+                            {{ pr.role.name }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td class="text-right">{{ entry.aliquoted_ects|floatformat:2 }}</td>
+                    <td class="text-right"><strong>{{ entry.final_ects|floatformat:2 }}</strong></td>
+                    <td class="text-right">{{ entry.reimbursed_ects|floatformat:2 }}</td>
+                    <td class="text-right">{{ entry.remaining_ects|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">{% trans "No audit entries found" %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="section">
+    <h2 class="section-title">{% trans "Detailed Breakdown" %}</h2>
+    <div class="section-content">
+        {% for entry in entries %}
+        <div class="subsection">
+            <h3>{{ entry.person.first_name }} {{ entry.person.last_name }}</h3>
+
+            <table class="info-table">
+                <tr>
+                    <th>{% trans "Person Roles" %}</th>
+                    <td>
+                        {% for pr in entry.person_roles.all %}
+                            {{ pr.role.name }}
+                            ({% include '_includes/_date_period.html' with start_date=pr.start_date end_date=pr.end_date %})
+                            {% if not forloop.last %}<br>{% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>{% trans "Aliquoted ECTS" %}</th>
+                    <td>{{ entry.aliquoted_ects|floatformat:2 }}</td>
+                </tr>
+                <tr>
+                    <th>{% trans "Bonus/Malus Applied" %}</th>
+                    <td>{% if semester.ects_bonus_malus >= 0 %}+{% endif %}{{ semester.ects_bonus_malus }}</td>
+                </tr>
+                <tr>
+                    <th>{% trans "Final ECTS" %}</th>
+                    <td><strong>{{ entry.final_ects|floatformat:2 }}</strong></td>
+                </tr>
+            </table>
+
+            {% if entry.inbox_requests.exists %}
+            <h4>{% trans "Reimbursement Requests" %}</h4>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>{% trans "Reference" %}</th>
+                        <th>{% trans "Courses" %}</th>
+                        <th>{% trans "ECTS" %}</th>
+                        <th>{% trans "Status" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in entry.inbox_requests.all %}
+                    <tr>
+                        <td>{{ req.reference_code }}</td>
+                        <td>
+                            {% for course in req.courses.all %}
+                                {{ course.course_code|default:"—" }} {{ course.course_name|default:"—" }}{% if not forloop.last %}<br>{% endif %}
+                            {% endfor %}
+                        </td>
+                        <td class="text-right">{{ req.total_ects|floatformat:2 }}</td>
+                        <td>{{ req.get_stage_display }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
+            {% if entry.notes %}
+            <p><strong>{% trans "Notes" %}:</strong> {{ entry.notes|linebreaksbr }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% include '_includes/_signature_seal.html' with signatures=signatures %}
+
+{% include '_includes/_disclaimer.html' %}
+
+{% endblock %}

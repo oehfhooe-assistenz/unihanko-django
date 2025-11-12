@@ -3,9 +3,8 @@ from django.contrib import admin, messages
 from django import forms
 from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
-from django.utils.safestring import mark_safe
+from django.utils.text import slugify
 from django.utils import timezone
-from django.template.loader import render_to_string
 from django_object_actions import DjangoObjectActions
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
@@ -13,13 +12,11 @@ from simple_history.admin import SimpleHistoryAdmin
 from concurrency.admin import ConcurrentModelAdmin
 from django.db import transaction
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from django.db.models import Q, Sum
 
 from .models import Semester, InboxRequest, InboxCourse, SemesterAuditEntry, generate_semester_password
 from people.models import PersonRole, Person
 from organisation.models import OrgInfo
+from core.pdf import render_pdf_response
 from core.admin_mixins import (
     ImportExportGuardMixin,
     HelpPageMixin,
@@ -82,13 +79,10 @@ class SemesterForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # Help texts
         if 'access_password' in self.fields:
             self.fields['access_password'].help_text = _(
                 "Auto-generated on save. Superusers can regenerate via admin action."
             )
-
         if 'ects_adjustment' in self.fields:
             self.fields['ects_adjustment'].help_text = _(
                 "Bonus/malus ECTS (e.g., +2.0 or -2.0) applied to all roles in this semester"
@@ -102,13 +96,10 @@ class InboxCourseInlineForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-
-        # At least one of course_code or course_name required
         if not cleaned.get('course_code') and not cleaned.get('course_name'):
             raise ValidationError(
                 _("At least one of course code or course name is required")
             )
-
         return cleaned
 
 
@@ -119,34 +110,25 @@ class InboxRequestForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        obj = self.instance
-
-        # Reference code is auto-generated
         if 'reference_code' in self.fields:
             self.fields['reference_code'].help_text = _(
                 "Auto-generated on first save in format: SEMESTER-NAME-####"
             )
-
-        # Help for affidavits
         if 'affidavit1_confirmed_at' in self.fields:
             self.fields['affidavit1_confirmed_at'].help_text = _(
                 "Timestamp when student confirmed initial submission affidavit"
             )
-
         if 'affidavit2_confirmed_at' in self.fields:
             self.fields['affidavit2_confirmed_at'].help_text = _(
-                "Timestamp when student confirmed form upload affidavit"
+                "Timestamp when student uploads signed form"
             )
 
     def clean(self):
         cleaned = super().clean()
-
-        # Validate ECTS total if courses exist
         if self.instance.pk and self.instance.courses.exists():
             is_valid, max_ects, total_ects, message = validate_ects_total(self.instance)
             if not is_valid:
                 self.add_error(None, ValidationError(message))
-
         return cleaned
 
 
@@ -157,8 +139,6 @@ class SemesterAuditEntryForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # Make calculated fields read-only in form
         for field_name in ['max_ects_entitled', 'ects_reimbursed', 'ects_bulk']:
             if field_name in self.fields:
                 self.fields[field_name].help_text = _(
@@ -175,7 +155,6 @@ class InboxCourseInline(admin.TabularInline):
     fields = ('course_code', 'course_name', 'ects_amount')
 
     def has_delete_permission(self, request, obj=None):
-        # Check if parent request is locked
         if obj and obj.inbox_request_id:
             request_obj = InboxRequest.objects.get(pk=obj.inbox_request_id)
             st = state_snapshot(request_obj)
@@ -199,11 +178,9 @@ class SemesterAdmin(
     resource_classes = [SemesterResource]
     form = SemesterForm
 
-    # --- Helper methods ---
     def _is_manager(self, request) -> bool:
         return is_module_manager(request.user, 'academia')
 
-    # --- List display ---
     list_display = (
         'status_text',
         'code',
@@ -221,7 +198,6 @@ class SemesterAdmin(
     search_fields = ('code', 'display_name')
     ordering = ('-start_date',)
 
-    # --- Fieldsets ---
     fieldsets = (
         (_("Basic Information"), {
             'fields': ('code', 'display_name', 'start_date', 'end_date')
@@ -255,71 +231,60 @@ class SemesterAdmin(
 
     autocomplete_fields = []
 
-    # --- Object actions ---
     change_actions = (
-        'regenerate_password_action',
-        'lock_semester_action',
-        'unlock_semester_action',
-        'synchronize_audit_action',
-        'generate_audit_pdf_action',
-        'verify_audit_action',
-        'send_to_university_action',
+        'regenerate_password',
+        'lock_semester',
+        'unlock_semester',
+        'synchronize_audit',
+        'generate_audit_pdf',
+        'verify_audit',
+        'send_to_university',
     )
 
     def get_change_actions(self, request, object_id, form_url):
         actions = list(super().get_change_actions(request, object_id, form_url))
         obj = self.get_object(request, object_id)
 
-        if not obj:
+        if not obj or not self._is_manager(request):
             return []
 
-        if not self._is_manager(request):
-            return []
+        def drop(*names):
+            for n in names:
+                if n in actions:
+                    actions.remove(n)
 
         st = state_snapshot(obj)
 
         # Only superusers can regenerate password
         if not request.user.is_superuser:
-            actions = [a for a in actions if a != 'regenerate_password_action']
+            drop('regenerate_password')
 
-        # Remove unlock if not locked
-        if not st.get('explicit_locked'):
-            actions = [a for a in actions if a != 'unlock_semester_action']
-
-        # Remove lock if already locked
+        # Lock/unlock based on state
         if st.get('explicit_locked'):
-            actions = [a for a in actions if a != 'lock_semester_action']
+            drop('lock_semester')
+            # Audit actions only when locked
+        else:
+            drop('unlock_semester', 'synchronize_audit', 'generate_audit_pdf', 'verify_audit', 'send_to_university')
+            return actions
 
-        # Audit actions only available if semester is locked
-        if not st.get('explicit_locked'):
-            actions = [a for a in actions if a not in (
-                'synchronize_audit_action',
-                'generate_audit_pdf_action',
-                'verify_audit_action',
-                'send_to_university_action'
-            )]
-
-        # Verify only if audit PDF exists
+        # Verify only if PDF exists
         if not obj.audit_pdf:
-            actions = [a for a in actions if a != 'verify_audit_action']
+            drop('verify_audit')
 
         # Send only if verified
         if not has_sig(obj, 'VERIFY', ''):
-            actions = [a for a in actions if a != 'send_to_university_action']
+            drop('send_to_university')
 
         return actions
 
     @transaction.atomic
     @safe_admin_action
-    def regenerate_password_action(self, request, obj):
-        """Regenerate semester access password (superuser only)"""
+    def regenerate_password(self, request, obj):
         if not request.user.is_superuser:
             raise PermissionDenied(_("Only superusers can regenerate passwords"))
-
         old_password = obj.access_password
         obj.access_password = generate_semester_password()
         obj.save(update_fields=['access_password'])
-
         messages.success(
             request,
             _("Password regenerated: %(old)s → %(new)s") % {
@@ -328,136 +293,159 @@ class SemesterAdmin(
             }
         )
 
-    regenerate_password_action.label = _("Regenerate Password")
-    regenerate_password_action.attrs = {"class": "button"}
+    regenerate_password.label = _("Regenerate Password")
+    regenerate_password.attrs = {
+        "class": "btn btn-block btn-secondary",
+        "style": "margin-bottom: 1rem;",
+    }
 
     @transaction.atomic
     @safe_admin_action
-    def lock_semester_action(self, request, obj):
-        """Lock semester and cascade to all inbox requests"""
+    def lock_semester(self, request, obj):
         if not self._is_manager(request):
             raise PermissionDenied(_("Not authorized"))
-
         action = get_action("LOCK:-@academia.Semester")
+        if not action:
+            messages.error(request, _("Lock action not configured"))
+            return
         record_signature(
             request.user,
             action,
             obj,
             note=f"Semester {obj.code} locked for audit"
         )
-
-        # Close public filing
         obj.is_active = False
         obj.save(update_fields=['is_active'])
+        messages.success(request, _("Semester locked. Public filing closed."))
 
-        messages.success(
-            request,
-            _("Semester locked. Public filing closed. All inbox requests are now read-only.")
-        )
-
-    lock_semester_action.label = _("Lock Semester")
-    lock_semester_action.attrs = {"class": "button default"}
+    lock_semester.label = _("Lock Semester")
+    lock_semester.attrs = {
+        "class": "btn btn-block btn-warning",
+        "style": "margin-bottom: 1rem;",
+    }
 
     @transaction.atomic
     @safe_admin_action
-    def unlock_semester_action(self, request, obj):
-        """Unlock semester (emergency use)"""
+    def unlock_semester(self, request, obj):
         if not self._is_manager(request):
             raise PermissionDenied(_("Not authorized"))
-
         action = get_action("UNLOCK:-@academia.Semester")
+        if not action:
+            messages.error(request, _("Unlock action not configured"))
+            return
         record_signature(
             request.user,
             action,
             obj,
             note=f"Semester {obj.code} unlocked for corrections"
         )
+        messages.warning(request, _("Semester unlocked. Use with caution."))
 
-        messages.warning(
-            request,
-            _("Semester unlocked. Use with caution.")
-        )
-
-    unlock_semester_action.label = _("Unlock Semester")
-    unlock_semester_action.attrs = {"class": "button"}
+    unlock_semester.label = _("Unlock Semester")
+    unlock_semester.attrs = {
+        "class": "btn btn-block btn-success",
+        "style": "margin-bottom: 1rem;",
+    }
 
     @transaction.atomic
     @safe_admin_action
-    def synchronize_audit_action(self, request, obj):
-        """Synchronize audit entries from PersonRoles and InboxRequests"""
+    def synchronize_audit(self, request, obj):
         if not self._is_manager(request):
             raise PermissionDenied(_("Not authorized"))
-
         created, skipped = synchronize_audit_entries(obj)
-
         messages.success(
             request,
-            _("Audit synchronized: %(created)d entries created, %(skipped)d existing entries preserved.") % {
+            _("Audit synchronized: %(created)d entries created, %(skipped)d existing.") % {
                 'created': created,
                 'skipped': skipped
             }
         )
 
-    synchronize_audit_action.label = _("Synchronize Audit Entries")
-    synchronize_audit_action.attrs = {"class": "button default"}
+    synchronize_audit.label = _("Synchronize Audit Entries")
+    synchronize_audit.attrs = {
+        "class": "btn btn-block btn-primary",
+        "style": "margin-bottom: 1rem;",
+    }
 
     @transaction.atomic
     @safe_admin_action
-    def generate_audit_pdf_action(self, request, obj):
-        """Generate audit PDF (placeholder - implement PDF generation)"""
+    def generate_audit_pdf(self, request, obj):
         if not self._is_manager(request):
             raise PermissionDenied(_("Not authorized"))
 
-        # TODO: Implement PDF generation
-        messages.info(
+        # Get all audit entries for this semester
+        entries = obj.audit_entries.all().select_related('person', 'semester').prefetch_related('person_roles', 'inbox_requests')
+
+        if not entries:
+            messages.warning(request, _("No audit entries found. Run synchronization first."))
+            return
+
+        date_str = timezone.localtime().strftime("%Y-%m-%d")
+        signatures = seal_signatures_context(obj)
+
+        ctx = {
+            'semester': obj,
+            'entries': entries,
+            'org': OrgInfo.get_solo(),
+            'signatures': signatures,
+            'generated_date': timezone.localdate(),
+        }
+
+        return render_pdf_response(
+            "academia/semester_audit_pdf.html",
+            ctx,
             request,
-            _("PDF generation not yet implemented. Will generate audit PDF from SemesterAuditEntry records.")
+            f"ECTS-AUDIT_{obj.code}_{date_str}.pdf"
         )
 
-    generate_audit_pdf_action.label = _("Generate Audit PDF")
-    generate_audit_pdf_action.attrs = {"class": "button"}
+    generate_audit_pdf.label = "🖨️ " + _("Generate Audit PDF")
+    generate_audit_pdf.attrs = {
+        "class": "btn btn-block btn-info",
+        "style": "margin-bottom: 1rem;",
+    }
 
     @transaction.atomic
     @safe_admin_action
-    def verify_audit_action(self, request, obj):
-        """Verify complete audit (locks all audit entries)"""
+    def verify_audit(self, request, obj):
         if not self._is_manager(request):
             raise PermissionDenied(_("Not authorized"))
-
         action = get_action("VERIFY:-@academia.Semester")
+        if not action:
+            messages.error(request, _("Verify action not configured"))
+            return
         record_signature(
             request.user,
             action,
             obj,
             note=f"Audit verified for semester {obj.code}"
         )
-
         # Lock all audit entries
         for entry in obj.audit_entries.all():
             lock_action = get_action("LOCK:-@academia.SemesterAuditEntry")
-            record_signature(
-                request.user,
-                lock_action,
-                entry,
-                note=f"Locked via semester {obj.code} verification"
-            )
+            if lock_action:
+                record_signature(
+                    request.user,
+                    lock_action,
+                    entry,
+                    note=f"Locked via semester {obj.code} verification"
+                )
+        messages.success(request, _("Audit verified. All entries locked."))
 
-        messages.success(
-            request,
-            _("Audit verified. All audit entries are now locked.")
-        )
-
-    verify_audit_action.label = _("Verify Audit")
-    verify_audit_action.attrs = {"class": "button default"}
+    verify_audit.label = _("Verify Audit")
+    verify_audit.attrs = {
+        "class": "btn btn-block btn-success",
+        "style": "margin-bottom: 1rem;",
+    }
 
     @transaction.atomic
     @safe_admin_action
-    def send_to_university_action(self, request, obj):
-        """Record sending audit to university"""
+    def send_to_university(self, request, obj):
         if not self._is_manager(request):
             raise PermissionDenied(_("Not authorized"))
-
         action = get_action("RELEASE:-@academia.Semester")
+        if not action:
+            messages.error(request, _("Release action not configured"))
+            return
         sign_once(
             request,
             action,
@@ -465,10 +453,8 @@ class SemesterAdmin(
             note=f"Audit sent to university for semester {obj.code}",
             window_seconds=10
         )
-
         obj.audit_sent_university_at = timezone.now()
         obj.save(update_fields=['audit_sent_university_at'])
-
         messages.success(
             request,
             _("Audit sent timestamp recorded: %(time)s") % {
@@ -476,13 +462,15 @@ class SemesterAdmin(
             }
         )
 
-    send_to_university_action.label = _("Send to University")
-    send_to_university_action.attrs = {"class": "button default"}
+    send_to_university.label = _("Send to University")
+    send_to_university.attrs = {
+        "class": "btn btn-block btn-success",
+        "style": "margin-bottom: 1rem;",
+    }
 
-    # --- Display methods ---
+    # Display methods
     @admin.display(description=_("Status"))
     def status_text(self, obj):
-        """Use HankoSign-aware status display"""
         return object_status_span(obj, final_stage="")
 
     @admin.display(description=_("Filing"), boolean=True)
@@ -501,15 +489,12 @@ class SemesterAdmin(
 
     @admin.display(description=_("Locked"))
     def active_text(self, obj):
-        """Right-side locked indicator using boolean_status_span"""
         if not obj:
             return "—"
-
         st = state_snapshot(obj)
         is_locked = st.get("explicit_locked", False)
-
         return boolean_status_span(
-            value=not is_locked,  # True = unlocked
+            value=not is_locked,
             true_label=_("Open"),
             false_label=_("Locked"),
             true_code="ok",
@@ -535,11 +520,9 @@ class InboxRequestAdmin(
     form = InboxRequestForm
     inlines = [InboxCourseInline]
 
-    # --- Helper methods ---
     def _is_manager(self, request) -> bool:
         return is_module_manager(request.user, 'academia')
 
-    # --- List display ---
     list_display = (
         'status_text',
         'reference_code',
@@ -560,7 +543,6 @@ class InboxRequestAdmin(
     )
     ordering = ('-created_at',)
 
-    # --- Fieldsets ---
     fieldsets = (
         (_("Identification"), {
             'fields': ('reference_code', 'semester', 'person_role')
@@ -598,12 +580,11 @@ class InboxRequestAdmin(
 
     autocomplete_fields = ['person_role', 'semester']
 
-    # --- Object actions ---
     change_actions = (
-        'verify_request_action',
-        'approve_request_action',
-        'reject_request_action',
-        'print_form_action',
+        'verify_request',
+        'approve_request',
+        'reject_request',
+        'print_form',
     )
 
     def get_change_actions(self, request, object_id, form_url):
@@ -613,111 +594,106 @@ class InboxRequestAdmin(
         if not obj or not self._is_manager(request):
             return []
 
-        st = state_snapshot(obj)
+        def drop(*names):
+            for n in names:
+                if n in actions:
+                    actions.remove(n)
+
         stage = obj.stage
 
-        # Only show relevant actions based on stage
         if stage == 'DRAFT':
-            return []  # Nothing to verify yet
-
-        if stage == 'SUBMITTED':
-            return ['verify_request_action', 'print_form_action']
-
-        if stage == 'VERIFIED':
-            return ['approve_request_action', 'reject_request_action', 'print_form_action']
-
-        if stage in ('APPROVED', 'REJECTED', 'TRANSFERRED'):
-            return ['print_form_action']
+            drop('verify_request', 'approve_request', 'reject_request', 'print_form')
+        elif stage == 'SUBMITTED':
+            drop('approve_request', 'reject_request')
+        elif stage == 'VERIFIED':
+            drop('verify_request')
+        elif stage in ('APPROVED', 'REJECTED', 'TRANSFERRED'):
+            drop('verify_request', 'approve_request', 'reject_request')
 
         return actions
 
     @transaction.atomic
     @safe_admin_action
-    def verify_request_action(self, request, obj):
-        """Verify request (colleague checks form and data)"""
+    def verify_request(self, request, obj):
         if not self._is_manager(request):
             raise PermissionDenied(_("Not authorized"))
-
-        # Check that form is uploaded
         if not obj.uploaded_form:
             raise ValidationError(_("Cannot verify: No form uploaded yet"))
-
-        # Validate ECTS total
         is_valid, max_ects, total_ects, message = validate_ects_total(obj)
         if not is_valid:
             messages.warning(request, _("Warning: ") + message)
-
         action = get_action("VERIFY:-@academia.InboxRequest")
+        if not action:
+            messages.error(request, _("Verify action not configured"))
+            return
         record_signature(
             request.user,
             action,
             obj,
             note=f"Request {obj.reference_code} verified"
         )
+        messages.success(request, _("Request verified. Ready for chair approval."))
 
-        messages.success(
-            request,
-            _("Request verified. Ready for chair approval.")
-        )
-
-    verify_request_action.label = _("Verify Request")
-    verify_request_action.attrs = {"class": "button default"}
+    verify_request.label = _("Verify Request")
+    verify_request.attrs = {
+        "class": "btn btn-block btn-primary",
+        "style": "margin-bottom: 1rem;",
+    }
 
     @transaction.atomic
     @safe_admin_action
-    def approve_request_action(self, request, obj):
-        """Approve request (chair final approval)"""
+    def approve_request(self, request, obj):
         if not self._is_manager(request):
             raise PermissionDenied(_("Not authorized"))
-
         action = get_action("APPROVE:CHAIR@academia.InboxRequest")
+        if not action:
+            messages.error(request, _("Approve action not configured"))
+            return
         record_signature(
             request.user,
             action,
             obj,
             note=f"Request {obj.reference_code} approved by chair"
         )
+        messages.success(request, _("Request approved."))
 
-        messages.success(
-            request,
-            _("Request approved. Will be included in semester audit.")
-        )
-
-    approve_request_action.label = _("Approve (Chair)")
-    approve_request_action.attrs = {"class": "button default"}
+    approve_request.label = _("Approve (Chair)")
+    approve_request.attrs = {
+        "class": "btn btn-block btn-success",
+        "style": "margin-bottom: 1rem;",
+    }
 
     @transaction.atomic
     @safe_admin_action
-    def reject_request_action(self, request, obj):
-        """Reject request (chair rejection)"""
+    def reject_request(self, request, obj):
         if not self._is_manager(request):
             raise PermissionDenied(_("Not authorized"))
-
         action = get_action("REJECT:CHAIR@academia.InboxRequest")
+        if not action:
+            messages.error(request, _("Reject action not configured"))
+            return
         record_signature(
             request.user,
             action,
             obj,
             note=f"Request {obj.reference_code} rejected by chair"
         )
+        messages.warning(request, _("Request rejected. Student should contact administration."))
 
-        messages.warning(
-            request,
-            _("Request rejected. Student should be notified to contact administration.")
-        )
+    reject_request.label = _("Reject (Chair)")
+    reject_request.attrs = {
+        "class": "btn btn-block btn-danger",
+        "style": "margin-bottom: 1rem;",
+    }
 
-    reject_request_action.label = _("Reject (Chair)")
-    reject_request_action.attrs = {"class": "button"}
-
-    @transaction.atomic
     @safe_admin_action
-    def print_form_action(self, request, obj):
-        """Print reimbursement form PDF (placeholder)"""
+    def print_form(self, request, obj):
         if not self._is_manager(request):
             raise PermissionDenied(_("Not authorized"))
-
-        # Record RELEASE action
         action = get_action("RELEASE:-@academia.InboxRequest")
+        if not action:
+            messages.error(request, _("Release action not configured"))
+            return
         sign_once(
             request,
             action,
@@ -725,24 +701,33 @@ class InboxRequestAdmin(
             note=f"Form printed for {obj.reference_code}",
             window_seconds=10
         )
+        date_str = timezone.localtime().strftime("%Y-%m-%d")
+        signatures = seal_signatures_context(obj)
+        lname = slugify(obj.person_role.person.last_name)[:20]
 
-        # TODO: Implement PDF generation
-        messages.info(
+        ctx = {
+            'request_obj': obj,
+            'org': OrgInfo.get_solo(),
+            'signatures': signatures,
+        }
+
+        return render_pdf_response(
+            "academia/inboxrequest_form_pdf.html",
+            ctx,
             request,
-            _("PDF generation not yet implemented. Will generate form for %(ref)s") % {
-                'ref': obj.reference_code
-            }
+            f"ECTS-REQUEST_{obj.reference_code}_{lname}_{date_str}.pdf"
         )
 
-    print_form_action.label = _("Print Form")
-    print_form_action.attrs = {"class": "button"}
+    print_form.label = "🖨️ " + _("Print Form")
+    print_form.attrs = {
+        "class": "btn btn-block btn-info",
+        "style": "margin-bottom: 1rem;",
+    }
 
-    # --- Display methods ---
+    # Display methods
     @admin.display(description=_("Status"))
     def status_text(self, obj):
-        """Left-side status using custom stage display"""
         stage = obj.stage
-        # Map stage to standard HankoSign codes for consistent coloring
         stage_to_code = {
             'DRAFT': 'draft',
             'SUBMITTED': 'submitted',
@@ -761,13 +746,11 @@ class InboxRequestAdmin(
 
     @admin.display(description=_("ECTS"))
     def total_ects_display(self, obj):
-        total = obj.total_ects
-        return str(total)
+        return str(obj.total_ects)
 
     @admin.display(description=_("Total ECTS"))
     def total_ects_readonly(self, obj):
-        total = obj.total_ects
-        return f"{total} ECTS"
+        return f"{obj.total_ects} ECTS"
 
     @admin.display(description=_("Max Entitled"))
     def max_ects_readonly(self, obj):
@@ -777,7 +760,6 @@ class InboxRequestAdmin(
     @admin.display(description=_("Validation"))
     def validation_status(self, obj):
         is_valid, max_ects, total_ects, message = validate_ects_total(obj)
-        # Use boolean_status_span for consistent styling
         return boolean_status_span(
             value=is_valid,
             true_label=_("Valid"),
@@ -788,19 +770,14 @@ class InboxRequestAdmin(
 
     @admin.display(description=_("Locked"))
     def active_text(self, obj):
-        """Right-side locked indicator"""
         if not obj:
             return "—"
-
         st = state_snapshot(obj)
         is_locked = st.get("locked", False)
-
-        # Also check semester lock cascade
         if obj.semester:
             semester_st = state_snapshot(obj.semester)
             if semester_st.get("explicit_locked"):
                 is_locked = True
-
         return boolean_status_span(
             value=not is_locked,
             true_label=_("Open"),
@@ -815,20 +792,14 @@ class InboxRequestAdmin(
 
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
-
         if obj:
-            # Check if locked
             st = state_snapshot(obj)
-            if st.get('locked') or obj.semester:
-                semester_st = state_snapshot(obj.semester)
-                if semester_st.get('explicit_locked'):
-                    # Everything except notes becomes read-only
-                    ro.extend([
-                        'semester', 'person_role', 'student_note',
-                        'affidavit1_confirmed_at', 'affidavit2_confirmed_at',
-                        'uploaded_form', 'uploaded_form_at', 'submission_ip'
-                    ])
-
+            if st.get('locked') or (obj.semester and state_snapshot(obj.semester).get('explicit_locked')):
+                ro.extend([
+                    'semester', 'person_role', 'student_note',
+                    'affidavit1_confirmed_at', 'affidavit2_confirmed_at',
+                    'uploaded_form', 'uploaded_form_at', 'submission_ip'
+                ])
         return ro
 
 
@@ -845,11 +816,9 @@ class SemesterAuditEntryAdmin(
     resource_classes = [SemesterAuditEntryResource]
     form = SemesterAuditEntryForm
 
-    # --- Helper methods ---
     def _is_manager(self, request) -> bool:
         return is_module_manager(request.user, 'academia')
 
-    # --- List display ---
     list_display = (
         'status_text',
         'person',
@@ -869,7 +838,6 @@ class SemesterAuditEntryAdmin(
     )
     ordering = ('semester', 'person__last_name', 'person__first_name')
 
-    # --- Fieldsets ---
     fieldsets = (
         (_("Identification"), {
             'fields': ('semester', 'person')
@@ -908,10 +876,9 @@ class SemesterAuditEntryAdmin(
     autocomplete_fields = ['semester', 'person']
     filter_horizontal = ['person_roles', 'inbox_requests']
 
-    # --- Object actions ---
     change_actions = (
-        'lock_entry_action',
-        'unlock_entry_action',
+        'lock_entry',
+        'unlock_entry',
     )
 
     def get_change_actions(self, request, object_id, form_url):
@@ -921,75 +888,80 @@ class SemesterAuditEntryAdmin(
         if not obj or not self._is_manager(request):
             return []
 
-        st = state_snapshot(obj)
+        def drop(*names):
+            for n in names:
+                if n in actions:
+                    actions.remove(n)
 
-        # Show lock or unlock based on current state
+        st = state_snapshot(obj)
         if st.get('explicit_locked'):
-            return ['unlock_entry_action']
+            drop('lock_entry')
         else:
-            return ['lock_entry_action']
+            drop('unlock_entry')
+
+        return actions
 
     @transaction.atomic
     @safe_admin_action
-    def lock_entry_action(self, request, obj):
-        """Lock audit entry"""
+    def lock_entry(self, request, obj):
         if not self._is_manager(request):
             raise PermissionDenied(_("Not authorized"))
-
         action = get_action("LOCK:-@academia.SemesterAuditEntry")
+        if not action:
+            messages.error(request, _("Lock action not configured"))
+            return
         record_signature(
             request.user,
             action,
             obj,
             note=f"Audit entry locked for {obj.person}"
         )
-
         messages.success(request, _("Audit entry locked."))
 
-    lock_entry_action.label = _("Lock Entry")
-    lock_entry_action.attrs = {"class": "button"}
+    lock_entry.label = _("Lock Entry")
+    lock_entry.attrs = {
+        "class": "btn btn-block btn-warning",
+        "style": "margin-bottom: 1rem;",
+    }
 
     @transaction.atomic
     @safe_admin_action
-    def unlock_entry_action(self, request, obj):
-        """Unlock audit entry (for university corrections)"""
+    def unlock_entry(self, request, obj):
         if not self._is_manager(request):
             raise PermissionDenied(_("Not authorized"))
-
         action = get_action("UNLOCK:-@academia.SemesterAuditEntry")
+        if not action:
+            messages.error(request, _("Unlock action not configured"))
+            return
         record_signature(
             request.user,
             action,
             obj,
             note=f"Audit entry unlocked for corrections: {obj.person}"
         )
-
         messages.warning(request, _("Audit entry unlocked for corrections."))
 
-    unlock_entry_action.label = _("Unlock Entry")
-    unlock_entry_action.attrs = {"class": "button"}
+    unlock_entry.label = _("Unlock Entry")
+    unlock_entry.attrs = {
+        "class": "btn btn-block btn-success",
+        "style": "margin-bottom: 1rem;",
+    }
 
-    # --- Display methods ---
+    # Display methods
     @admin.display(description=_("Status"))
     def status_text(self, obj):
-        """Left-side status using HankoSign-aware display"""
         return object_status_span(obj, final_stage="")
 
     @admin.display(description=_("Roles"))
     def roles_count(self, obj):
-        count = obj.person_roles.count()
-        return str(count)
+        return str(obj.person_roles.count())
 
     @admin.display(description=_("Calculation Details"))
     def calculation_details_display(self, obj):
-        """Render calculation details as plain text in readonly field"""
         if not obj.calculation_details:
             return _("No details available")
-
         details = obj.calculation_details
         lines = []
-
-        # Show roles
         if 'roles' in details:
             lines.append(_("Roles:"))
             for role in details['roles']:
@@ -999,24 +971,18 @@ class SemesterAuditEntryAdmin(
                     f"{role.get('percentage', 0)*100:.1f}% = "
                     f"{role.get('aliquoted_ects', 0)} ECTS"
                 )
-
-        # Show bonus/malus
         if 'bonus_malus' in details:
             bm = details['bonus_malus']
             if bm != 0:
                 lines.append(f"Bonus/Malus: {bm:+.1f} ECTS")
-
         return "\n".join(lines)
 
     @admin.display(description=_("Locked"))
     def active_text(self, obj):
-        """Right-side locked indicator"""
         if not obj:
             return "—"
-
         st = state_snapshot(obj)
         is_locked = st.get("explicit_locked", False)
-
         return boolean_status_span(
             value=not is_locked,
             true_label=_("Open"),
@@ -1031,15 +997,12 @@ class SemesterAuditEntryAdmin(
 
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
-
         if obj:
             st = state_snapshot(obj)
             if st.get('explicit_locked'):
-                # Lock all calculation fields when locked
                 ro.extend([
                     'semester', 'person', 'person_roles', 'inbox_requests',
                     'max_ects_entitled', 'ects_reimbursed', 'ects_bulk',
                     'calculation_details'
                 ])
-
         return ro
