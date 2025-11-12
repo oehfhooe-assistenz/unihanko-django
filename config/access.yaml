@@ -131,3 +131,22 @@ groups:
       assembly.SessionItem: [view, add, change, delete]
       assembly.Vote: [view, add, change]
     custom_perms: {}
+
+  "module:academia:editor":
+    inherits: []
+    models:
+      academia.Semester: [view]
+      academia.InboxRequest: [view]
+      academia.InboxCourse: [view]
+      academia.SemesterAuditEntry: [view]
+    custom_perms: {}
+
+  "module:academia:manager":
+    inherits:
+      - "module:academia:editor"
+    models:
+      academia.Semester: [view, add, change]
+      academia.InboxRequest: [view, add, change]
+      academia.InboxCourse: [view, add, change, delete]
+      academia.SemesterAuditEntry: [view, add, change]
+    custom_perms: {}

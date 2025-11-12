@@ -359,3 +359,100 @@ actions:
     is_repeatable: true
     require_distinct_signer: false
     comment: "Allows printing individual resolution/item PDFs"
+
+  # ========================================
+  # ACADEMIA MODULE - Semesters
+  # ========================================
+  - verb: LOCK
+    stage: ""
+    scope: academia.Semester
+    human_label: "Lock Semester"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Closes public filing and locks all inbox requests for audit processing"
+
+  - verb: UNLOCK
+    stage: ""
+    scope: academia.Semester
+    human_label: "Unlock Semester"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Reopens semester for corrections (emergency use)"
+
+  - verb: VERIFY
+    stage: ""
+    scope: academia.Semester
+    human_label: "Verify Complete Audit"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Verifies audit is complete and correct (locks all audit entries)"
+
+  - verb: RELEASE
+    stage: ""
+    scope: academia.Semester
+    human_label: "Send to University/Print Audit"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Records sending audit to university (repeatable for reprints)"
+
+  # ========================================
+  # ACADEMIA MODULE - Inbox Requests
+  # ========================================
+  - verb: SUBMIT
+    stage: ""
+    scope: academia.InboxRequest
+    human_label: "Submit ECTS Reimbursement Request"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Student/staff submits reimbursement request"
+
+  - verb: VERIFY
+    stage: ""
+    scope: academia.InboxRequest
+    human_label: "Verify Reimbursement Request"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Staff verifies request form is legible and data is correct"
+
+  - verb: APPROVE
+    stage: "CHAIR"
+    scope: academia.InboxRequest
+    human_label: "Approve Reimbursement Request (Chair)"
+    is_repeatable: false
+    require_distinct_signer: true
+    comment: "Chair approves reimbursement request (final approval)"
+
+  - verb: REJECT
+    stage: "CHAIR"
+    scope: academia.InboxRequest
+    human_label: "Reject Reimbursement Request (Chair)"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Chair rejects reimbursement request"
+
+  - verb: RELEASE
+    stage: ""
+    scope: academia.InboxRequest
+    human_label: "Release/Print Reimbursement Form PDF"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Allows printing reimbursement request form PDFs"
+
+  # ========================================
+  # ACADEMIA MODULE - Semester Audit Entries
+  # ========================================
+  - verb: LOCK
+    stage: ""
+    scope: academia.SemesterAuditEntry
+    human_label: "Lock Audit Entry"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Locks individual audit entry (done automatically on semester verify)"
+
+  - verb: UNLOCK
+    stage: ""
+    scope: academia.SemesterAuditEntry
+    human_label: "Unlock Audit Entry"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Reopens audit entry for university corrections"
