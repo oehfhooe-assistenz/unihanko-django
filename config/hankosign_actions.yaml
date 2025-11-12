@@ -398,13 +398,8 @@ actions:
   # ========================================
   # ACADEMIA MODULE - Inbox Requests
   # ========================================
-  - verb: SUBMIT
-    stage: ""
-    scope: academia.InboxRequest
-    human_label: "Submit ECTS Reimbursement Request"
-    is_repeatable: false
-    require_distinct_signer: false
-    comment: "Student/staff submits reimbursement request"
+  # Note: No SUBMIT action - students use public filing platform (no Django account)
+  # Workflow starts directly at VERIFY stage when staff reviews uploaded forms
 
   - verb: VERIFY
     stage: ""
