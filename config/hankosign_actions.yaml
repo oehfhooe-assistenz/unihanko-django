@@ -361,7 +361,7 @@ actions:
     comment: "Allows printing individual resolution/item PDFs"
 
   # ========================================
-  # ACADEMIA MODULE - Semesters
+  # ACADEMIA MODULE - Semesters (Inbox)
   # ========================================
   - verb: LOCK
     stage: ""
@@ -369,7 +369,7 @@ actions:
     human_label: "Lock Semester"
     is_repeatable: true
     require_distinct_signer: false
-    comment: "Closes public filing and locks all inbox requests for audit processing"
+    comment: "Closes public filing and locks all inbox requests (cascades to children)"
 
   - verb: UNLOCK
     stage: ""
@@ -378,22 +378,6 @@ actions:
     is_repeatable: true
     require_distinct_signer: false
     comment: "Reopens semester for corrections (emergency use)"
-
-  - verb: VERIFY
-    stage: ""
-    scope: academia.Semester
-    human_label: "Verify Audit Complete"
-    is_repeatable: false
-    require_distinct_signer: false
-    comment: "Verifies audit calculations are complete and correct (locks all audit entries)"
-
-  - verb: VERIFY
-    stage: "SENT"
-    scope: academia.Semester
-    human_label: "Verify Audit Sent to University"
-    is_repeatable: false
-    require_distinct_signer: false
-    comment: "Confirms audit report was sent to university administration"
 
   # ========================================
   # ACADEMIA MODULE - Inbox Requests
@@ -431,23 +415,63 @@ actions:
     human_label: "Release/Print Reimbursement Form PDF"
     is_repeatable: true
     require_distinct_signer: false
-    comment: "Allows printing reimbursement request form PDFs"
+    comment: "Allows printing reimbursement request form PDFs (repeatable)"
 
   # ========================================
-  # ACADEMIA MODULE - Semester Audit Entries
+  # ACADEMIA AUDIT MODULE - Audit Semesters
   # ========================================
   - verb: LOCK
     stage: ""
-    scope: academia.SemesterAuditEntry
-    human_label: "Lock Audit Entry"
+    scope: academia_audit.AuditSemester
+    human_label: "Lock Audit Semester"
     is_repeatable: true
     require_distinct_signer: false
-    comment: "Locks individual audit entry (done automatically on semester verify)"
+    comment: "Locks audit semester (cascades to all audit entries)"
 
   - verb: UNLOCK
     stage: ""
-    scope: academia.SemesterAuditEntry
-    human_label: "Unlock Audit Entry"
+    scope: academia_audit.AuditSemester
+    human_label: "Unlock Audit Semester"
     is_repeatable: true
     require_distinct_signer: false
-    comment: "Reopens audit entry for university corrections"
+    comment: "Unlocks audit semester for corrections (emergency use)"
+
+  - verb: VERIFY
+    stage: ""
+    scope: academia_audit.AuditSemester
+    human_label: "Verify Audit Complete"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Verifies audit calculations are complete and all entries checked"
+
+  - verb: APPROVE
+    stage: "CHAIR"
+    scope: academia_audit.AuditSemester
+    human_label: "Approve Audit (Chair)"
+    is_repeatable: false
+    require_distinct_signer: true
+    comment: "Chair approves final audit report"
+
+  - verb: REJECT
+    stage: "CHAIR"
+    scope: academia_audit.AuditSemester
+    human_label: "Reject Audit (Chair)"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Chair rejects audit (returns to verification)"
+
+  - verb: VERIFY
+    stage: "SENT"
+    scope: academia_audit.AuditSemester
+    human_label: "Verify Audit Sent to University"
+    is_repeatable: false
+    require_distinct_signer: false
+    comment: "Confirms audit report was sent to university administration"
+
+  - verb: RELEASE
+    stage: ""
+    scope: academia_audit.AuditSemester
+    human_label: "Release/Print Audit PDF"
+    is_repeatable: true
+    require_distinct_signer: false
+    comment: "Allows printing audit report PDFs (repeatable)"
