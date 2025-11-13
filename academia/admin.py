@@ -13,7 +13,7 @@ from concurrency.admin import ConcurrentModelAdmin
 from django.db import transaction
 from django.core.exceptions import PermissionDenied, ValidationError
 
-from .models import Semester, InboxRequest, InboxCourse, SemesterAuditEntry, generate_semester_password
+from .models import Semester, InboxRequest, InboxCourse, generate_semester_password
 from people.models import PersonRole, Person
 from organisation.models import OrgInfo
 from core.pdf import render_pdf_response
@@ -23,7 +23,6 @@ from core.admin_mixins import (
     safe_admin_action,
     ManagerOnlyHistoryMixin
 )
-# Authz imported below
 from core.utils.bool_admin_status import boolean_status_span
 from hankosign.utils import (
     render_signatures_box,
@@ -33,7 +32,8 @@ from hankosign.utils import (
     has_sig,
     sign_once,
     object_status_span,
-    seal_signatures_context
+    seal_signatures_context,
+    RID_JS
 )
 from .utils import validate_ects_total
 from core.utils.authz import is_academia_manager
@@ -46,7 +46,7 @@ class SemesterResource(resources.ModelResource):
         model = Semester
         fields = (
             'id', 'code', 'display_name', 'start_date', 'end_date',
-            'is_active', 'ects_adjustment', 'created_at', 'updated_at'
+            'filing_start', 'filing_end', 'ects_adjustment', 'created_at', 'updated_at'
         )
         export_order = fields
 
@@ -57,16 +57,6 @@ class InboxRequestResource(resources.ModelResource):
         fields = (
             'id', 'reference_code', 'semester', 'person_role',
             'student_note', 'created_at', 'updated_at'
-        )
-        export_order = fields
-
-
-class SemesterAuditEntryResource(resources.ModelResource):
-    class Meta:
-        model = SemesterAuditEntry
-        fields = (
-            'id', 'semester', 'person', 'max_ects_entitled',
-            'ects_reimbursed', 'ects_bulk', 'notes', 'generated_at'
         )
         export_order = fields
 
@@ -133,20 +123,6 @@ class InboxRequestForm(forms.ModelForm):
         return cleaned
 
 
-class SemesterAuditEntryForm(forms.ModelForm):
-    class Meta:
-        model = SemesterAuditEntry
-        fields = '__all__'
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field_name in ['max_ects_entitled', 'ects_reimbursed', 'ects_bulk']:
-            if field_name in self.fields:
-                self.fields[field_name].help_text = _(
-                    "Calculated automatically. Modify via audit synchronization."
-                )
-
-
 # =============== Inline Admins ===============
 
 class InboxCourseInline(admin.TabularInline):
@@ -156,9 +132,9 @@ class InboxCourseInline(admin.TabularInline):
     fields = ('course_code', 'course_name', 'ects_amount')
 
     def has_delete_permission(self, request, obj=None):
-        if obj and obj.inbox_request_id:
-            request_obj = InboxRequest.objects.get(pk=obj.inbox_request_id)
-            st = state_snapshot(request_obj)
+        # obj is the parent InboxRequest
+        if obj:
+            st = state_snapshot(obj)
             if st.get('locked'):
                 return False
         return super().has_delete_permission(request, obj)
@@ -183,19 +159,17 @@ class SemesterAdmin(
         return is_academia_manager(request.user)
 
     list_display = (
-        'status_text',
         'code',
         'display_name',
         'start_date',
         'end_date',
-        'is_active_badge',
+        'filing_window_display',
         'ects_adjustment',
         'requests_count',
-        'audit_entries_count',
         'active_text',
     )
-
-    list_filter = ('is_active', 'start_date', 'created_at')
+    list_display_links = ('code',)
+    list_filter = ('start_date', 'created_at')
     search_fields = ('code', 'display_name')
     ordering = ('-start_date',)
 
@@ -204,7 +178,7 @@ class SemesterAdmin(
             'fields': ('code', 'display_name', 'start_date', 'end_date')
         }),
         (_("Public Filing"), {
-            'fields': ('is_active', 'access_password')
+            'fields': ('filing_start', 'filing_end', 'access_password')
         }),
         (_("ECTS Configuration"), {
             'fields': ('ects_adjustment',)
@@ -264,6 +238,50 @@ class SemesterAdmin(
 
         return actions
 
+    @admin.display(description=_("Filing Window (Web)"))
+    def filing_window_display(self, obj):
+        if not obj.filing_start or not obj.filing_end:
+            return "—"
+        now = timezone.now()
+        if obj.filing_start <= now <= obj.filing_end:
+            return format_html('<span style="color: #10b981; font-weight: 700;">● OPEN</span>')
+        elif now < obj.filing_start:
+            return format_html('<span style="color: #fbbf24;">⏱ Upcoming</span>')
+        else:
+            return format_html('<span style="color: #6b7280;">✓ Closed</span>')
+
+    @admin.display(description=_("Requests"))
+    def requests_count(self, obj):
+        count = obj.inbox_requests.count()
+        return str(count)
+
+    @admin.display(description=_("Locked"))
+    def active_text(self, obj):
+        if not obj:
+            return "—"
+        st = state_snapshot(obj)
+        is_locked = st.get("explicit_locked", False)
+        return boolean_status_span(
+            value=not is_locked,
+            true_label=_("Open"),
+            false_label=_("Locked"),
+            true_code="ok",
+            false_code="off",
+        )
+
+    @admin.display(description=_("Signatures"))
+    def signatures_box(self, obj):
+        return render_signatures_box(obj)
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        if obj:
+            ro.extend(['code', 'display_name'])
+            st = state_snapshot(obj)
+            if st.get("explicit_locked"):
+                ro += ['start_date', 'end_date', 'filing_start', 'filing_end', 'ects_adjustment']
+        return ro
+
     @transaction.atomic
     @safe_admin_action
     def regenerate_password(self, request, obj):
@@ -301,8 +319,6 @@ class SemesterAdmin(
             obj,
             note=f"Semester {obj.code} locked for audit"
         )
-        obj.is_active = False
-        obj.save(update_fields=['is_active'])
         messages.success(request, _("Semester locked. Public filing closed."))
 
     lock_semester.label = _("Lock Semester")
@@ -334,106 +350,8 @@ class SemesterAdmin(
         "style": "margin-bottom: 1rem;",
     }
 
-    @transaction.atomic
-    @safe_admin_action
-    def verify_audit(self, request, obj):
-        if not self._is_manager(request):
-            raise PermissionDenied(_("Not authorized"))
-        action = get_action("VERIFY:-@academia.Semester")
-        if not action:
-            messages.error(request, _("Verify action not configured"))
-            return
-        record_signature(
-            request.user,
-            action,
-            obj,
-            note=f"Audit verified for semester {obj.code}"
-        )
-        # Lock all audit entries
-        for entry in obj.audit_entries.all():
-            lock_action = get_action("LOCK:-@academia.SemesterAuditEntry")
-            if lock_action:
-                record_signature(
-                    request.user,
-                    lock_action,
-                    entry,
-                    note=f"Locked via semester {obj.code} verification"
-                )
-        messages.success(request, _("Audit verified. All entries locked."))
-
-    verify_audit.label = _("Verify Audit")
-    verify_audit.attrs = {
-        "class": "btn btn-block btn-success",
-        "style": "margin-bottom: 1rem;",
-    }
-
-    @transaction.atomic
-    @safe_admin_action
-    def send_to_university(self, request, obj):
-        if not self._is_manager(request):
-            raise PermissionDenied(_("Not authorized"))
-        action = get_action("RELEASE:-@academia.Semester")
-        if not action:
-            messages.error(request, _("Release action not configured"))
-            return
-        sign_once(
-            request,
-            action,
-            obj,
-            note=f"Audit sent to university for semester {obj.code}",
-            window_seconds=10
-        )
-        obj.audit_sent_university_at = timezone.now()
-        obj.save(update_fields=['audit_sent_university_at'])
-        messages.success(
-            request,
-            _("Audit sent timestamp recorded: %(time)s") % {
-                'time': obj.audit_sent_university_at.strftime('%Y-%m-%d %H:%M')
-            }
-        )
-
-    send_to_university.label = _("Send to University")
-    send_to_university.attrs = {
-        "class": "btn btn-block btn-success",
-        "style": "margin-bottom: 1rem;",
-    }
-
-    # Display methods
-    @admin.display(description=_("Status"))
-    def status_text(self, obj):
-        return object_status_span(obj, final_stage="")
-
-    @admin.display(description=_("Filing"), boolean=True)
-    def is_active_badge(self, obj):
-        return obj.is_active
-
-    @admin.display(description=_("Requests"))
-    def requests_count(self, obj):
-        count = obj.inbox_requests.count()
-        return str(count)
-
-    @admin.display(description=_("Audit"))
-    def audit_entries_count(self, obj):
-        count = obj.audit_entries.count()
-        return str(count)
-
-    @admin.display(description=_("Locked"))
-    def active_text(self, obj):
-        if not obj:
-            return "—"
-        st = state_snapshot(obj)
-        is_locked = st.get("explicit_locked", False)
-        return boolean_status_span(
-            value=not is_locked,
-            true_label=_("Open"),
-            false_label=_("Locked"),
-            true_code="ok",
-            false_code="off",
-        )
-
-    @admin.display(description=_("Signatures"))
-    def signatures_box(self, obj):
-        return render_signatures_box(obj)
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(InboxRequest)
@@ -531,16 +449,101 @@ class InboxRequestAdmin(
 
         stage = obj.stage
 
-        if stage == 'DRAFT':
-            drop('verify_request', 'approve_request', 'reject_request', 'print_form')
-        elif stage == 'SUBMITTED':
+        if stage in ('DRAFT', 'SUBMITTED'):
+            # Can only verify
             drop('approve_request', 'reject_request')
         elif stage == 'VERIFIED':
+            # Can approve or reject
             drop('verify_request')
         elif stage in ('APPROVED', 'REJECTED', 'TRANSFERRED'):
+            # Final states - only print
             drop('verify_request', 'approve_request', 'reject_request')
 
         return actions
+
+    @admin.display(description=_("Status"))
+    def status_text(self, obj):
+        stage = obj.stage
+        stage_to_code = {
+            'DRAFT': 'draft',
+            'SUBMITTED': 'submitted',
+            'VERIFIED': 'pending',
+            'APPROVED': 'final',
+            'REJECTED': 'rejected',
+            'TRANSFERRED': 'locked',
+        }
+        code = stage_to_code.get(stage, 'draft')
+        return format_html('<span class="js-state" data-state="{}">{}</span>', code, stage)
+
+    @admin.display(description=_("Person"))
+    def person_name(self, obj):
+        person = obj.person_role.person
+        return f"{person.first_name} {person.last_name}"
+
+    @admin.display(description=_("ECTS"))
+    def total_ects_display(self, obj):
+        return str(obj.total_ects)
+
+    @admin.display(description=_("Total ECTS"))
+    def total_ects_readonly(self, obj):
+        return f"{obj.total_ects} ECTS"
+
+    @admin.display(description=_("Max Entitled"))
+    def max_ects_readonly(self, obj):
+        is_valid, max_ects, total_ects, message = validate_ects_total(obj)
+        return f"{max_ects} ECTS"
+
+    @admin.display(description=_("Validation"))
+    def validation_status(self, obj):
+        is_valid, max_ects, total_ects, message = validate_ects_total(obj)
+        return boolean_status_span(
+            value=is_valid,
+            true_label=_("Valid"),
+            false_label=_("Exceeds"),
+            true_code="ok",
+            false_code="error",
+        )
+
+    @admin.display(description=_("Locked"))
+    def active_text(self, obj):
+        if not obj:
+            return "—"
+        st = state_snapshot(obj)
+        is_locked = st.get("locked", False)
+        if obj.semester:
+            semester_st = state_snapshot(obj.semester)
+            if semester_st.get("explicit_locked"):
+                is_locked = True
+        return boolean_status_span(
+            value=not is_locked,
+            true_label=_("Open"),
+            false_label=_("Locked"),
+            true_code="ok",
+            false_code="off",
+        )
+
+    @admin.display(description=_("Signatures"))
+    def signatures_box(self, obj):
+        return render_signatures_box(obj)
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        if obj:
+            # ALWAYS lock scope fields after creation
+            ro.extend(['semester', 'person_role'])
+            
+            # Additionally lock other fields if verified/approved
+            st = state_snapshot(obj)
+            if st.get('locked') or (obj.semester and state_snapshot(obj.semester).get('explicit_locked')):
+                ro.extend([
+                    'student_note',
+                    'affidavit1_confirmed_at', 
+                    'affidavit2_confirmed_at',
+                    'uploaded_form', 
+                    'uploaded_form_at', 
+                    'submission_ip'
+                ])
+        return ro
 
     @transaction.atomic
     @safe_admin_action
@@ -652,287 +655,9 @@ class InboxRequestAdmin(
     print_form.attrs = {
         "class": "btn btn-block btn-info",
         "style": "margin-bottom: 1rem;",
+        "data-action": "post-object",
+        "onclick": RID_JS
     }
 
-    # Display methods
-    @admin.display(description=_("Status"))
-    def status_text(self, obj):
-        stage = obj.stage
-        stage_to_code = {
-            'DRAFT': 'draft',
-            'SUBMITTED': 'submitted',
-            'VERIFIED': 'pending',
-            'APPROVED': 'final',
-            'REJECTED': 'rejected',
-            'TRANSFERRED': 'locked',
-        }
-        code = stage_to_code.get(stage, 'draft')
-        return format_html('<span class="js-state" data-state="{}">{}</span>', code, stage)
-
-    @admin.display(description=_("Person"))
-    def person_name(self, obj):
-        person = obj.person_role.person
-        return f"{person.first_name} {person.last_name}"
-
-    @admin.display(description=_("ECTS"))
-    def total_ects_display(self, obj):
-        return str(obj.total_ects)
-
-    @admin.display(description=_("Total ECTS"))
-    def total_ects_readonly(self, obj):
-        return f"{obj.total_ects} ECTS"
-
-    @admin.display(description=_("Max Entitled"))
-    def max_ects_readonly(self, obj):
-        is_valid, max_ects, total_ects, message = validate_ects_total(obj)
-        return f"{max_ects} ECTS"
-
-    @admin.display(description=_("Validation"))
-    def validation_status(self, obj):
-        is_valid, max_ects, total_ects, message = validate_ects_total(obj)
-        return boolean_status_span(
-            value=is_valid,
-            true_label=_("Valid"),
-            false_label=_("Exceeds"),
-            true_code="ok",
-            false_code="error",
-        )
-
-    @admin.display(description=_("Locked"))
-    def active_text(self, obj):
-        if not obj:
-            return "—"
-        st = state_snapshot(obj)
-        is_locked = st.get("locked", False)
-        if obj.semester:
-            semester_st = state_snapshot(obj.semester)
-            if semester_st.get("explicit_locked"):
-                is_locked = True
-        return boolean_status_span(
-            value=not is_locked,
-            true_label=_("Open"),
-            false_label=_("Locked"),
-            true_code="ok",
-            false_code="off",
-        )
-
-    @admin.display(description=_("Signatures"))
-    def signatures_box(self, obj):
-        return render_signatures_box(obj)
-
-    def get_readonly_fields(self, request, obj=None):
-        ro = list(super().get_readonly_fields(request, obj))
-        if obj:
-            st = state_snapshot(obj)
-            if st.get('locked') or (obj.semester and state_snapshot(obj.semester).get('explicit_locked')):
-                ro.extend([
-                    'semester', 'person_role', 'student_note',
-                    'affidavit1_confirmed_at', 'affidavit2_confirmed_at',
-                    'uploaded_form', 'uploaded_form_at', 'submission_ip'
-                ])
-        return ro
-
-
-@admin.register(SemesterAuditEntry)
-class SemesterAuditEntryAdmin(
-    SimpleHistoryAdmin,
-    DjangoObjectActions,
-    ImportExportModelAdmin,
-    ConcurrentModelAdmin,
-    HelpPageMixin,
-    ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin
-):
-    resource_classes = [SemesterAuditEntryResource]
-    form = SemesterAuditEntryForm
-
-    def _is_manager(self, request) -> bool:
-        return is_academia_manager(request.user)
-
-    list_display = (
-        'status_text',
-        'person',
-        'semester',
-        'roles_count',
-        'max_ects_entitled',
-        'ects_reimbursed',
-        'ects_bulk',
-        'active_text',
-    )
-
-    list_filter = ('semester', 'generated_at')
-    search_fields = (
-        'person__last_name',
-        'person__first_name',
-        'semester__code'
-    )
-    ordering = ('semester', 'person__last_name', 'person__first_name')
-
-    fieldsets = (
-        (_("Identification"), {
-            'fields': ('semester', 'person')
-        }),
-        (_("ECTS Calculation"), {
-            'fields': (
-                'max_ects_entitled',
-                'ects_reimbursed',
-                'ects_bulk',
-                'calculation_details_display'
-            )
-        }),
-        (_("Relationships"), {
-            'fields': ('person_roles', 'inbox_requests'),
-            'classes': ('collapse',)
-        }),
-        (_("Notes"), {
-            'fields': ('notes',)
-        }),
-        (_("HankoSign"), {
-            'fields': ('signatures_box',)
-        }),
-        (_("System"), {
-            'fields': ('version', 'generated_at', 'updated_at')
-        }),
-    )
-
-    readonly_fields = (
-        'calculation_details_display',
-        'signatures_box',
-        'version',
-        'generated_at',
-        'updated_at'
-    )
-
-    autocomplete_fields = ['semester', 'person']
-    filter_horizontal = ['person_roles', 'inbox_requests']
-
-    change_actions = (
-        'lock_entry',
-        'unlock_entry',
-    )
-
-    def get_change_actions(self, request, object_id, form_url):
-        actions = list(super().get_change_actions(request, object_id, form_url))
-        obj = self.get_object(request, object_id)
-
-        if not obj or not self._is_manager(request):
-            return []
-
-        def drop(*names):
-            for n in names:
-                if n in actions:
-                    actions.remove(n)
-
-        st = state_snapshot(obj)
-        if st.get('explicit_locked'):
-            drop('lock_entry')
-        else:
-            drop('unlock_entry')
-
-        return actions
-
-    @transaction.atomic
-    @safe_admin_action
-    def lock_entry(self, request, obj):
-        if not self._is_manager(request):
-            raise PermissionDenied(_("Not authorized"))
-        action = get_action("LOCK:-@academia.SemesterAuditEntry")
-        if not action:
-            messages.error(request, _("Lock action not configured"))
-            return
-        record_signature(
-            request.user,
-            action,
-            obj,
-            note=f"Audit entry locked for {obj.person}"
-        )
-        messages.success(request, _("Audit entry locked."))
-
-    lock_entry.label = _("Lock Entry")
-    lock_entry.attrs = {
-        "class": "btn btn-block btn-warning",
-        "style": "margin-bottom: 1rem;",
-    }
-
-    @transaction.atomic
-    @safe_admin_action
-    def unlock_entry(self, request, obj):
-        if not self._is_manager(request):
-            raise PermissionDenied(_("Not authorized"))
-        action = get_action("UNLOCK:-@academia.SemesterAuditEntry")
-        if not action:
-            messages.error(request, _("Unlock action not configured"))
-            return
-        record_signature(
-            request.user,
-            action,
-            obj,
-            note=f"Audit entry unlocked for corrections: {obj.person}"
-        )
-        messages.warning(request, _("Audit entry unlocked for corrections."))
-
-    unlock_entry.label = _("Unlock Entry")
-    unlock_entry.attrs = {
-        "class": "btn btn-block btn-success",
-        "style": "margin-bottom: 1rem;",
-    }
-
-    # Display methods
-    @admin.display(description=_("Status"))
-    def status_text(self, obj):
-        return object_status_span(obj, final_stage="")
-
-    @admin.display(description=_("Roles"))
-    def roles_count(self, obj):
-        return str(obj.person_roles.count())
-
-    @admin.display(description=_("Calculation Details"))
-    def calculation_details_display(self, obj):
-        if not obj.calculation_details:
-            return _("No details available")
-        details = obj.calculation_details
-        lines = []
-        if 'roles' in details:
-            lines.append(_("Roles:"))
-            for role in details['roles']:
-                lines.append(
-                    f"  • {role.get('role_name', '?')}: "
-                    f"{role.get('nominal_ects', 0)} ECTS × "
-                    f"{role.get('percentage', 0)*100:.1f}% = "
-                    f"{role.get('aliquoted_ects', 0)} ECTS"
-                )
-        if 'bonus_malus' in details:
-            bm = details['bonus_malus']
-            if bm != 0:
-                lines.append(f"Bonus/Malus: {bm:+.1f} ECTS")
-        return "\n".join(lines)
-
-    @admin.display(description=_("Locked"))
-    def active_text(self, obj):
-        if not obj:
-            return "—"
-        st = state_snapshot(obj)
-        is_locked = st.get("explicit_locked", False)
-        return boolean_status_span(
-            value=not is_locked,
-            true_label=_("Open"),
-            false_label=_("Locked"),
-            true_code="ok",
-            false_code="off",
-        )
-
-    @admin.display(description=_("Signatures"))
-    def signatures_box(self, obj):
-        return render_signatures_box(obj)
-
-    def get_readonly_fields(self, request, obj=None):
-        ro = list(super().get_readonly_fields(request, obj))
-        if obj:
-            st = state_snapshot(obj)
-            if st.get('explicit_locked'):
-                ro.extend([
-                    'semester', 'person', 'person_roles', 'inbox_requests',
-                    'max_ects_entitled', 'ects_reimbursed', 'ects_bulk',
-                    'calculation_details'
-                ])
-        return ro
+    def has_delete_permission(self, request, obj=None):
+        return False

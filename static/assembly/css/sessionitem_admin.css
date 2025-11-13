@@ -1,0 +1,16 @@
+.hidden-field {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Make sure visible fields are properly shown */
+.form-group.field-content:not(.hidden-field),
+.form-group.field-subject:not(.hidden-field),
+.form-group.field-discussion:not(.hidden-field),
+.form-group.field-outcome:not(.hidden-field) {
+    display: block !important;
+    visibility: visible !important;
+}
