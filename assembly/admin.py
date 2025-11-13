@@ -104,13 +104,30 @@ class VoteInline(admin.StackedInline):
     autocomplete_fields = ('mandate',)
 
 
+class SessionItemAdminForm(forms.ModelForm):
+    class Meta:
+        model = SessionItem
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+
+
+
 class SessionItemInline(SortableInlineAdminMixin, ManagerOnlyHistoryMixin, admin.StackedInline):
     model = SessionItem
+    form = SessionItemAdminForm
     extra = 0
-    fields = ('kind', 'title', 'item_code')
+    fields = ('order', 'kind', 'title', 
+              'content',  # For PROCEDURAL
+              'subject', 'discussion', 'outcome',  # For RESOLUTION/ELECTION
+              'voting_mode', 'votes_for', 'votes_against', 'votes_abstain', 'passed',  # Voting
+              'elected_person_role', 'elected_person_text_reference', 'elected_role_text_reference')  # Election
     readonly_fields = ('item_code',)
     show_change_link = True
     can_delete = False
+    ordering = ('order',)
     
     def get_max_num(self, request, obj=None, **kwargs):
         return 50
@@ -175,12 +192,14 @@ class TermAdmin(
     def signatures_box(self, obj):
         return render_signatures_box(obj)
     
+
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
         if obj:
+            ro.extend(['label'])
             st = state_snapshot(obj)
             if st.get("explicit_locked"):
-                ro += ['label', 'start_date', 'end_date', 'is_active', 'notes']
+                ro += ['start_date', 'end_date', 'is_active', 'notes']
         return ro
     
     def get_change_actions(self, request, object_id, form_url):
@@ -258,7 +277,7 @@ class TermAdmin(
         "data-action": "post-object",
         "onclick": RID_JS
     }
-    
+
     def has_delete_permission(self, request, obj=None):
         return False
 
@@ -330,6 +349,15 @@ class CompositionAdmin(
         "data-action": "post-object",
         "onclick": RID_JS
     }
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        if obj:
+            ro.extend(["term"])
+            st = state_snapshot(obj.term)
+            if st.get("explicit_locked"):
+                    ro += ['notes']
+        return ro
     
     def has_delete_permission(self, request, obj=None):
         return False
@@ -408,10 +436,12 @@ class SessionAdmin(
     
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
-        if obj and self._is_locked(request, obj):
-            ro += ['term', 'session_type', 'session_date', 'session_time', 
-                   'location', 'protocol_number', 'attendees', 'absent', 
-                   'other_attendees', 'notes']
+        if obj:
+            ro.extend(['term'])
+            if self._is_locked(request, obj):
+                ro += ['session_type', 'session_date', 'session_time', 
+                    'location', 'protocol_number', 'attendees', 'absent', 
+                    'other_attendees', 'notes']
         return ro
     
     def get_change_actions(self, request, object_id, form_url):
@@ -575,33 +605,7 @@ class SessionAdmin(
 # SESSION ITEM ADMIN
 # ============================================================================
 
-class SessionItemAdminForm(forms.ModelForm):
-    class Meta:
-        model = SessionItem
-        fields = '__all__'
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Conditional field requirements based on kind
-        kind = self.data.get('kind') or getattr(self.instance, 'kind', None)
-        
-        if kind == SessionItem.Kind.PROCEDURAL:
-            # Only show content field
-            if 'subject' in self.fields:
-                self.fields['subject'].required = False
-                self.fields['subject'].widget = forms.HiddenInput()
-            if 'discussion' in self.fields:
-                self.fields['discussion'].required = False
-                self.fields['discussion'].widget = forms.HiddenInput()
-            if 'outcome' in self.fields:
-                self.fields['outcome'].required = False
-                self.fields['outcome'].widget = forms.HiddenInput()
-        else:
-            # Hide content field for RES/ELEC
-            if 'content' in self.fields:
-                self.fields['content'].required = False
-                self.fields['content'].widget = forms.HiddenInput()
+
 
 
 @admin.register(SessionItem)
@@ -744,16 +748,15 @@ class SessionItemAdmin(
     
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
-        
-        # Lock if parent session is locked
-        if obj and obj.session_id:
-            session_admin = self.admin_site._registry.get(Session)
-            if session_admin and session_admin._is_locked(request, obj.session):
-                ro += ['session', 'order', 'kind', 'title', 'content', 
-                       'subject', 'discussion', 'outcome', 'voting_mode',
-                       'votes_for', 'votes_against', 'votes_abstain', 
-                       'passed', 'elected_person_role', 'notes']
-        
+        if obj:
+            ro.extend(['session'])
+            if obj.session_id:
+                session_admin = self.admin_site._registry.get(Session)
+                if session_admin and session_admin._is_locked(request, obj.session):
+                    ro += ['order', 'kind', 'title', 'content', 
+                        'subject', 'discussion', 'outcome', 'voting_mode',
+                        'votes_for', 'votes_against', 'votes_abstain', 
+                        'passed', 'elected_person_role', 'notes'] 
         return ro
     
     def has_delete_permission(self, request, obj=None):
