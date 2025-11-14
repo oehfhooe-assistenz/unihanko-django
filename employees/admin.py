@@ -876,6 +876,7 @@ class TimeSheetAdmin(
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
     HelpPageMixin,
+    ManagerEditableGateMixin,
     ImportExportGuardMixin,
     ManagerEditableGateMixin,
     ManagerOnlyHistoryMixin
@@ -911,7 +912,7 @@ class TimeSheetAdmin(
     inlines = []
 
     fieldsets = (
-        (_("Scope"), {"fields": ("employee", ("year", "month"))}),
+        (_("Scope"), {"fields": (("employee"), ("year"), ("month"),)}),
         (_("Work Calendar"), {"fields": ("work_calendar_preview", "work_infobox")}),
         (_("Leave Calendar"), {"fields": ("leave_calendar_preview", "pto_infobox",)}),
         (_("HankoSign Workflow"), {"fields": ("signatures_box",),}),
@@ -922,6 +923,7 @@ class TimeSheetAdmin(
     @admin.display(description=_("Work Calendar"))
     def work_calendar_preview(self, obj):
         return self._render_calendar(obj, allow_kinds="work", show_kinds={"WORK", "OTHER"}, title=_("Work Calendar"), cal_type="wrk")
+
     
     @admin.display(description=_("Leave Calendar"))
     def leave_calendar_preview(self, obj):
@@ -929,6 +931,7 @@ class TimeSheetAdmin(
 
     # ---- server-rendered calendar preview (chips in cells, no day modal) ----
     def _render_calendar(self, obj, *, allow_kinds: str, show_kinds: set[str], title: str, cal_type: str):
+        print(f"DEBUG: _render_calendar called for {obj}")
         from django.utils.translation import gettext_lazy as _t
         if not obj or not obj.pk:
             return _t("— save first to see the calendar —")
