@@ -1,0 +1,117 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1 class="page-title">{% trans "Your Payment Plans" %}</h1>
+
+<div class="card">
+    <h2 class="card-title">{{ fiscal_year.label }}</h2>
+    <p style="color: #94a3b8;">
+        {% trans "Welcome" %}, {{ person.first_name }} {{ person.last_name }}
+    </p>
+</div>
+
+{% if draft_plans %}
+    <div class="card">
+        <h2 class="card-title">{% trans "Plans Requiring Action" %}</h2>
+        <p style="color: #94a3b8; margin-bottom: 1.5rem;">
+            {% trans "The following payment plans need to be completed. Click on each to enter your banking details." %}
+        </p>
+
+        <div style="display: grid; gap: 1rem;">
+            {% for plan in draft_plans %}
+            <div style="background: #2a2a2a; padding: 1.5rem; border-left: 4px solid #FF6B35;">
+                <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h3 style="font-size: 1.1rem; font-weight: 900; margin-bottom: 0.5rem; color: #FF6B35;">
+                            {{ plan.plan_code }}
+                        </h3>
+                        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">
+                            <strong>{% trans "Role" %}:</strong> {{ plan.person_role.role.name }}
+                        </p>
+                        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">
+                            <strong>{% trans "Period" %}:</strong>
+                            {{ plan.pay_start|date:"d.m.Y" }} - {{ plan.pay_end|date:"d.m.Y" }}
+                        </p>
+                        <p style="color: #94a3b8; font-size: 0.9rem;">
+                            <strong>{% trans "Monthly" %}:</strong> € {{ plan.monthly_amount }}
+                        </p>
+                    </div>
+                    <div>
+                        <a href="{% url 'portal:payments:complete_plan' plan_code=plan.plan_code %}" class="btn">
+                            {% trans "Complete Plan" %} →
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+{% if all_plans %}
+    <div class="card">
+        <h2 class="card-title">{% trans "All Your Plans" %}</h2>
+        <p style="color: #94a3b8; margin-bottom: 1.5rem;">
+            {% trans "View the status of all your payment plans for this fiscal year." %}
+        </p>
+
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid #444;">
+                    <th style="text-align: left; padding: 0.75rem; color: #FF6B35;">{% trans "Plan Code" %}</th>
+                    <th style="text-align: left; padding: 0.75rem; color: #FF6B35;">{% trans "Role" %}</th>
+                    <th style="text-align: center; padding: 0.75rem; color: #FF6B35;">{% trans "Status" %}</th>
+                    <th style="text-align: right; padding: 0.75rem; color: #FF6B35;">{% trans "Action" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for plan in all_plans %}
+                <tr style="border-bottom: 1px solid #2a2a2a;">
+                    <td style="padding: 0.75rem; font-family: monospace;">{{ plan.plan_code }}</td>
+                    <td style="padding: 0.75rem;">{{ plan.person_role.role.name }}</td>
+                    <td style="padding: 0.75rem; text-align: center;">
+                        <span style="padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-size: 0.85rem; font-weight: 600;
+                                     {% if plan.status == 'DRAFT' %}background: rgba(255, 107, 53, 0.2); color: #FF6B35;
+                                     {% elif plan.status == 'ACTIVE' %}background: rgba(16, 185, 129, 0.2); color: #10b981;
+                                     {% else %}background: rgba(100, 116, 139, 0.2); color: #94a3b8;{% endif %}">
+                            {{ plan.get_status_display }}
+                        </span>
+                    </td>
+                    <td style="padding: 0.75rem; text-align: right;">
+                        <a href="{% url 'portal:payments:plan_status' plan_code=plan.plan_code %}"
+                           style="color: #FF6B35; text-decoration: none; font-weight: 600;">
+                            {% trans "View" %} →
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="card">
+        <p style="color: #94a3b8; text-align: center;">
+            {% trans "No payment plans found for this fiscal year." %}
+        </p>
+    </div>
+{% endif %}
+
+<div style="margin-top: 2rem;">
+    <a href="{% url 'portal:payments:fy_list' %}" class="btn btn-secondary">{% trans "Back to Fiscal Years" %}</a>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media (max-width: 768px) {
+        table {
+            font-size: 0.85rem;
+        }
+        th, td {
+            padding: 0.5rem !important;
+        }
+    }
+</style>
+{% endblock %}

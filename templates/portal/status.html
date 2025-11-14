@@ -1,0 +1,223 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1 class="page-title">{% trans "Request Status" %}</h1>
+
+<!-- Prominent reference code banner -->
+<div style="background: #1a1a1a; border: 4px solid #FF6B35; padding: 1rem 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 6px 6px 0 #000;">
+    <div>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Your Reference Code" %}</p>
+        <p style="font-size: 1.5rem; font-weight: 900; color: #FF6B35; font-family: monospace; letter-spacing: 2px;">{{ inbox_request.reference_code }}</p>
+    </div>
+    <div style="text-align: right;">
+        <p style="color: #94a3b8; font-size: 0.85rem;">{% trans "Save this code to check your status later" %}</p>
+        <button onclick="copyCode()" class="btn" style="margin-top: 0.5rem; padding: 0.5rem 1rem; font-size: 0.9rem;">
+            {% trans "Copy Code" %}
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">{% trans "Request Details" %}</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+        <div>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Semester" %}</p>
+            <p style="font-weight: 600;">{{ inbox_request.semester.display_name }}</p>
+        </div>
+        <div>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Person" %}</p>
+            <p style="font-weight: 600;">{{ inbox_request.person_role.person.first_name }} {{ inbox_request.person_role.person.last_name }}</p>
+        </div>
+        <div>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Role" %}</p>
+            <p style="font-weight: 600;">{{ inbox_request.person_role.role.name }}</p>
+        </div>
+        <div>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Total ECTS" %}</p>
+            <p style="font-weight: 600; color: #FF6B35;">{{ inbox_request.total_ects }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">{% trans "Current Status" %}</h2>
+
+    <div style="margin: 1.5rem 0;">
+        {% if stage == 'DRAFT' %}
+            <div style="background: rgba(255, 107, 53, 0.1); border-left: 4px solid #FF6B35; padding: 1rem;">
+                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem;">{% trans "DRAFT" %}</p>
+                <p style="color: #94a3b8;">{% trans "Your request has been created. Please download the form below, have it signed by your professors, then upload it here." %}</p>
+            </div>
+        {% elif stage == 'SUBMITTED' %}
+            <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6; padding: 1rem;">
+                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; color: #3b82f6;">{% trans "SUBMITTED" %}</p>
+                <p style="color: #94a3b8;">{% trans "Your signed form has been uploaded. It is awaiting verification by staff." %}</p>
+            </div>
+        {% elif stage == 'VERIFIED' %}
+            <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; padding: 1rem;">
+                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; color: #10b981;">{% trans "VERIFIED" %}</p>
+                <p style="color: #94a3b8;">{% trans "Your form has been verified by staff. It is now awaiting approval by the chair." %}</p>
+            </div>
+        {% elif stage == 'APPROVED' %}
+            <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; padding: 1rem;">
+                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; color: #10b981;">{% trans "APPROVED" %}</p>
+                <p style="color: #94a3b8;">{% trans "Your request has been approved by the chair. It will be included in the semester audit." %}</p>
+            </div>
+        {% elif stage == 'REJECTED' %}
+            <div style="background: rgba(220, 38, 38, 0.1); border-left: 4px solid #dc2626; padding: 1rem;">
+                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; color: #dc2626;">{% trans "REJECTED" %}</p>
+                <p style="color: #94a3b8;">{% trans "Your request has been rejected. Please contact the office for more information." %}</p>
+            </div>
+        {% elif stage == 'TRANSFERRED' %}
+            <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; padding: 1rem;">
+                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; color: #10b981;">{% trans "TRANSFERRED" %}</p>
+                <p style="color: #94a3b8;">{% trans "Your request has been transferred to the audit system." %}</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div style="margin-top: 2rem;">
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.5rem;">
+            <strong>{% trans "Submitted" %}:</strong> {{ inbox_request.created_at|date:"d.m.Y H:i" }}
+        </p>
+        {% if inbox_request.uploaded_form_at %}
+        <p style="color: #94a3b8; font-size: 0.9rem;">
+            <strong>{% trans "Form uploaded" %}:</strong> {{ inbox_request.uploaded_form_at|date:"d.m.Y H:i" }}
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">{% trans "Course List" %}</h2>
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+        <thead>
+            <tr style="border-bottom: 2px solid #444;">
+                <th style="text-align: left; padding: 0.75rem; color: #FF6B35;">{% trans "Code" %}</th>
+                <th style="text-align: left; padding: 0.75rem; color: #FF6B35;">{% trans "Name" %}</th>
+                <th style="text-align: right; padding: 0.75rem; color: #FF6B35;">{% trans "ECTS" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in inbox_request.courses.all %}
+            <tr style="border-bottom: 1px solid #2a2a2a;">
+                <td style="padding: 0.75rem;">{{ course.course_code|default:"—" }}</td>
+                <td style="padding: 0.75rem;">{{ course.course_name|default:"—" }}</td>
+                <td style="padding: 0.75rem; text-align: right; font-weight: 600;">{{ course.ects_amount }}</td>
+            </tr>
+            {% endfor %}
+            <tr style="border-top: 2px solid #FF6B35;">
+                <td colspan="2" style="padding: 0.75rem; text-align: right; font-weight: 600;">{% trans "Total" %}:</td>
+                <td style="padding: 0.75rem; text-align: right; font-weight: 600; color: #FF6B35; font-size: 1.1rem;">{{ inbox_request.total_ects }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+{% if inbox_request.student_note %}
+<div class="card">
+    <h2 class="card-title">{% trans "Notes" %}</h2>
+    <p style="line-height: 1.6; white-space: pre-wrap;">{{ inbox_request.student_note }}</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2 class="card-title">{% trans "Download Form" %}</h2>
+    <p style="margin-bottom: 1.5rem; color: #94a3b8;">
+        {% trans "Download the PDF form, have it signed by your professors, then upload it below." %}
+    </p>
+    <a href="{% url 'portal:request_pdf' inbox_request.reference_code %}" class="btn" target="_blank">
+        {% trans "Download PDF Form" %}
+    </a>
+</div>
+
+{% if upload_form %}
+<div class="card">
+    <h2 class="card-title">{% trans "Upload Signed Form" %}</h2>
+
+    <div style="background: #2a2a2a; padding: 1.5rem; margin-bottom: 1.5rem; border-left: 4px solid #FF6B35;">
+        <p style="line-height: 1.6; white-space: pre-wrap;">{{ affidavit_2 }}</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="id_uploaded_form" class="form-label">{{ upload_form.uploaded_form.label }}</label>
+            {{ upload_form.uploaded_form }}
+            {% if upload_form.uploaded_form.errors %}
+                <ul class="errorlist">
+                    {% for error in upload_form.uploaded_form.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% if upload_form.uploaded_form.help_text %}
+                <span class="form-help">{{ upload_form.uploaded_form.help_text }}</span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label style="display: flex; align-items: start; gap: 0.75rem; cursor: pointer;">
+                {{ upload_form.affidavit2_confirmed }}
+                <span style="flex: 1;">
+                    {{ upload_form.affidavit2_confirmed.label }}
+                    {% if upload_form.affidavit2_confirmed.errors %}
+                        <ul class="errorlist">
+                            {% for error in upload_form.affidavit2_confirmed.errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </span>
+            </label>
+        </div>
+
+        <button type="submit" class="btn">{% trans "Upload Form" %}</button>
+    </form>
+</div>
+{% endif %}
+
+<div style="margin-top: 2rem;">
+    <a href="{% url 'portal:semester_list' %}" class="btn btn-secondary">{% trans "Back to Portal" %}</a>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media (max-width: 768px) {
+        table {
+            font-size: 0.9rem;
+        }
+        td, th {
+            padding: 0.5rem !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copyCode() {
+        const code = "{{ inbox_request.reference_code }}";
+        navigator.clipboard.writeText(code).then(function() {
+            // Visual feedback
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = "{% trans 'Copied!' %}";
+            btn.style.background = '#10b981';
+
+            setTimeout(function() {
+                btn.textContent = originalText;
+                btn.style.background = '#FF6B35';
+            }, 2000);
+        }).catch(function(err) {
+            // Fallback for older browsers
+            alert("{% trans 'Reference Code:' %} " + code);
+        });
+    }
+</script>
+{% endblock %}

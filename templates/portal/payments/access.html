@@ -1,0 +1,67 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1 class="page-title">{% trans "Access Payment Plans" %}</h1>
+
+<div class="card">
+    <h2 class="card-title">{{ fiscal_year.label }}</h2>
+    <p style="color: #94a3b8;">
+        {{ fiscal_year.start|date:"d.m.Y" }} - {{ fiscal_year.end|date:"d.m.Y" }}
+    </p>
+</div>
+
+<div class="card">
+    <h2 class="card-title">{% trans "Enter Your Personal Access Code" %}</h2>
+
+    <p style="color: #94a3b8; margin-bottom: 1.5rem;">
+        {% trans "Your personal access code (PAC) was provided to you by the administration. Enter it below to access your payment plans for this fiscal year." %}
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="id_pac" class="form-label">{{ form.pac.label }}</label>
+            {{ form.pac }}
+            {% if form.pac.errors %}
+                <ul class="errorlist">
+                    {% for error in form.pac.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% if form.pac.help_text %}
+                <span class="form-help">{{ form.pac.help_text }}</span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="id_captcha_0" class="form-label">{{ form.captcha.label }}</label>
+            {{ form.captcha }}
+            {% if form.captcha.errors %}
+                <ul class="errorlist">
+                    {% for error in form.captcha.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+
+        {% if form.non_field_errors %}
+            <ul class="errorlist" style="margin-bottom: 1rem;">
+                {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <button type="submit" class="btn">{% trans "Access Plans" %}</button>
+    </form>
+</div>
+
+<div style="margin-top: 2rem;">
+    <a href="{% url 'portal:payments:fy_list' %}" class="btn btn-secondary">{% trans "Back" %}</a>
+</div>
+
+{% endblock %}

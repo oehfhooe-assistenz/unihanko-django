@@ -23,7 +23,9 @@ admin.site.index_title = "Dashboard"
 urlpatterns = [
     path('tinymce/', include('tinymce.urls')),
     path('i18n/', include('django.conf.urls.i18n')),
+    path('captcha/', include('captcha.urls')),
     path('', core_views.home, name='home'),
+    path('portal/', include('portal.urls')),
     path('admin/cockpit/', core_views.admin_cockpit, name='admin_cockpit'),
     path('admin/', admin.site.urls),
     path('markdownx/', include('markdownx.urls')),
