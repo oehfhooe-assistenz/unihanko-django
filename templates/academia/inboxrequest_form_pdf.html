@@ -1,0 +1,159 @@
+{% extends "pdf/base.html" %}
+{% load i18n %}
+
+{% block header_title %}{% trans "ECTS Reimbursement Request" %} — {{ request_obj.reference_code }}{% endblock %}
+
+{% block content %}
+{% include '_includes/_org_header.html' with org=org %}
+
+<h1 class="document-title">{% trans "ECTS Reimbursement Request Form" %}</h1>
+<p class="document-code">{{ request_obj.reference_code }}</p>
+
+<div class="section">
+    <h2 class="section-title">{% trans "Request Details" %}</h2>
+    <div class="section-content">
+        <table class="info-table">
+            <tr>
+                <th>{% trans "Reference Code" %}</th>
+                <td><strong>{{ request_obj.reference_code }}</strong></td>
+            </tr>
+            <tr>
+                <th>{% trans "Semester" %}</th>
+                <td>{{ request_obj.semester.code }} — {{ request_obj.semester.display_name }}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Person" %}</th>
+                <td>{{ request_obj.person_role.person.first_name }} {{ request_obj.person_role.person.last_name }}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Submission Date" %}</th>
+                <td>{{ request_obj.created_at|date:"d.m.Y H:i" }}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Status" %}</th>
+                <td>{{ request_obj.get_stage_display }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="section">
+    <h2 class="section-title">{% trans "Course List" %}</h2>
+    <div class="section-content">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>{% trans "Course Code" %}</th>
+                    <th>{% trans "Course Name" %}</th>
+                    <th class="text-right">{% trans "ECTS" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in request_obj.courses.all %}
+                <tr>
+                    <td>{{ course.course_code|default:"—" }}</td>
+                    <td>{{ course.course_name|default:"—" }}</td>
+                    <td class="text-right">{{ course.ects|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center">{% trans "No courses listed" %}</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="2" class="text-right"><strong>{% trans "Total ECTS" %}</strong></td>
+                    <td class="text-right"><strong>{{ request_obj.total_ects|floatformat:2 }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="section">
+    <h2 class="section-title">{% trans "Eligibility" %}</h2>
+    <div class="section-content">
+        <table class="info-table">
+            <tr>
+                <th>{% trans "Person Roles" %}</th>
+                <td>
+                    {% for pr in request_obj.person_role.person.person_roles.all %}
+                        {% if pr.role.is_eligible_for_ects %}
+                            {{ pr.role.name }}
+                            ({% include '_includes/_date_period.html' with start_date=pr.start_date end_date=pr.end_date %})
+                            — {% trans "Max" %} {{ pr.role.max_ects_per_semester }} {% trans "ECTS/semester" %}
+                            {% if not forloop.last %}<br>{% endif %}
+                        {% endif %}
+                    {% empty %}
+                        {% trans "No eligible roles found" %}
+                    {% endfor %}
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="section">
+    <h2 class="section-title">{% trans "Affidavits" %}</h2>
+    <div class="section-content">
+        <div class="affidavit-box">
+            <h4>{% trans "Initial Submission Affidavit" %}</h4>
+            <p>{{ org.ects_affidavit_1|linebreaksbr|default:"—" }}</p>
+            <p class="signature-line">
+                <label>{% trans "Confirmed" %}:</label>
+                {% if request_obj.affidavit1_confirmed_at %}
+                    {{ request_obj.affidavit1_confirmed_at|date:"d.m.Y H:i" }}
+                {% else %}
+                    {% trans "Not confirmed" %}
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="affidavit-box">
+            <h4>{% trans "Form Upload Affidavit" %}</h4>
+            <p>{{ org.ects_affidavit_2|linebreaksbr|default:"—" }}</p>
+            <p class="signature-line">
+                <label>{% trans "Confirmed" %}:</label>
+                {% if request_obj.affidavit2_confirmed_at %}
+                    {{ request_obj.affidavit2_confirmed_at|date:"d.m.Y H:i" }}
+                {% else %}
+                    {% trans "Not confirmed" %}
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+{% if request_obj.uploaded_form %}
+<div class="section">
+    <h2 class="section-title">{% trans "Uploaded Form" %}</h2>
+    <div class="section-content">
+        <table class="info-table">
+            <tr>
+                <th>{% trans "File" %}</th>
+                <td>{{ request_obj.uploaded_form.name }}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Upload Date" %}</th>
+                <td>{{ request_obj.uploaded_form_at|date:"d.m.Y H:i"|default:"—" }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if request_obj.notes %}
+<div class="section">
+    <h2 class="section-title">{% trans "Notes" %}</h2>
+    <div class="section-content">
+        <p>{{ request_obj.notes|linebreaksbr }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% include '_includes/_signature_seal.html' with signatures=signatures %}
+
+{% include '_includes/_signature_boxes.html' with count=2 signers=signers %}
+
+{% include '_includes/_disclaimer.html' %}
+
+{% endblock %}

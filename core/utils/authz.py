@@ -64,6 +64,12 @@ def is_employees_manager(user) -> bool:
 def is_assembly_manager(user) -> bool:
     return is_module_manager(user, "assembly")
 
+def is_academia_manager(user) -> bool:
+    return is_module_manager(user, "academia")
+
+def is_academia_audit_manager(user) -> bool:
+    return is_module_manager(user, "academia_audit")
+
 def refresh_acl_cache() -> None:
     """Call this if you change access.yaml at runtime (e.g., from a management command)."""
     _load_acl.cache_clear()

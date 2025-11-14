@@ -88,6 +88,19 @@ class OrgInfo(SingletonModel):
 
     org_public_filing_url = models.CharField(_("Public filing URL"), max_length=128, blank=True, help_text=_("Do not change without permission."))
 
+    # --- ECTS Reimbursement Affidavits -------------------------------------
+    ects_affidavit_1 = models.TextField(
+        _("ECTS Affidavit 1 (Initial Submission)"),
+        blank=True,
+        help_text=_("Affidavit text shown when student submits course list")
+    )
+
+    ects_affidavit_2 = models.TextField(
+        _("ECTS Affidavit 2 (Form Upload)"),
+        blank=True,
+        help_text=_("Affidavit text shown when student uploads signed form")
+    )
+
     history = HistoricalRecords()
 
     class Meta:

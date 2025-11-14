@@ -1,0 +1,118 @@
+# Wordlist for semester password generation
+# Format: word-word-## (e.g., forest-mountain-42)
+# Words should be memorable, easy to spell, and appropriate
+
+words:
+  # Nature & Geography
+  - forest
+  - mountain
+  - river
+  - ocean
+  - valley
+  - sunrise
+  - sunset
+  - thunder
+  - breeze
+  - meadow
+  - glacier
+  - canyon
+  - desert
+  - island
+  - storm
+  - lake
+  - cliff
+  - wave
+  - cloud
+  - star
+  - moon
+  - earth
+  - wind
+  - fire
+  - water
+  - stone
+  - branch
+  - leaf
+  - snow
+  - rain
+
+  # Colors
+  - azure
+  - crimson
+  - emerald
+  - golden
+  - silver
+  - amber
+  - violet
+  - indigo
+  - copper
+  - pearl
+
+  # Animals
+  - eagle
+  - falcon
+  - dolphin
+  - panther
+  - wolf
+  - bear
+  - fox
+  - deer
+  - hawk
+  - tiger
+  - lion
+  - otter
+  - swan
+  - raven
+  - owl
+
+  # Abstract/Positive
+  - wisdom
+  - courage
+  - spirit
+  - energy
+  - harmony
+  - balance
+  - focus
+  - clarity
+  - victory
+  - triumph
+  - unity
+  - freedom
+  - justice
+  - honor
+  - trust
+
+  # Objects
+  - castle
+  - tower
+  - bridge
+  - compass
+  - anchor
+  - crown
+  - shield
+  - sword
+  - arrow
+  - beacon
+
+  # Time
+  - dawn
+  - dusk
+  - autumn
+  - spring
+  - summer
+  - winter
+  - solstice
+  - equinox
+  - century
+  - epoch
+
+  # Misc
+  - crystal
+  - prism
+  - nexus
+  - zenith
+  - quantum
+  - cipher
+  - atlas
+  - cosmos
+  - nova
+  - phoenix
