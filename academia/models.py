@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
@@ -63,7 +64,13 @@ class Semester(models.Model):
         _("Code"),
         max_length=10,
         unique=True,
-        help_text=_("Short code, e.g., WS24, SS25")
+        validators=[
+            RegexValidator(
+                regex=r'^(WS|SS)\d{2}$',
+                message=_("Code must be in format: WS## or SS## (e.g., WS24, SS25)")
+            )
+        ],
+        help_text=_("Short code in format WS## or SS## (e.g., WS24, SS25)")
     )
 
     display_name = models.CharField(
@@ -88,12 +95,6 @@ class Semester(models.Model):
         null=True,
         blank=True,
         help_text=_("When public filing platform closes for new requests")
-    )
-
-    is_active = models.BooleanField(
-        _("Active for Filing"),
-        default=False,
-        help_text=_("DEPRECATED: Use filing_start/filing_end instead")
     )
 
     access_password = models.CharField(
@@ -189,6 +190,14 @@ class Semester(models.Model):
                             'fields': ', '.join(changed_fields)
                         }
                     )
+
+    @property
+    def is_filing_open(self):
+        """Check if filing window is currently open"""
+        now = timezone.now()
+        if not self.filing_start or not self.filing_end:
+            return False
+        return self.filing_start <= now <= self.filing_end
 
 
 class InboxRequest(models.Model):
@@ -328,8 +337,8 @@ class InboxRequest(models.Model):
             original = InboxRequest.objects.get(pk=self.pk)
             st = state_snapshot(original)
 
-            # Allow file upload even if partially locked
-            if st.get("submitted") and not has_sig(original, 'APPROVE', 'CHAIR'):
+            # Allow file upload even if verified
+            if has_sig(original, 'VERIFY', ''):
                 # Only allow updating uploaded_form and affidavit2
                 allowed_fields = {'uploaded_form', 'uploaded_form_at', 'affidavit2_confirmed_at', 'updated_at'}
                 changed_fields = set()
@@ -343,7 +352,7 @@ class InboxRequest(models.Model):
 
                 if changed_fields:
                     raise ValidationError(
-                        _("Request already submitted. Cannot modify: %(fields)s") % {
+                        _("Request verified. Cannot modify: %(fields)s") % {
                             'fields': ', '.join(changed_fields)
                         }
                     )
@@ -356,24 +365,19 @@ class InboxRequest(models.Model):
         Returns:
             str: One of DRAFT, SUBMITTED, VERIFIED, APPROVED, REJECTED, TRANSFERRED
         """
-        st = state_snapshot(self)
-
         # Check for rejection first
         if has_sig(self, 'REJECT', 'CHAIR'):
             return 'REJECTED'
 
-        # Check if transferred to audit
-        if hasattr(self, '_transferred_to_audit'):
-            if self._transferred_to_audit:
-                return 'TRANSFERRED'
-        else:
-            # Check database
-            if SemesterAuditEntry.objects.filter(
-                semester=self.semester,
-                person=self.person_role.person,
-                inbox_requests=self
-            ).exists():
-                return 'TRANSFERRED'
+        # Check if transferred to audit (check if AuditEntry exists)
+        # Avoid circular import by doing late import
+        from academia_audit.models import AuditEntry
+        if AuditEntry.objects.filter(
+            audit_semester__semester=self.semester,
+            person=self.person_role.person,
+            inbox_requests=self
+        ).exists():
+            return 'TRANSFERRED'
 
         # Check HankoSign approvals
         if has_sig(self, 'APPROVE', 'CHAIR'):
@@ -464,133 +468,4 @@ class InboxCourse(models.Model):
         if self.ects_amount and self.ects_amount <= 0:
             raise ValidationError(
                 _("ECTS amount must be greater than 0")
-            )
-
-
-class SemesterAuditEntry(models.Model):
-    """
-    Final audit entry for a person's ECTS allocation in a semester.
-
-    This model is generated when the semester audit is synchronized.
-    It represents the final calculation of ECTS entitlement, reimbursements,
-    and bulk allocation for a person across all their roles during the semester.
-    """
-
-    # Core relationships
-    semester = models.ForeignKey(
-        Semester,
-        on_delete=models.PROTECT,
-        related_name='audit_entries',
-        verbose_name=_("Semester")
-    )
-
-    person = models.ForeignKey(
-        Person,
-        on_delete=models.PROTECT,
-        related_name='ects_audits',
-        verbose_name=_("Person")
-    )
-
-    # Many-to-many relationships
-    person_roles = models.ManyToManyField(
-        PersonRole,
-        related_name='semester_audit_entries',
-        verbose_name=_("Person Roles"),
-        help_text=_("All roles this person held during the semester (DEPRECATED)")
-    )
-
-    inbox_requests = models.ManyToManyField(
-        InboxRequest,
-        blank=True,
-        related_name='semester_audit_entries',
-        verbose_name=_("Inbox Requests"),
-        help_text=_("Approved reimbursement requests for this person (DEPRECATED)")
-    )
-
-    # Calculated ECTS
-    max_ects_entitled = models.DecimalField(
-        _("Maximum ECTS Entitled"),
-        max_digits=5,
-        decimal_places=2,
-        help_text=_("Maximum ECTS with aliquotation and bonus/malus applied")
-    )
-
-    ects_reimbursed = models.DecimalField(
-        _("ECTS Reimbursed"),
-        max_digits=5,
-        decimal_places=2,
-        default=0,
-        help_text=_("Sum of ECTS from specific course reimbursements")
-    )
-
-    ects_bulk = models.DecimalField(
-        _("ECTS Bulk"),
-        max_digits=5,
-        decimal_places=2,
-        help_text=_("Remaining ECTS credited as general (bulk)")
-    )
-
-    # Calculation transparency
-    calculation_details = models.JSONField(
-        _("Calculation Details"),
-        default=dict,
-        blank=True,
-        help_text=_("Detailed breakdown of ECTS calculation per role")
-    )
-
-    # Manual adjustments
-    notes = models.TextField(
-        _("Notes"),
-        blank=True,
-        help_text=_("Optional notes for manual adjustments or corrections")
-    )
-
-    # Timestamps
-    generated_at = models.DateTimeField(
-        _("Generated At"),
-        auto_now_add=True
-    )
-
-    updated_at = models.DateTimeField(auto_now=True)
-
-    # History & versioning
-    history = HistoricalRecords()
-    version = AutoIncVersionField()
-
-    class Meta:
-        verbose_name = _("Semester Audit Entry")
-        verbose_name_plural = _("Semester Audit Entries")
-        ordering = ['person__last_name', 'person__first_name']
-        constraints = [
-            models.UniqueConstraint(
-                fields=['semester', 'person'],
-                name='uq_audit_one_per_person_per_semester'
-            )
-        ]
-
-    def __str__(self):
-        return f"{self.person} - {self.semester.code} ({self.max_ects_entitled} ECTS)"
-
-    def clean(self):
-        super().clean()
-
-        # Check if locked via HankoSign
-        if self.pk:
-            original = SemesterAuditEntry.objects.get(pk=self.pk)
-            st = state_snapshot(original)
-
-            if st.get("explicit_locked"):
-                raise ValidationError(
-                    _("Audit entry is locked. Cannot modify.")
-                )
-
-        # Validate ECTS calculations
-        if self.ects_reimbursed < 0:
-            raise ValidationError(
-                _("Reimbursed ECTS cannot be negative")
-            )
-
-        if self.ects_bulk < 0:
-            raise ValidationError(
-                _("Bulk ECTS cannot be negative")
             )
