@@ -1,0 +1,181 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1 class="page-title">{% trans "File ECTS Request" %}</h1>
+
+<div class="card">
+    <h2 class="card-title">{{ semester.display_name }}</h2>
+    <p style="color: #94a3b8;">
+        {{ semester.code}} | {{ semester.start_date|date:"d.m.Y" }} - {{ semester.end_date|date:"d.m.Y" }}
+    </p>
+</div>
+
+<form method="post" id="filing-form">
+    {% csrf_token %}
+
+    <div class="card">
+        <h2 class="card-title">{% trans "1. Select Your Role" %}</h2>
+
+        <div class="form-group">
+            <label for="id_person_role" class="form-label">{{ form.person_role.label }}</label>
+            {{ form.person_role }}
+            {% if form.person_role.errors %}
+                <ul class="errorlist">
+                    {% for error in form.person_role.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% if form.person_role.help_text %}
+                <span class="form-help">{{ form.person_role.help_text }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 class="card-title">{% trans "2. Add Your Courses" %}</h2>
+        <p style="color: #94a3b8; margin-bottom: 1.5rem;">
+            {% trans "Add up to 10 courses. At least one of course code or course name is required for each entry." %}
+        </p>
+
+        {{ course_formset.management_form }}
+
+        <div id="course-forms">
+            {% for course_form in course_formset %}
+            <div class="course-form-entry" style="background: #2a2a2a; padding: 1rem; margin-bottom: 1rem; border: 2px solid #444;">
+                <h4 style="color: #FF6B35; margin-bottom: 1rem;">{% trans "Course" %} #{{ forloop.counter }}</h4>
+
+                <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 1rem; margin-bottom: 0.5rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" style="font-size: 0.9rem;">{{ course_form.course_code.label }}</label>
+                        {{ course_form.course_code }}
+                        {% if course_form.course_code.errors %}
+                            <ul class="errorlist">
+                                {% for error in course_form.course_code.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" style="font-size: 0.9rem;">{{ course_form.course_name.label }}</label>
+                        {{ course_form.course_name }}
+                        {% if course_form.course_name.errors %}
+                            <ul class="errorlist">
+                                {% for error in course_form.course_name.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" style="font-size: 0.9rem;">{{ course_form.ects_amount.label }}</label>
+                        {{ course_form.ects_amount }}
+                        {% if course_form.ects_amount.errors %}
+                            <ul class="errorlist">
+                                {% for error in course_form.ects_amount.errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if course_form.non_field_errors %}
+                    <ul class="errorlist">
+                        {% for error in course_form.non_field_errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if course_formset.non_form_errors %}
+            <ul class="errorlist">
+                {% for error in course_formset.non_form_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2 class="card-title">{% trans "3. Notes (Optional)" %}</h2>
+
+        <div class="form-group">
+            <label for="id_student_note" class="form-label">{{ form.student_note.label }}</label>
+            {{ form.student_note }}
+            {% if form.student_note.errors %}
+                <ul class="errorlist">
+                    {% for error in form.student_note.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% if form.student_note.help_text %}
+                <span class="form-help">{{ form.student_note.help_text }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 class="card-title">{% trans "4. Affidavit" %}</h2>
+
+        <div style="background: #2a2a2a; padding: 1.5rem; margin-bottom: 1.5rem; border-left: 4px solid #FF6B35;">
+            <p style="line-height: 1.6; white-space: pre-wrap;">{{ affidavit_1 }}</p>
+        </div>
+
+        <div class="form-group">
+            <label style="display: flex; align-items: start; gap: 0.75rem; cursor: pointer;">
+                {{ form.affidavit1_confirmed }}
+                <span style="flex: 1;">
+                    {{ form.affidavit1_confirmed.label }}
+                    {% if form.affidavit1_confirmed.errors %}
+                        <ul class="errorlist">
+                            {% for error in form.affidavit1_confirmed.errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </span>
+            </label>
+        </div>
+    </div>
+
+    {% if form.non_field_errors %}
+        <ul class="errorlist" style="margin-bottom: 1rem;">
+            {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+        <button type="submit" class="btn">{% trans "Submit Request" %}</button>
+        <a href="{% url 'portal:semester_list' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Make the select box searchable-looking */
+    #id_person_role {
+        height: auto;
+        min-height: 40px;
+    }
+
+    /* Responsive grid for courses */
+    @media (max-width: 768px) {
+        .course-form-entry > div {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
+{% endblock %}

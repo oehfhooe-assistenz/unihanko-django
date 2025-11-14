@@ -1,0 +1,57 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1 class="page-title">{% trans "ECTS Filing Portal" %}</h1>
+
+<div class="card">
+    <h2 class="card-title">{% trans "Welcome" %}</h2>
+    <p style="margin-bottom: 1rem; line-height: 1.6;">
+        {% trans "This is the public ECTS reimbursement filing portal. Select an open semester below to file a new request or check the status of an existing request." %}
+    </p>
+    <p style="color: #94a3b8; font-size: 0.9rem;">
+        {% trans "You will need either your semester access code (for new filings) or your reference code (to check status)." %}
+    </p>
+</div>
+
+{% if open_semesters %}
+    <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem; color: #FF6B35;">{% trans "Open Filing Periods" %}</h2>
+
+    {% for semester in open_semesters %}
+    <div class="card">
+        <h3 class="card-title">{{ semester.display_name }}</h3>
+        <div style="margin-bottom: 1.5rem;">
+            <p style="color: #94a3b8; margin-bottom: 0.5rem;">
+                <strong>{% trans "Code" %}:</strong> {{ semester.code }}
+            </p>
+            <p style="color: #94a3b8; margin-bottom: 0.5rem;">
+                <strong>{% trans "Period" %}:</strong> {{ semester.start_date|date:"d.m.Y" }} - {{ semester.end_date|date:"d.m.Y" }}
+            </p>
+            <p style="color: #94a3b8;">
+                <strong>{% trans "Filing closes" %}:</strong> {{ semester.filing_end|date:"d.m.Y H:i" }}
+            </p>
+        </div>
+        <a href="{% url 'portal:access_login' semester.id %}" class="btn">
+            {% trans "Enter Access Code" %}
+        </a>
+    </div>
+    {% endfor %}
+
+{% else %}
+    <div class="card">
+        <p style="color: #94a3b8; font-size: 1.1rem;">
+            {% trans "No filing periods are currently open. Please check back later." %}
+        </p>
+    </div>
+{% endif %}
+
+<div class="card">
+    <h2 class="card-title">{% trans "Need Help?" %}</h2>
+    <ul style="list-style-position: inside; color: #94a3b8; line-height: 1.8;">
+        <li>{% trans "To file a new request, you need the semester access code provided by your organization." %}</li>
+        <li>{% trans "To check the status of an existing request, use your unique reference code (format: WS24-MUEL-1234)." %}</li>
+        <li>{% trans "You can only file one request per semester." %}</li>
+        <li>{% trans "After filing, you'll receive a reference code to track your request." %}</li>
+    </ul>
+</div>
+{% endblock %}

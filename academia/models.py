@@ -241,6 +241,17 @@ class InboxRequest(models.Model):
         help_text=_("IP address from which request was submitted (audit trail)")
     )
 
+    filing_source = models.CharField(
+        _("Filing Source"),
+        max_length=20,
+        choices=[
+            ('PUBLIC', _('Public Portal')),
+            ('ADMIN', _('Admin Interface')),
+        ],
+        default='ADMIN',
+        help_text=_("How this request was created (public portal or admin)")
+    )
+
     # Student input
     student_note = models.TextField(
         _("Student Note"),

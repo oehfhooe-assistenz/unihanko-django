@@ -106,6 +106,7 @@ INSTALLED_APPS = [
     'django_object_actions',
     'django_renderpdf',
     'adminsortable2',
+    'captcha',  # django-simple-captcha
 
     'core',
     'hankosign',
@@ -115,6 +116,7 @@ INSTALLED_APPS = [
     'assembly',
     'academia',
     'academia_audit',
+    'portal',
 
     'organisation',
 ]
@@ -226,6 +228,17 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# django-simple-captcha configuration
+CAPTCHA_IMAGE_SIZE = (120, 50)
+CAPTCHA_FONT_SIZE = 32
+CAPTCHA_LETTER_ROTATION = (-20, 20)
+CAPTCHA_BACKGROUND_COLOR = '#0a0a0a'
+CAPTCHA_FOREGROUND_COLOR = '#FF6B35'
+CAPTCHA_NOISE_FUNCTIONS = ('captcha.helpers.noise_dots',)
+CAPTCHA_LENGTH = 4  # Number of characters
+CAPTCHA_TIMEOUT = 5  # Minutes
 
 
 #jazzmin configuration

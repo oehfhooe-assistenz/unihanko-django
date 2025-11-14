@@ -1,0 +1,82 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1 class="page-title">{% trans "Access Code" %}</h1>
+
+<div class="card">
+    <h2 class="card-title">{{ semester.display_name }}</h2>
+    <p style="color: #94a3b8; margin-bottom: 1.5rem;">
+        {{ semester.code }} | {{ semester.start_date|date:"d.m.Y" }} - {{ semester.end_date|date:"d.m.Y" }}
+    </p>
+</div>
+
+<div class="card">
+    <h2 class="card-title">{% trans "Enter Access Code" %}</h2>
+    <p style="margin-bottom: 2rem; line-height: 1.6; color: #94a3b8;">
+        {% trans "Enter your semester access code to file a new request, or your reference code to check the status of an existing request." %}
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="id_access_code" class="form-label">{{ form.access_code.label }}</label>
+            {{ form.access_code }}
+            {% if form.access_code.errors %}
+                <ul class="errorlist">
+                    {% for error in form.access_code.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% if form.access_code.help_text %}
+                <span class="form-help">{{ form.access_code.help_text }}</span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="id_captcha_0" class="form-label">{{ form.captcha.label }}</label>
+            {{ form.captcha }}
+            {% if form.captcha.errors %}
+                <ul class="errorlist">
+                    {% for error in form.captcha.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+
+        {% if form.non_field_errors %}
+            <ul class="errorlist">
+                {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+            <button type="submit" class="btn">{% trans "Continue" %}</button>
+            <a href="{% url 'portal:semester_list' %}" class="btn btn-secondary">{% trans "Back" %}</a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h3 class="card-title">{% trans "Code Types" %}</h3>
+    <div style="margin-bottom: 1rem;">
+        <p style="color: #FF6B35; font-weight: 600; margin-bottom: 0.5rem;">{% trans "Semester Access Code" %}</p>
+        <p style="color: #94a3b8; margin-bottom: 1rem;">
+            {% trans "Format: word-word-## (e.g., mountain-forest-42)" %}<br>
+            {% trans "Use this to file a new ECTS request." %}
+        </p>
+    </div>
+    <div>
+        <p style="color: #FF6B35; font-weight: 600; margin-bottom: 0.5rem;">{% trans "Reference Code" %}</p>
+        <p style="color: #94a3b8;">
+            {% trans "Format: SSSS-LLLL-#### (e.g., WS24-MUEL-1234)" %}<br>
+            {% trans "Use this to check the status of an existing request." %}
+        </p>
+    </div>
+</div>
+{% endblock %}
