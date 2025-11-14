@@ -878,7 +878,6 @@ class TimeSheetAdmin(
     HelpPageMixin,
     ManagerEditableGateMixin,
     ImportExportGuardMixin,
-    ManagerEditableGateMixin,
     ManagerOnlyHistoryMixin
     ):
     resource_classes = [TimeSheetResource]
