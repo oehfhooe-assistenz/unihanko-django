@@ -125,7 +125,7 @@ class InboxRequestForm(forms.ModelForm):
 
 # =============== Inline Admins ===============
 
-class InboxCourseInline(admin.TabularInline):
+class InboxCourseInline(admin.StackedInline):
     model = InboxCourse
     form = InboxCourseInlineForm
     extra = 1
