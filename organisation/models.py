@@ -101,6 +101,13 @@ class OrgInfo(SingletonModel):
         help_text=_("Affidavit text shown when student uploads signed form")
     )
 
+    # --- Payment Plan Disclaimer -------------------------------------------
+    payment_plan_disclaimer = models.TextField(
+        _("Payment Plan Disclaimer"),
+        blank=True,
+        help_text=_("Disclaimer text shown when person completes payment plan banking details")
+    )
+
     history = HistoricalRecords()
 
     class Meta:

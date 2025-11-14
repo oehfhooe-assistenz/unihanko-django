@@ -1,0 +1,176 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1 class="page-title">{% trans "Payment Plan Status" %}</h1>
+
+<!-- Payment Plan Code Banner -->
+<div style="background: #1a1a1a; border: 4px solid #dc2626; padding: 1rem 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 6px 6px 0 #000;">
+    <div>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Payment Plan Code" %}</p>
+        <p style="font-size: 1.5rem; font-weight: 900; color: #dc2626; font-family: monospace; letter-spacing: 2px;">{{ payment_plan.plan_code }}</p>
+    </div>
+    <div style="text-align: right;">
+        <p style="color: #94a3b8; font-size: 0.85rem;">{% trans "Save this code to access your plan later" %}</p>
+        <button onclick="copyCode()" class="btn" style="margin-top: 0.5rem; padding: 0.5rem 1rem; font-size: 0.9rem; background: #dc2626;">
+            {% trans "Copy Code" %}
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">{% trans "Plan Details" %}</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+        <div>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Role" %}</p>
+            <p style="font-weight: 600;">{{ payment_plan.person_role.role.name }}</p>
+        </div>
+        <div>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Fiscal Year" %}</p>
+            <p style="font-weight: 600;">{{ payment_plan.fiscal_year.label }}</p>
+        </div>
+        <div>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Monthly Amount" %}</p>
+            <p style="font-weight: 600; color: #dc2626;">€ {{ payment_plan.monthly_amount }}</p>
+        </div>
+        <div>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Payment Period" %}</p>
+            <p style="font-weight: 600;">{{ payment_plan.pay_start|date:"m.Y" }} - {{ payment_plan.pay_end|date:"m.Y" }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">{% trans "Current Status" %}</h2>
+
+    <div style="margin: 1.5rem 0;">
+        {% if stage == 'DRAFT' %}
+            <div style="background: rgba(255, 107, 53, 0.1); border-left: 4px solid #FF6B35; padding: 1rem;">
+                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem;">{% trans "DRAFT" %}</p>
+                <p style="color: #94a3b8;">{% trans "Your payment plan is in draft status. Please complete the banking details below." %}</p>
+            </div>
+        {% elif stage == 'PENDING' %}
+            <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6; padding: 1rem;">
+                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; color: #3b82f6;">{% trans "PENDING" %}</p>
+                <p style="color: #94a3b8;">{% trans "Your signed form has been uploaded. It is awaiting review by administration." %}</p>
+            </div>
+        {% elif stage == 'ACTIVE' %}
+            <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; padding: 1rem;">
+                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; color: #10b981;">{% trans "ACTIVE" %}</p>
+                <p style="color: #94a3b8;">{% trans "Your payment plan is active. Payments will be processed according to the schedule." %}</p>
+            </div>
+        {% elif stage == 'FINISHED' %}
+            <div style="background: rgba(100, 116, 139, 0.1); border-left: 4px solid #64748b; padding: 1rem;">
+                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; color: #64748b;">{% trans "FINISHED" %}</p>
+                <p style="color: #94a3b8;">{% trans "Your payment plan has been completed." %}</p>
+            </div>
+        {% elif stage == 'CANCELLED' %}
+            <div style="background: rgba(220, 38, 38, 0.1); border-left: 4px solid #dc2626; padding: 1rem;">
+                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; color: #dc2626;">{% trans "CANCELLED" %}</p>
+                <p style="color: #94a3b8;">{% trans "This payment plan has been cancelled. Please contact the office for more information." %}</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if payment_plan.payee_name %}
+<div class="card">
+    <h2 class="card-title">{% trans "Banking Details" %}</h2>
+    <div style="margin-top: 1rem;">
+        <div style="margin-bottom: 1rem;">
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Payee Name" %}</p>
+            <p style="font-weight: 600;">{{ payment_plan.payee_name }}</p>
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "IBAN" %}</p>
+            <p style="font-weight: 600; font-family: monospace;">{{ payment_plan.iban }}</p>
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "BIC" %}</p>
+            <p style="font-weight: 600; font-family: monospace;">{{ payment_plan.bic }}</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2 class="card-title">{% trans "Download Form" %}</h2>
+    <p style="margin-bottom: 1.5rem; color: #94a3b8;">
+        {% trans "Download the PDF form, sign it, then upload it below." %}
+    </p>
+    <a href="{% url 'portal:payments:plan_pdf' plan_code=payment_plan.plan_code %}" class="btn" target="_blank">
+        {% trans "Download PDF Form" %}
+    </a>
+</div>
+
+{% if upload_form %}
+<div class="card">
+    <h2 class="card-title">{% trans "Upload Signed Form" %}</h2>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="id_pdf_file" class="form-label">{{ upload_form.pdf_file.label }}</label>
+            {{ upload_form.pdf_file }}
+            {% if upload_form.pdf_file.errors %}
+                <ul class="errorlist">
+                    {% for error in upload_form.pdf_file.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% if upload_form.pdf_file.help_text %}
+                <span class="form-help">{{ upload_form.pdf_file.help_text }}</span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="id_signed_person_at" class="form-label">{{ upload_form.signed_person_at.label }}</label>
+            {{ upload_form.signed_person_at }}
+            {% if upload_form.signed_person_at.errors %}
+                <ul class="errorlist">
+                    {% for error in upload_form.signed_person_at.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% if upload_form.signed_person_at.help_text %}
+                <span class="form-help">{{ upload_form.signed_person_at.help_text }}</span>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn">{% trans "Upload Form" %}</button>
+    </form>
+</div>
+{% endif %}
+
+<div style="margin-top: 2rem;">
+    <a href="{% url 'portal:payments:plan_list' fy_code=payment_plan.fiscal_year.code %}" class="btn btn-secondary">{% trans "Back to Plans" %}</a>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copyCode() {
+        const code = "{{ payment_plan.plan_code }}";
+        navigator.clipboard.writeText(code).then(function() {
+            // Visual feedback
+            const btn = event.target;
+            const originalText = btn.textContent;
+            const originalBg = btn.style.background;
+            btn.textContent = "{% trans 'Copied!' %}";
+            btn.style.background = '#10b981';
+
+            setTimeout(function() {
+                btn.textContent = originalText;
+                btn.style.background = originalBg;
+            }, 2000);
+        }).catch(function(err) {
+            // Fallback for older browsers
+            alert("{% trans 'Plan Code:' %} " + code);
+        });
+    }
+</script>
+{% endblock %}

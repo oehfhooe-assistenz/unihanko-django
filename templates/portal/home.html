@@ -1,0 +1,66 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1 class="page-title">{% trans "Self Service Portal" %}</h1>
+
+<p style="color: #94a3b8; margin-bottom: 2rem; text-align: center; font-size: 1.1rem;">
+    {% trans "Choose a service below to get started" %}
+</p>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 3rem;">
+    <!-- ECTS Filing Card -->
+    <div class="card" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;"
+         onclick="window.location.href='{% url 'portal:semester_list' %}'">
+        <div style="background: #FF6B35; padding: 1rem; margin: -1.5rem -1.5rem 1.5rem -1.5rem;">
+            <h2 style="color: #0a0a0a; font-weight: 900; font-size: 1.5rem; margin: 0;">
+                📚 {% trans "ECTS Filing" %}
+            </h2>
+        </div>
+        <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 1.5rem;">
+            {% trans "File ECTS reimbursement requests for courses you've completed. Submit your course list, download the form, and upload it after professor signatures." %}
+        </p>
+        <a href="{% url 'portal:semester_list' %}" class="btn" style="width: 100%; text-align: center;">
+            {% trans "Start Filing" %}
+        </a>
+    </div>
+
+    <!-- Payment Plans Card -->
+    <div class="card" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;"
+         onclick="window.location.href='{% url 'portal:payments:fy_list' %}'">
+        <div style="background: #dc2626; padding: 1rem; margin: -1.5rem -1.5rem 1.5rem -1.5rem;">
+            <h2 style="color: #0a0a0a; font-weight: 900; font-size: 1.5rem; margin: 0;">
+                💰 {% trans "Payment Plans" %}
+            </h2>
+        </div>
+        <p style="color: #94a3b8; line-height: 1.6; margin-bottom: 1.5rem;">
+            {% trans "Complete your payment plan banking details. Enter your personal access code, fill in your account information, and upload the signed form." %}
+        </p>
+        <a href="{% url 'portal:payments:fy_list' %}" class="btn btn-secondary" style="width: 100%; text-align: center;">
+            {% trans "Manage Plans" %}
+        </a>
+    </div>
+</div>
+
+<div style="margin-top: 3rem; text-align: center;">
+    <p style="color: #64748b; font-size: 0.9rem;">
+        {% trans "Need help? Contact the administration office." %}
+    </p>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 8px 8px 0 #000 !important;
+    }
+
+    @media (max-width: 768px) {
+        .card {
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+{% endblock %}

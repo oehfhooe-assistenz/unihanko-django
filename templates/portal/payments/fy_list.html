@@ -1,0 +1,46 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1 class="page-title">{% trans "Payment Plan Portal" %}</h1>
+
+<p style="color: #94a3b8; margin-bottom: 2rem;">
+    {% trans "Select a fiscal year to access your payment plans." %}
+</p>
+
+{% if fiscal_years %}
+    <div style="display: grid; gap: 1.5rem;">
+        {% for fy in fiscal_years %}
+        <div class="card" style="cursor: pointer;"
+             onclick="window.location.href='{% url 'portal:payments:payment_access' fy_code=fy.code %}'">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h3 style="font-size: 1.3rem; font-weight: 900; margin-bottom: 0.5rem;">
+                        {{ fy.label }}
+                    </h3>
+                    <p style="color: #94a3b8; font-size: 0.9rem;">
+                        {{ fy.start|date:"d.m.Y" }} - {{ fy.end|date:"d.m.Y" }}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'portal:payments:payment_access' fy_code=fy.code %}" class="btn">
+                        {% trans "Access Plans" %} →
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card">
+        <p style="color: #94a3b8; text-align: center;">
+            {% trans "No active fiscal years available at this time." %}
+        </p>
+    </div>
+{% endif %}
+
+<div style="margin-top: 2rem;">
+    <a href="{% url 'portal:home' %}" class="btn btn-secondary">{% trans "Back to Portal" %}</a>
+</div>
+
+{% endblock %}

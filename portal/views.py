@@ -17,7 +17,12 @@ from academia.utils import validate_ects_total
 from organisation.models import OrgInfo
 from people.models import PersonRole
 
-from .forms import AccessCodeForm, FileRequestForm, CourseFormSet, UploadFormForm
+from .forms import (
+    AccessCodeForm, FileRequestForm, CourseFormSet, UploadFormForm,
+    PaymentAccessForm, BankingDetailsForm, PaymentUploadForm
+)
+from finances.models import FiscalYear, PaymentPlan, paymentplan_status
+from people.models import Person
 
 
 def get_client_ip(request):
@@ -29,6 +34,25 @@ def get_client_ip(request):
         ip = request.META.get('REMOTE_ADDR')
     return ip
 
+
+# ============================================================================
+# Portal Landing
+# ============================================================================
+
+@ratelimit(key='ip', rate='30/m', method='GET')
+def portal_home(request):
+    """
+    Portal landing page with menu to choose between ECTS Filing and Payment Plans.
+    """
+    context = {
+        'page_title': _("Self Service Portal")
+    }
+    return render(request, 'portal/home.html', context)
+
+
+# ============================================================================
+# ECTS Filing Portal Views
+# ============================================================================
 
 @ratelimit(key='ip', rate='30/m', method='GET')
 def semester_list(request):
@@ -308,3 +332,206 @@ def request_pdf(request, reference_code):
 
     # Use django-renderpdf or the existing PDF rendering mechanism
     return render(request, 'academia/inboxrequest_form_pdf.html', context, content_type='application/pdf')
+
+
+# ============================================================================
+# Payment Plan Portal Views
+# ============================================================================
+
+@ratelimit(key='ip', rate='30/m', method='GET')
+def fy_list(request):
+    """
+    Landing page showing available fiscal years with active payment plans.
+    """
+    now = timezone.now()
+
+    # Get fiscal years that are active
+    active_fys = FiscalYear.objects.filter(
+        is_active=True
+    ).order_by('-start')
+
+    context = {
+        'fiscal_years': active_fys,
+        'page_title': _("Payment Plan Portal")
+    }
+
+    return render(request, 'portal/payments/fy_list.html', context)
+
+
+@ratelimit(key='ip', rate='20/m', method=['GET', 'POST'])
+@require_http_methods(['GET', 'POST'])
+def payment_access(request, fy_code):
+    """
+    Enter Personal Access Code (PAC) to access payment plans for a fiscal year.
+    """
+    fiscal_year = get_object_or_404(FiscalYear, code=fy_code)
+
+    if request.method == 'POST':
+        form = PaymentAccessForm(request.POST, fiscal_year=fiscal_year)
+        if form.is_valid():
+            # Store person ID in session
+            request.session['payment_person_id'] = form.person.id
+            request.session['payment_fiscal_year_id'] = fiscal_year.id
+
+            # Redirect to plan list
+            return redirect('portal:plan_list', fy_code=fy_code)
+    else:
+        form = PaymentAccessForm(fiscal_year=fiscal_year)
+
+    context = {
+        'form': form,
+        'fiscal_year': fiscal_year,
+        'page_title': _("Access Payment Plans")
+    }
+
+    return render(request, 'portal/payments/access.html', context)
+
+
+@ratelimit(key='ip', rate='30/m', method='GET')
+def plan_list(request, fy_code):
+    """
+    Show payment plans for authenticated person in this fiscal year.
+    """
+    fiscal_year = get_object_or_404(FiscalYear, code=fy_code)
+
+    # Check session authentication
+    if 'payment_person_id' not in request.session or \
+       request.session.get('payment_fiscal_year_id') != fiscal_year.id:
+        messages.warning(request, _("Please enter your access code first."))
+        return redirect('portal:payment_access', fy_code=fy_code)
+
+    person = get_object_or_404(Person, id=request.session['payment_person_id'])
+
+    # Get payment plans for this person in this fiscal year
+    # Mother decides = they're already created by admin, just need to be completed
+    payment_plans = PaymentPlan.objects.filter(
+        person_role__person=person,
+        fiscal_year=fiscal_year
+    ).select_related('person_role', 'person_role__role', 'fiscal_year')
+
+    # Filter to show only DRAFT plans that need completion
+    draft_plans = payment_plans.filter(status='DRAFT')
+
+    context = {
+        'person': person,
+        'fiscal_year': fiscal_year,
+        'draft_plans': draft_plans,
+        'all_plans': payment_plans,
+        'page_title': _("Your Payment Plans")
+    }
+
+    return render(request, 'portal/payments/plan_list.html', context)
+
+
+@ratelimit(key='ip', rate='20/m', method=['GET', 'POST'])
+@require_http_methods(['GET', 'POST'])
+@transaction.atomic
+def complete_plan(request, plan_code):
+    """
+    Complete banking details for a payment plan.
+    """
+    payment_plan = get_object_or_404(PaymentPlan, plan_code=plan_code)
+
+    # Check session authentication
+    if 'payment_person_id' not in request.session or \
+       request.session.get('payment_person_id') != payment_plan.person_role.person.id:
+        messages.warning(request, _("Please enter your access code first."))
+        return redirect('portal:payment_access', fy_code=payment_plan.fiscal_year.code)
+
+    # Check if plan is in DRAFT status
+    if payment_plan.status != 'DRAFT':
+        messages.warning(request, _("This payment plan cannot be edited."))
+        return redirect('portal:plan_status', plan_code=plan_code)
+
+    # Get org disclaimer
+    org = OrgInfo.get()
+    disclaimer = org.payment_plan_disclaimer
+
+    if request.method == 'POST':
+        form = BankingDetailsForm(request.POST, instance=payment_plan)
+        if form.is_valid():
+            # Save banking details
+            plan = form.save(commit=False)
+            plan.submission_ip = get_client_ip(request)
+            plan.save()
+
+            messages.success(request, _("Banking details saved! You can now download and sign the form."))
+            return redirect('portal:plan_status', plan_code=plan_code)
+    else:
+        form = BankingDetailsForm(instance=payment_plan)
+
+    context = {
+        'form': form,
+        'payment_plan': payment_plan,
+        'disclaimer': disclaimer,
+        'page_title': _("Complete Payment Plan")
+    }
+
+    return render(request, 'portal/payments/complete.html', context)
+
+
+@ratelimit(key='ip', rate='30/m', method=['GET', 'POST'])
+@require_http_methods(['GET', 'POST'])
+@transaction.atomic
+def plan_status(request, plan_code):
+    """
+    View payment plan status and upload signed form.
+    """
+    payment_plan = get_object_or_404(PaymentPlan, plan_code=plan_code)
+
+    # Check session authentication
+    if 'payment_person_id' not in request.session or \
+       request.session.get('payment_person_id') != payment_plan.person_role.person.id:
+        messages.warning(request, _("Please enter your access code first."))
+        return redirect('portal:payment_access', fy_code=payment_plan.fiscal_year.code)
+
+    # Determine current stage
+    stage = paymentplan_status(payment_plan)
+
+    # Show upload form only if banking details are complete but form not yet uploaded
+    show_upload_form = (
+        payment_plan.payee_name and
+        payment_plan.iban and
+        payment_plan.bic and
+        not payment_plan.signed_person_at
+    )
+
+    upload_form = None
+    if show_upload_form and request.method == 'POST':
+        upload_form = PaymentUploadForm(request.POST, request.FILES)
+        if upload_form.is_valid():
+            # Save uploaded file and signature date
+            payment_plan.pdf_file = upload_form.cleaned_data['pdf_file']
+            payment_plan.signed_person_at = upload_form.cleaned_data['signed_person_at']
+            payment_plan.save()
+
+            messages.success(request, _("Form uploaded successfully! The administration will review it soon."))
+            return redirect('portal:plan_status', plan_code=plan_code)
+    elif show_upload_form:
+        upload_form = PaymentUploadForm()
+
+    context = {
+        'payment_plan': payment_plan,
+        'stage': stage,
+        'upload_form': upload_form,
+        'page_title': _("Payment Plan Status")
+    }
+
+    return render(request, 'portal/payments/status.html', context)
+
+
+@ratelimit(key='ip', rate='60/m', method='GET')
+def plan_pdf(request, plan_code):
+    """
+    Generate and download payment plan PDF (public access via plan code).
+    """
+    payment_plan = get_object_or_404(PaymentPlan, plan_code=plan_code)
+    org = OrgInfo.get()
+
+    context = {
+        'plan': payment_plan,
+        'org': org,
+    }
+
+    # Use the existing payment plan PDF template
+    return render(request, 'finances/paymentplan_pdf.html', context, content_type='application/pdf')

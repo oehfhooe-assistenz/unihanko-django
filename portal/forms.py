@@ -11,7 +11,8 @@ from decimal import Decimal
 import pikepdf
 
 from academia.models import InboxRequest, InboxCourse, Semester
-from people.models import PersonRole
+from people.models import PersonRole, Person
+from finances.models import PaymentPlan, FiscalYear
 
 
 class AccessCodeForm(forms.Form):
@@ -250,6 +251,198 @@ class UploadFormForm(forms.Form):
 
             # Check for JavaScript (potential XSS vector)
             # Note: eIDAS signatures are fine, they use /AcroForm which is different
+            if '/JavaScript' in pdf.Root.get('/Names', {}):
+                raise ValidationError(
+                    _("PDF contains JavaScript, which is not allowed for security reasons.")
+                )
+
+            pdf.close()
+
+        except pikepdf.PdfError as e:
+            raise ValidationError(
+                _("Invalid or corrupted PDF file. Please try another file.")
+            )
+        except Exception as e:
+            # Catch any other errors during validation
+            raise ValidationError(
+                _("Unable to validate PDF file. Please ensure it's a valid PDF.")
+            )
+
+        # Reset file pointer for saving
+        uploaded_file.seek(0)
+        return uploaded_file
+
+
+# ============================================================================
+# Payment Plan Forms
+# ============================================================================
+
+class PaymentAccessForm(forms.Form):
+    """
+    Form for entering Personal Access Code (PAC) to access payment plans.
+    """
+    pac = forms.CharField(
+        label=_("Personal Access Code"),
+        max_length=19,  # Format: ABCD-EFGH or longer
+        widget=forms.TextInput(attrs={
+            'placeholder': _('e.g., ABCD-EFGH'),
+            'class': 'form-input'
+        }),
+        help_text=_("Enter your personal access code (provided by administration)")
+    )
+    captcha = CaptchaField(label=_("Security Check"))
+
+    def __init__(self, *args, fiscal_year=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fiscal_year = fiscal_year
+        self.person = None  # Set if PAC is valid
+
+    def clean_pac(self):
+        code = self.cleaned_data['pac'].strip()
+
+        # Look up person by PAC
+        try:
+            person = Person.objects.get(personal_access_code__iexact=code)
+            self.person = person
+            return code
+        except Person.DoesNotExist:
+            raise ValidationError(
+                _("Invalid personal access code. Please check and try again.")
+            )
+
+
+class BankingDetailsForm(forms.ModelForm):
+    """
+    Form for completing banking details on a payment plan.
+    """
+    disclaimer_confirmed = forms.BooleanField(
+        label=_("I confirm"),
+        required=True,
+        error_messages={
+            'required': _("You must confirm the disclaimer to proceed.")
+        }
+    )
+
+    class Meta:
+        model = PaymentPlan
+        fields = ['payee_name', 'iban', 'bic', 'address', 'reference']
+        widgets = {
+            'payee_name': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': _('Full name as it appears on your bank account')
+            }),
+            'iban': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': _('AT00 0000 0000 0000 0000')
+            }),
+            'bic': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': _('e.g., BKAUATWW')
+            }),
+            'address': forms.Textarea(attrs={
+                'class': 'form-textarea',
+                'rows': 3,
+                'placeholder': _('Street and number\nPostal code and city\nCountry')
+            }),
+            'reference': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': _('Optional reference text for bank transfer')
+            }),
+        }
+        help_texts = {
+            'payee_name': _("Name of the account holder"),
+            'iban': _("International Bank Account Number"),
+            'bic': _("Bank Identifier Code (SWIFT)"),
+            'address': _("Full postal address"),
+            'reference': _("Optional reference for the payment (e.g., invoice number)"),
+        }
+
+    def clean_iban(self):
+        """Basic IBAN validation"""
+        iban = self.cleaned_data.get('iban', '').strip().upper().replace(' ', '')
+
+        if not iban:
+            raise ValidationError(_("IBAN is required."))
+
+        # Basic format check (2 letter country code + 2 digits + up to 30 alphanumeric)
+        if len(iban) < 15 or len(iban) > 34:
+            raise ValidationError(_("IBAN length is invalid."))
+
+        if not iban[:2].isalpha() or not iban[2:4].isdigit():
+            raise ValidationError(_("IBAN format is invalid. Should start with country code and 2 digits."))
+
+        return iban
+
+    def clean_bic(self):
+        """Basic BIC validation"""
+        bic = self.cleaned_data.get('bic', '').strip().upper()
+
+        if not bic:
+            raise ValidationError(_("BIC is required."))
+
+        # BIC is either 8 or 11 characters
+        if len(bic) not in [8, 11]:
+            raise ValidationError(_("BIC must be 8 or 11 characters long."))
+
+        if not bic.isalnum():
+            raise ValidationError(_("BIC must contain only letters and numbers."))
+
+        return bic
+
+
+class PaymentUploadForm(forms.Form):
+    """
+    Form for uploading signed payment plan PDF.
+    """
+    pdf_file = forms.FileField(
+        label=_("Signed PDF Form"),
+        help_text=_("Upload your signed payment plan form (PDF, max 20MB)"),
+        widget=forms.FileInput(attrs={
+            'accept': '.pdf',
+            'class': 'form-file'
+        })
+    )
+
+    signed_person_at = forms.DateField(
+        label=_("Date of Signature"),
+        help_text=_("Date when you signed the form"),
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-input'
+        })
+    )
+
+    def clean_pdf_file(self):
+        uploaded_file = self.cleaned_data.get('pdf_file')
+
+        if not uploaded_file:
+            return uploaded_file
+
+        # Check file size (20MB)
+        max_size = 20 * 1024 * 1024  # 20MB in bytes
+        if uploaded_file.size > max_size:
+            raise ValidationError(
+                _("File size exceeds 20MB. Please upload a smaller file.")
+            )
+
+        # Check if it's a PDF
+        if not uploaded_file.name.lower().endswith('.pdf'):
+            raise ValidationError(
+                _("Only PDF files are allowed.")
+            )
+
+        # Validate PDF with pikepdf (basic security checks)
+        try:
+            uploaded_file.seek(0)  # Reset file pointer
+            pdf = pikepdf.open(uploaded_file)
+
+            # Check for embedded files (potential malware vector)
+            if '/EmbeddedFiles' in pdf.Root.get('/Names', {}):
+                raise ValidationError(
+                    _("PDF contains embedded files, which are not allowed for security reasons.")
+                )
+
+            # Check for JavaScript (potential XSS vector)
             if '/JavaScript' in pdf.Root.get('/Names', {}):
                 raise ValidationError(
                     _("PDF contains JavaScript, which is not allowed for security reasons.")

@@ -222,44 +222,40 @@ class PaymentPlanAdmin(
         "plan_code_or_hint",
         "created_at", "updated_at",
         "window_preview", "breakdown_preview", "recommended_total_display", "role_monthly_hint",
-        "bank_reference_preview_full", "pdf_file", "signatures_box",
+        "bank_reference_preview_full", "pdf_file", "submission_ip", "signatures_box",
     )
 
     list_per_page = 50
     ordering = ("-created_at",)
 
     fieldsets = (
-        (_("Scope"), {
+        (_("Admin Sets: Scope"), {
             "fields": ("plan_code_or_hint", "person_role", "fiscal_year"),
         }),
-        (_("Budget"), {
+        (_("Admin Sets: Budget"), {
             "fields": ("cost_center",),
         }),
-        (_("Payee & banking"), {
+        (_("Admin Sets: Standing Invoice Window"), {
+            "fields": (("pay_start"), ("pay_end"), "window_preview"),
+        }),
+        (_("Admin Sets: Monetary Amounts"), {
+            "fields": (("monthly_amount"), "role_monthly_hint", ("total_override"), "recommended_total_display", "breakdown_preview"),
+        }),
+        (_("Public Completes: Payee & Banking"), {
             "fields": (
                 ("payee_name",), ("iban"), ("bic"),
                 ("address"), "reference",
                 "bank_reference_preview_full",
             ),
         }),
-        (_("Standing invoice window"), {
-            "fields": (("pay_start"), ("pay_end"), "window_preview"),
-        }),
-        (_("Monetary amounts"), {
-            "fields": (("monthly_amount"), "role_monthly_hint", ("total_override"), "recommended_total_display", "breakdown_preview"),
-        }),
-        (_("Payment Plan PDF Center [TBA]"), {
-            "fields": (("pdf_file"),),
+        (_("Public Completes: Signature & Upload"), {
+            "fields": (("signed_person_at"), ("pdf_file"), ("submission_ip")),
         }),
         (_("HankoSign Workflow"), {
-        "fields": ("signatures_box",),
+            "fields": ("signatures_box",),
         }),
-        (_("Status & signatures"), {
-            "fields": (("status"), ("status_note"),
-                       ("signed_person_at"),),
-        }),
-        (_("Miscellaneous"), {
-            "fields": (("notes"),),
+        (_("Status & Notes"), {
+            "fields": (("status"), ("status_note"), ("notes")),
         }),
         (_("System"), {
             "fields": (("created_at"), ("updated_at"), ("version"),),
@@ -546,6 +542,10 @@ class PaymentPlanAdmin(
         st = state_snapshot(obj)
         if st["submitted"]:
             messages.info(request, _("Already submitted."))
+            return
+        # Validate that person has completed their part
+        if not obj.signed_person_at or not obj.pdf_file:
+            messages.warning(request, _("Cannot submit until payee has signed and uploaded the form."))
             return
         action = get_action("SUBMIT:WIREF@finances.paymentplan")
         if not action:

@@ -345,9 +345,12 @@ class PaymentPlan(models.Model):
 
     # Non-Hankosign 'Signature' (dates are enough for now)
     signed_person_at = models.DateField(_("Signed by payee on"), blank=True, null=True, help_text=_("Date of signature received."))
-    
+
     # Future media hook (nullable until the media container lands)
     pdf_file     = models.FileField(_("Signed PDF (optional)"), upload_to="payment_plans/%Y/%m/", blank=True, null=True, help_text=_("Upload for the signed payment plan PDFs. Note: Simply re-upload after each signature."))
+
+    # Public portal tracking
+    submission_ip = models.GenericIPAddressField(_("Submission IP"), blank=True, null=True, help_text=_("IP address from which the public portal form was submitted."))
 
     # Timestamps
     created_at   = models.DateTimeField(auto_now_add=True)
