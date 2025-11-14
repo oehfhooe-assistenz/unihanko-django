@@ -4,8 +4,22 @@
 {% block content %}
 <h1 class="page-title">{% trans "Request Status" %}</h1>
 
+<!-- Prominent reference code banner -->
+<div style="background: #1a1a1a; border: 4px solid #FF6B35; padding: 1rem 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 6px 6px 0 #000;">
+    <div>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Your Reference Code" %}</p>
+        <p style="font-size: 1.5rem; font-weight: 900; color: #FF6B35; font-family: monospace; letter-spacing: 2px;">{{ inbox_request.reference_code }}</p>
+    </div>
+    <div style="text-align: right;">
+        <p style="color: #94a3b8; font-size: 0.85rem;">{% trans "Save this code to check your status later" %}</p>
+        <button onclick="copyCode()" class="btn" style="margin-top: 0.5rem; padding: 0.5rem 1rem; font-size: 0.9rem;">
+            {% trans "Copy Code" %}
+        </button>
+    </div>
+</div>
+
 <div class="card">
-    <h2 class="card-title">{% trans "Reference Code" %}: {{ inbox_request.reference_code }}</h2>
+    <h2 class="card-title">{% trans "Request Details" %}</h2>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
         <div>
             <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Semester" %}</p>
@@ -183,4 +197,27 @@
         }
     }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copyCode() {
+        const code = "{{ inbox_request.reference_code }}";
+        navigator.clipboard.writeText(code).then(function() {
+            // Visual feedback
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = "{% trans 'Copied!' %}";
+            btn.style.background = '#10b981';
+
+            setTimeout(function() {
+                btn.textContent = originalText;
+                btn.style.background = '#FF6B35';
+            }, 2000);
+        }).catch(function(err) {
+            // Fallback for older browsers
+            alert("{% trans 'Reference Code:' %} " + code);
+        });
+    }
+</script>
 {% endblock %}
