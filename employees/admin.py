@@ -118,7 +118,7 @@ class HolidayCalendarResource(resources.ModelResource):
 # Helpers / mixins
 # =========================
 
-class ManagerGateMixin:
+class ManagerEditableGateMixin:
     """Gate certain UI actions to managers only."""
 
     def _is_manager(self, request) -> bool:
@@ -245,7 +245,7 @@ class EmployeeAdmin(
     ImportExportModelAdmin,
     #no concurrency,
     HelpPageMixin,
-    ManagerGateMixin, 
+    ManagerEditableGateMixin, 
     ImportExportGuardMixin,
     ManagerOnlyHistoryMixin
     ):
@@ -877,6 +877,7 @@ class TimeSheetAdmin(
     ConcurrentModelAdmin,
     HelpPageMixin,
     ImportExportGuardMixin,
+    ManagerEditableGateMixin,
     ManagerOnlyHistoryMixin
     ):
     resource_classes = [TimeSheetResource]
@@ -1438,7 +1439,7 @@ class HolidayCalendarAdmin(
     SimpleHistoryAdmin,
     ImportExportModelAdmin,
     ImportExportGuardMixin,
-    ManagerGateMixin,
+    ManagerEditableGateMixin,
     ManagerOnlyHistoryMixin
     ):
     resource_classes = [HolidayCalendarResource]

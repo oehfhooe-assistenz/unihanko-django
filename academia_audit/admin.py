@@ -50,6 +50,55 @@ class AuditEntryResource(resources.ModelResource):
 
 
 # ============================================================================
+# INLINES (add before AuditSemesterAdmin class)
+# ============================================================================
+
+class AuditEntryInline(admin.StackedInline):
+    model = AuditEntry
+    extra = 0
+    fields = (
+        'person',
+        'aliquoted_ects',
+        'final_ects',
+        'reimbursed_ects',
+        'remaining_ects',
+        'checked_at',
+        'notes',
+    )
+    readonly_fields = ('person',)  # Scope field always readonly
+    autocomplete_fields = ('person',)
+    show_change_link = True
+    can_delete = False
+    
+    def get_max_num(self, request, obj=None, **kwargs):
+        return 100  # Reasonable limit
+    
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        
+        # If parent audit semester is locked, lock everything
+        if obj:
+            st = state_snapshot(obj)
+            if st.get("explicit_locked"):
+                ro.extend([
+                    'aliquoted_ects',
+                    'final_ects',
+                    'reimbursed_ects',
+                    'remaining_ects',
+                    'notes',
+                ])
+        
+        return ro
+    
+    def has_add_permission(self, request, obj):
+        # Can't add entries via inline - use synchronize action
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        # Never allow deletion via inline
+        return False
+
+# ============================================================================
 # AUDIT SEMESTER ADMIN
 # ============================================================================
 
@@ -64,7 +113,7 @@ class AuditSemesterAdmin(
     ManagerOnlyHistoryMixin,
 ):
     resource_classes = [AuditSemesterResource]
-
+    inlines = [AuditEntryInline]
     list_display = (
         'status_text',
         'semester_code',
@@ -179,9 +228,10 @@ class AuditSemesterAdmin(
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
         if obj:
+            ro.extend(['semester'])
             st = state_snapshot(obj)
             if st.get("explicit_locked"):
-                ro += ['semester', 'notes']
+                ro.append('notes')
         return ro
 
     def get_change_actions(self, request, object_id, form_url):
@@ -522,10 +572,16 @@ class AuditEntryAdmin(
 
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
-        if obj and obj.audit_semester:
-            st = state_snapshot(obj.audit_semester)
-            if st.get("explicit_locked"):
-                ro += ['audit_semester', 'person', 'aliquoted_ects', 'final_ects', 'reimbursed_ects', 'remaining_ects', 'notes']
+        if obj:
+            # ALWAYS lock scope fields after creation
+            ro.extend(['audit_semester', 'person'])
+            
+            # Additionally lock calculation fields when parent is locked
+            if obj.audit_semester:
+                st = state_snapshot(obj.audit_semester)
+                if st.get("explicit_locked"):
+                    ro.extend(['aliquoted_ects', 'final_ects', 'reimbursed_ects', 
+                            'remaining_ects', 'notes', 'person_roles', 'inbox_requests'])
         return ro
 
     def has_delete_permission(self, request, obj=None):

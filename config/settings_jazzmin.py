@@ -92,7 +92,7 @@ JAZZMIN_SETTINGS = {
 
     # Custom assets
     # "custom_css": "admin/unihanko.css",
-    "custom_css": "admin/uh_new.css",
+    "custom_css": "admin/unihanko_neobrutalist_theme.css",
     "custom_js": "admin/custom.js",
 
     # Optional: show Jazzmin UI builder (handy for experimenting)
@@ -100,33 +100,40 @@ JAZZMIN_SETTINGS = {
 }
 
 JAZZMIN_UI_TWEAKS = {
-    # Bootswatch theme names: flatly, simplex, cosmo, lumen, slate, darkly, etc.
-    "theme": "flatly",
+    # Theme - set to None since we have custom CSS
+    "theme": "darkly",
     "dark_mode_theme": "darkly",
 
-    # Navbar / sidebar styling
-    "navbar": "navbar-light",
+    # Navbar styling
+    "navbar": "navbar-dark",  # Changed from navbar-light (dark theme!)
     "no_navbar_border": True,
-    "brand_small_text": False,
+    "navbar_fixed": False,
+    
+    # Brand/Logo
+    "brand_small_text": False,  # Removed duplicate
+    "brand_colour": False,
+    
+    # Text sizes
     "navbar_small_text": False,
     "footer_small_text": True,
     "body_small_text": False,
-    "brand_small_text": False,
-    "brand_colour": False,
-    "accent": "accent-orange",
-    "navbar": "navbar-orange navbar-light",
-    "no_navbar_border": True,
-    "navbar_fixed": False,
+    
+    # Layout
     "layout_boxed": False,
     "footer_fixed": True,
     "sidebar_fixed": True,
-    "sidebar": "sidebar-dark-orange",
+    
+    # Sidebar
+    "accent": "accent-orange",
+    "sidebar": "sidebar-dark-orange",  # This is fine!
     "sidebar_nav_small_text": True,
     "sidebar_disable_expand": False,
     "sidebar_nav_child_indent": True,
     "sidebar_nav_compact_style": True,
     "sidebar_nav_legacy_style": False,
     "sidebar_nav_flat_style": True,
+    
+    # Buttons - these work with the theme
     "button_classes": {
         "primary": "btn-primary",
         "secondary": "btn-secondary",
@@ -135,5 +142,7 @@ JAZZMIN_UI_TWEAKS = {
         "danger": "btn-danger",
         "success": "btn-success"
     },
+    
+    # Actions
     "actions_sticky_top": True
 }

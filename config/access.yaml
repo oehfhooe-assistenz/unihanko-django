@@ -136,9 +136,8 @@ groups:
     inherits: []
     models:
       academia.Semester: [view]
-      academia.InboxRequest: [view]
-      academia.InboxCourse: [view]
-      academia.SemesterAuditEntry: [view]
+      academia.InboxRequest: [view, add, change]
+      academia.InboxCourse: [view, add, change, delete]
     custom_perms: {}
 
   "module:academia:manager":
@@ -148,7 +147,6 @@ groups:
       academia.Semester: [view, add, change]
       academia.InboxRequest: [view, add, change]
       academia.InboxCourse: [view, add, change, delete]
-      academia.SemesterAuditEntry: [view, add, change]
     custom_perms: {}
 
   "module:academia_audit:editor":

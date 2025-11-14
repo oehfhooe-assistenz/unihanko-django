@@ -1,53 +1,118 @@
-/* Card + title */
-.ts-card-sig{
-  background:var(--uh-surface,#333c3f);
-  border:2px solid var(--uh-border,#D3D3D3);
-  border-radius:12px;
-  padding:24px;
-  position:relative;               /* for absolute seal */
-}
-.ts-title{font-size:1.25rem;font-weight:600;margin:0 0 32px;padding-right:64px}
+/* hankosign sigbox.css — NEOBRUTALIST EDITION */
 
-/* Seal (50×50, subtle mono) */
-.sig-seal{
-  position:absolute; top:12px; right:12px;
-  width:75px; height:75px;
-  filter:grayscale(1) contrast(1.05) opacity(.9);  /* swap for sepia: sepia(1) saturate(.6) */
-  pointer-events:none; user-select:none;
+/* Card + title */
+.ts-card-sig {
+  background: var(--uh-surface, #333c3f);
+  border: 6px solid var(--uh-border, #D3D3D3);
+  border-radius: 0;  /* BRUTALIST: no rounded corners */
+  padding: 24px;
+  position: relative;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.4);  /* BRUTALIST: offset shadow */
+}
+
+.ts-title {
+  font-size: 1.25rem;
+  font-weight: 900;  /* BRUTALIST: extra bold */
+  margin: 0 0 32px;
+  padding-right: 64px;
+  text-transform: uppercase;  /* BRUTALIST: caps */
+  letter-spacing: 1px;
+}
+
+/* Seal (75×75, subtle mono) */
+.sig-seal {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 75px;
+  height: 75px;
+  filter: grayscale(1) contrast(1.1) opacity(.9);
+  pointer-events: none;
+  user-select: none;
+  border: 3px solid rgba(255, 255, 255, .15);  /* BRUTALIST: add border */
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);  /* BRUTALIST: offset shadow */
 }
 
 /* Rows */
-.sig-grid{display:flex;flex-direction:column;gap:.4rem}
-.sig-row{
-  display:grid;
-  grid-template-columns: auto minmax(0,1fr) auto auto;
+.sig-grid {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;  /* Slightly larger gap */
+}
+
+.sig-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   grid-template-areas:
     "code who when id"
     "note note note note";
-  column-gap:.5rem; row-gap:.2rem;
-  align-items:baseline;
-  border-bottom:1px dashed rgba(255,255,255,.12);
-  padding:.25rem 0 .35rem;
-}
-.sig-row:last-child{border-bottom:none}
-.sig-badge{grid-area:code}
-.sig-who{grid-area:who; font-weight:600; min-width:0}
-.sig-when{grid-area:when; opacity:.9; font-variant-numeric:tabular-nums; justify-self:end}
-.sig-id{grid-area:id; opacity:.9; justify-self:end}
-.sig-note{grid-area:note; opacity:.85}
-
-.sig-badge{
-  display:inline-block; padding:.2rem .4rem; border:1px solid rgba(255,255,255,.15);
-  border-radius:.35rem; font-size:.85rem; background:#3b2a10;
+  column-gap: .75rem;
+  row-gap: .3rem;
+  align-items: baseline;
+  border-bottom: 3px solid rgba(255, 255, 255, .15);  /* BRUTALIST: thicker border */
+  padding: .5rem 0 .6rem;
 }
 
-@media (max-width:720px){
-  .sig-row{
-    grid-template-columns: auto minmax(0,1fr);
+.sig-row:last-child {
+  border-bottom: none;
+}
+
+.sig-badge {
+  grid-area: code;
+}
+
+.sig-who {
+  grid-area: who;
+  font-weight: 700;  /* BRUTALIST: bolder */
+  min-width: 0;
+}
+
+.sig-when {
+  grid-area: when;
+  opacity: .9;
+  font-variant-numeric: tabular-nums;
+  justify-self: end;
+  font-weight: 600;
+}
+
+.sig-id {
+  grid-area: id;
+  opacity: .9;
+  justify-self: end;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.sig-note {
+  grid-area: note;
+  opacity: .85;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.sig-badge {
+  display: inline-block;
+  padding: .3rem .6rem;
+  border: 3px solid rgba(255, 255, 255, .25);  /* BRUTALIST: thicker border */
+  border-radius: 0;  /* BRUTALIST: no rounded corners */
+  font-size: .85rem;
+  background: #3b2a10;
+  font-weight: 900;  /* BRUTALIST: extra bold */
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);  /* BRUTALIST: offset shadow */
+}
+
+@media (max-width: 720px) {
+  .sig-row {
+    grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
       "code who"
       "when id"
       "note note";
   }
-  .sig-when, .sig-id{justify-self:start}
+  .sig-when,
+  .sig-id {
+    justify-self: start;
+  }
 }

@@ -1,4 +1,4 @@
-/* inserts_standard.css — minimal, theme-safe info inserts */
+/* inserts_standard.css — NEOBRUTALIST EDITION */
 
 :root {
   --ins-bg:            color-mix(in srgb, Canvas 96%, transparent);
@@ -6,9 +6,8 @@
   --ins-border:        color-mix(in srgb, Highlight 35%, CanvasText 20%);
   --ins-accent:        color-mix(in srgb, Highlight 45%, CanvasText 10%);
   --ins-muted:         color-mix(in srgb, CanvasText 60%, transparent);
-  --ins-radius:        12px;
-  --ins-pad:           0.5rem 0.45rem;
-  --ins-gap:           0.5rem;
+  --ins-pad:           1rem 1.2rem;
+  --ins-gap:           0.75rem;
   --ins-code-bg:       color-mix(in srgb, CanvasText 5%, Canvas 95%);
 }
 
@@ -24,32 +23,38 @@
 .insert {
   background: var(--ins-bg);
   color: var(--ins-fg);
-  border: 1px solid var(--ins-border);
-  border-left: 4px solid var(--ins-accent);
-  border-radius: var(--ins-radius);
+  border: 4px solid var(--ins-border);
+  border-left: 8px solid var(--ins-accent);
+  border-radius: 0;  /* BRUTALIST: no rounded corners */
   padding: var(--ins-pad);
-  margin: 0.1rem 0;
+  margin: 0.75rem 0;
   display: block;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.3);  /* BRUTALIST: offset shadow */
+  transition: all 0.2s ease;
 }
 
 .insert *:last-child { margin-bottom: 0; }
 
 .insert__title {
-  font-weight: 600;
-  margin: 0 0 0.25rem 0;
+  font-weight: 900;  /* BRUTALIST: extra bold */
+  margin: 0 0 0.5rem 0;
   line-height: 1.2;
+  text-transform: uppercase;  /* BRUTALIST: caps */
+  letter-spacing: 0.5px;
 }
 
 .insert__meta {
   font-size: 0.875rem;
   color: var(--ins-muted);
-  margin: 0 0 0.25rem 0;
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
 }
 
 .insert__body { 
   display: grid;
   gap: var(--ins-gap);
   font-size: 0.95rem;
+  font-weight: 500;
 }
 
 /* Optional variants (minimal color nudge, still theme-safe) */
@@ -61,19 +66,27 @@
 /* Small utilities */
 .insert code, .insert pre {
   background: var(--ins-code-bg);
-  padding: 0.15rem 0.35rem;
-  border-radius: 6px;
-}
-.insert pre {
-  padding: 0.5rem 0.6rem;
-  overflow: auto;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0;  /* BRUTALIST: no rounded corners */
+  border: 2px solid color-mix(in srgb, var(--ins-border) 50%, transparent);
+  font-weight: 600;
 }
 
-/* Motion-respectful, subtle hover (if used on clickable blocks) */
+.insert pre {
+  padding: 0.75rem 1rem;
+  overflow: auto;
+  border: 4px solid var(--ins-border);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Motion-respectful hover */
 @media (prefers-reduced-motion: no-preference) {
-  .insert.is-hoverable { transition: border-color .15s ease, box-shadow .15s ease; }
+  .insert.is-hoverable { 
+    transition: transform 0.2s ease, box-shadow 0.2s ease; 
+  }
   .insert.is-hoverable:hover {
+    transform: translate(-2px, -2px);  /* BRUTALIST: lift effect */
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.4);
     border-color: var(--ins-accent);
-    box-shadow: 0 1px 0.5rem color-mix(in srgb, var(--ins-accent) 18%, transparent);
   }
 }

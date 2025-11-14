@@ -1,0 +1,990 @@
+/*
+ * UniHanko Neobrutalist Theme for Django Jazzmin
+ * A bold, modern theme inspired by Japanese design aesthetics
+ * Compatible with Jazzmin/AdminLTE 3.2/Bootstrap 5
+ */
+
+/* ============================================
+   FONTS & CSS VARIABLES
+   ============================================ */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700;900&display=swap');
+
+:root {
+    /* Colors */
+    --unihanko-bg-dark: #1a1a1a;
+    --unihanko-bg-darker: #0f0f0f;
+    --unihanko-bg-card: #252525;
+    --unihanko-accent-primary: #FF6B35;
+    --unihanko-accent-secondary: #DC2626;
+    --unihanko-text-primary: #ffffff;
+    --unihanko-text-secondary: #a0a0a0;
+    --unihanko-border: #3a3a3a;
+    
+    /* Brutalist borders */
+    --brutal-border: 4px solid #3a3a3a;
+    --brutal-border-thick: 6px solid #3a3a3a;
+    --brutal-shadow: 6px 6px 0 rgba(0, 0, 0, 0.5);
+    --brutal-shadow-hover: 8px 8px 0 rgba(0, 0, 0, 0.6);
+    
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+}
+
+/* ============================================
+   GLOBAL RESETS & BASE STYLES
+   ============================================ */
+body {
+    font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    background: var(--unihanko-bg-dark) !important;
+    color: var(--unihanko-text-primary) !important;
+    font-weight: 400;
+}
+
+/* Remove default AdminLTE gradients */
+.wrapper,
+.content-wrapper,
+.main-header,
+.main-sidebar {
+    background: var(--unihanko-bg-dark) !important;
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+.main-sidebar {
+    background: var(--unihanko-bg-darker) !important;
+    border-right: var(--brutal-border-thick) !important;
+}
+
+/* Brand/Logo area */
+.brand-link {
+    background: var(--unihanko-bg-darker) !important;
+    border-bottom: var(--brutal-border) !important;
+    padding: var(--spacing-lg) !important;
+    transition: all 0.2s ease;
+}
+
+.brand-link:hover {
+    background: rgba(255, 107, 53, 0.05) !important;
+    transform: translateX(4px);
+}
+
+.brand-link .brand-text {
+    color: var(--unihanko-text-primary) !important;
+    font-weight: 900 !important;
+    font-size: 1.3rem !important;
+    letter-spacing: 1px;
+}
+
+/* Sidebar navigation */
+.nav-sidebar .nav-item > .nav-link {
+    background: transparent !important;
+    color: var(--unihanko-text-secondary) !important;
+    border-left: 4px solid transparent !important;
+    padding: var(--spacing-md) var(--spacing-lg) !important;
+    margin: var(--spacing-xs) 0 !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease;
+}
+
+.nav-sidebar .nav-item > .nav-link:hover {
+    background: rgba(255, 107, 53, 0.1) !important;
+    color: var(--unihanko-text-primary) !important;
+    border-left-color: var(--unihanko-accent-primary) !important;
+    transform: translateX(4px);
+}
+
+.nav-sidebar .nav-item > .nav-link.active {
+    background: rgba(255, 107, 53, 0.15) !important;
+    color: var(--unihanko-text-primary) !important;
+    border-left-color: var(--unihanko-accent-primary) !important;
+    border-left-width: 6px !important;
+    font-weight: 700 !important;
+}
+
+.nav-sidebar .nav-icon {
+    color: var(--unihanko-accent-primary) !important;
+    font-size: 1.1rem !important;
+}
+
+/* Sidebar sub-menus */
+.nav-treeview .nav-link {
+    padding-left: var(--spacing-xl) !important;
+    font-size: 0.9rem !important;
+}
+
+/* ============================================
+   TOP NAVBAR
+   ============================================ */
+.main-header.navbar {
+    background: var(--unihanko-bg-darker) !important;
+    border-bottom: var(--brutal-border-thick) !important;
+    padding: var(--spacing-md) var(--spacing-lg) !important;
+}
+
+.navbar-nav .nav-link {
+    color: var(--unihanko-text-secondary) !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    color: var(--unihanko-text-primary) !important;
+    background: rgba(255, 107, 53, 0.1) !important;
+}
+
+/* User dropdown */
+.navbar-nav .dropdown-menu {
+    background: var(--unihanko-bg-card) !important;
+    border: var(--brutal-border) !important;
+    box-shadow: var(--brutal-shadow) !important;
+}
+
+.dropdown-item {
+    color: var(--unihanko-text-secondary) !important;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: rgba(255, 107, 53, 0.1) !important;
+    color: var(--unihanko-text-primary) !important;
+    transform: translateX(4px);
+}
+
+/* ============================================
+   BREADCRUMBS
+   ============================================ */
+.breadcrumb {
+    background: transparent !important;
+    padding: var(--spacing-md) 0 !important;
+    margin: 0 !important;
+}
+
+.breadcrumb-item {
+    color: var(--unihanko-text-secondary) !important;
+    font-weight: 500 !important;
+}
+
+.breadcrumb-item.active {
+    color: var(--unihanko-accent-primary) !important;
+    font-weight: 700 !important;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "›" !important;
+    color: var(--unihanko-text-secondary) !important;
+    font-size: 1.2rem !important;
+}
+
+/* ============================================
+   CONTENT WRAPPER
+   ============================================ */
+.content-wrapper {
+    background: var(--unihanko-bg-dark) !important;
+    padding: var(--spacing-xl) !important;
+}
+
+.content-header h1 {
+    color: var(--unihanko-text-primary) !important;
+    font-weight: 900 !important;
+    font-size: 2rem !important;
+    margin-bottom: var(--spacing-lg) !important;
+    letter-spacing: 0.5px;
+}
+
+/* ============================================
+   CARDS & BOXES
+   ============================================ */
+.card,
+.info-box,
+.small-box {
+    background: var(--unihanko-bg-card) !important;
+    border: var(--brutal-border) !important;
+    box-shadow: var(--brutal-shadow) !important;
+    border-radius: 0 !important;
+    margin-bottom: var(--spacing-lg) !important;
+    transition: all 0.3s ease;
+}
+
+.card:hover,
+.info-box:hover,
+.small-box:hover {
+    box-shadow: var(--brutal-shadow-hover) !important;
+}
+
+.card-header {
+    background: var(--unihanko-bg-darker) !important;
+    border-bottom: var(--brutal-border) !important;
+    padding: var(--spacing-lg) !important;
+    font-weight: 700 !important;
+    color: var(--unihanko-text-primary) !important;
+}
+
+.card-title {
+    color: var(--unihanko-text-primary) !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+}
+
+.card-body {
+    padding: var(--spacing-lg) !important;
+}
+
+/* Dashboard boxes */
+.small-box .icon {
+    color: var(--unihanko-accent-primary) !important;
+    opacity: 0.3;
+}
+
+.small-box h3,
+.small-box p {
+    color: var(--unihanko-text-primary) !important;
+}
+
+.small-box .small-box-footer {
+    background: var(--unihanko-bg-darker) !important;
+    border-top: var(--brutal-border) !important;
+    color: var(--unihanko-text-secondary) !important;
+    font-weight: 600 !important;
+}
+
+/* ============================================
+   BUTTONS - NEOBRUTALIST STYLE
+   ============================================ */
+.btn {
+    border-radius: 0 !important;
+    border: 4px solid !important;
+    padding: 0.6rem 1.2rem !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease !important;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+.btn:hover {
+    transform: translate(-2px, -2px) !important;
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.4) !important;
+}
+
+.btn:active {
+    transform: translate(0, 0) !important;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Primary button */
+.btn-primary {
+    background: var(--unihanko-accent-primary) !important;
+    border-color: var(--unihanko-accent-primary) !important;
+    color: #ffffff !important;
+}
+
+.btn-primary:hover {
+    background: #ff8555 !important;
+    border-color: #ff8555 !important;
+}
+
+/* Secondary button */
+.btn-secondary {
+    background: #6c757d !important;
+    border-color: #6c757d !important;
+    color: #ffffff !important;
+}
+
+.btn-secondary:hover {
+    background: #5a6268 !important;
+    border-color: #5a6268 !important;
+}
+
+/* Success button */
+.btn-success {
+    background: #28a745 !important;
+    border-color: #28a745 !important;
+    color: #ffffff !important;
+}
+
+.btn-success:hover {
+    background: #218838 !important;
+    border-color: #218838 !important;
+}
+
+/* Danger button */
+.btn-danger {
+    background: var(--unihanko-accent-secondary) !important;
+    border-color: var(--unihanko-accent-secondary) !important;
+    color: #ffffff !important;
+}
+
+.btn-danger:hover {
+    background: #c91f1f !important;
+    border-color: #c91f1f !important;
+}
+
+/* Info button */
+.btn-info {
+    background: #17a2b8 !important;
+    border-color: #17a2b8 !important;
+    color: #ffffff !important;
+}
+
+.btn-info:hover {
+    background: #138496 !important;
+    border-color: #138496 !important;
+}
+
+/* Block buttons (full width) */
+.btn-block {
+    width: 100% !important;
+    display: block !important;
+}
+
+/* Small buttons */
+.btn-sm {
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.875rem !important;
+}
+
+/* ============================================
+   FORMS & INPUTS
+   ============================================ */
+.form-control,
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple,
+textarea,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="url"],
+select {
+    background: var(--unihanko-bg-card) !important;
+    border: var(--brutal-border) !important;
+    border-radius: 0 !important;
+    color: var(--unihanko-text-primary) !important;
+    padding: var(--spacing-md) !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus,
+input:focus,
+textarea:focus,
+select:focus {
+    background: var(--unihanko-bg-darker) !important;
+    border-color: var(--unihanko-accent-primary) !important;
+    box-shadow: 4px 4px 0 rgba(255, 107, 53, 0.2) !important;
+    transform: translate(-2px, -2px);
+    outline: none !important;
+}
+
+/* Form labels */
+label,
+.form-label,
+.col-form-label {
+    color: var(--unihanko-text-primary) !important;
+    font-weight: 700 !important;
+    margin-bottom: var(--spacing-sm) !important;
+}
+
+/* Help text */
+.help-block,
+.form-text,
+small {
+    color: var(--unihanko-text-secondary) !important;
+    font-size: 0.875rem;
+}
+
+/* Required field indicator */
+.required::after {
+    content: " *";
+    color: var(--unihanko-accent-secondary);
+    font-weight: 900;
+}
+
+/* Fieldsets */
+fieldset {
+    border: var(--brutal-border) !important;
+    background: var(--unihanko-bg-card) !important;
+    padding: var(--spacing-lg) !important;
+    margin-bottom: var(--spacing-lg) !important;
+}
+
+fieldset legend {
+    background: var(--unihanko-bg-darker) !important;
+    color: var(--unihanko-text-primary) !important;
+    padding: var(--spacing-sm) var(--spacing-lg) !important;
+    font-weight: 900 !important;
+    border: var(--brutal-border) !important;
+    width: auto !important;
+}
+
+/* ============================================
+   TABLES
+   ============================================ */
+.table {
+    background: var(--unihanko-bg-card) !important;
+    border: var(--brutal-border) !important;
+    color: var(--unihanko-text-primary) !important;
+}
+
+.table thead th {
+    background: var(--unihanko-bg-darker) !important;
+    color: var(--unihanko-text-primary) !important;
+    border: var(--brutal-border) !important;
+    padding: var(--spacing-md) !important;
+    font-weight: 900 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table tbody tr {
+    border-bottom: 2px solid var(--unihanko-border) !important;
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background: rgba(255, 107, 53, 0.05) !important;
+    transform: translateX(2px);
+}
+
+.table tbody td {
+    padding: var(--spacing-md) !important;
+    border: 2px solid var(--unihanko-border) !important;
+    color: var(--unihanko-text-secondary) !important;
+    font-weight: 500;
+}
+
+/* Striped tables */
+.table-striped tbody tr:nth-of-type(odd) {
+    background: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Action column */
+.table td a {
+    color: var(--unihanko-accent-primary) !important;
+    font-weight: 700 !important;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.table td a:hover {
+    color: #ff8555 !important;
+    text-decoration: underline;
+}
+
+/* ============================================
+   CHANGE LIST (Model List View)
+   ============================================ */
+#changelist {
+    background: var(--unihanko-bg-card) !important;
+    border: var(--brutal-border) !important;
+    box-shadow: var(--brutal-shadow) !important;
+    padding: var(--spacing-lg) !important;
+}
+
+#changelist-filter {
+    background: var(--unihanko-bg-darker) !important;
+    border: var(--brutal-border) !important;
+    padding: var(--spacing-lg) !important;
+}
+
+#changelist-filter h2,
+#changelist-filter h3 {
+    color: var(--unihanko-text-primary) !important;
+    font-weight: 900 !important;
+    border-bottom: 4px solid var(--unihanko-accent-primary) !important;
+    padding-bottom: var(--spacing-sm) !important;
+    margin-bottom: var(--spacing-md) !important;
+}
+
+#changelist-filter li a {
+    color: var(--unihanko-text-secondary) !important;
+    font-weight: 500 !important;
+    padding: var(--spacing-sm) 0 !important;
+    transition: all 0.2s ease;
+}
+
+#changelist-filter li a:hover,
+#changelist-filter li.selected a {
+    color: var(--unihanko-accent-primary) !important;
+    font-weight: 700 !important;
+    transform: translateX(4px);
+}
+
+/* Search bar */
+#toolbar #searchbar {
+    background: var(--unihanko-bg-darker) !important;
+    border: var(--brutal-border) !important;
+    color: var(--unihanko-text-primary) !important;
+    padding: var(--spacing-md) !important;
+}
+
+/* ============================================
+   PAGINATION
+   ============================================ */
+.pagination {
+    margin: var(--spacing-lg) 0 !important;
+}
+
+.page-item .page-link {
+    background: var(--unihanko-bg-card) !important;
+    border: 4px solid var(--unihanko-border) !important;
+    color: var(--unihanko-text-secondary) !important;
+    padding: var(--spacing-sm) var(--spacing-md) !important;
+    margin: 0 var(--spacing-xs) !important;
+    font-weight: 700 !important;
+    transition: all 0.2s ease;
+}
+
+.page-item .page-link:hover {
+    background: rgba(255, 107, 53, 0.1) !important;
+    border-color: var(--unihanko-accent-primary) !important;
+    color: var(--unihanko-text-primary) !important;
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.page-item.active .page-link {
+    background: var(--unihanko-accent-primary) !important;
+    border-color: var(--unihanko-accent-primary) !important;
+    color: #ffffff !important;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================
+   ALERTS & MESSAGES
+   ============================================ */
+.alert {
+    border-radius: 0 !important;
+    border: var(--brutal-border) !important;
+    box-shadow: var(--brutal-shadow) !important;
+    padding: var(--spacing-lg) !important;
+    font-weight: 700 !important;
+    margin-bottom: var(--spacing-lg) !important;
+}
+
+.alert-success {
+    background: rgba(40, 167, 69, 0.2) !important;
+    border-color: #28a745 !important;
+    color: #28a745 !important;
+}
+
+.alert-danger,
+.alert-error {
+    background: rgba(220, 38, 38, 0.2) !important;
+    border-color: var(--unihanko-accent-secondary) !important;
+    color: var(--unihanko-accent-secondary) !important;
+}
+
+.alert-warning {
+    background: rgba(255, 193, 7, 0.2) !important;
+    border-color: #ffc107 !important;
+    color: #ffc107 !important;
+}
+
+.alert-info {
+    background: rgba(23, 162, 184, 0.2) !important;
+    border-color: #17a2b8 !important;
+    color: #17a2b8 !important;
+}
+
+/* Django messages */
+.messagelist {
+    margin: 0 0 var(--spacing-lg) 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+}
+
+.messagelist li {
+    border: var(--brutal-border) !important;
+    box-shadow: var(--brutal-shadow) !important;
+    padding: var(--spacing-lg) !important;
+    margin-bottom: var(--spacing-md) !important;
+    font-weight: 700 !important;
+}
+
+.messagelist li.success {
+    background: rgba(40, 167, 69, 0.2) !important;
+    border-color: #28a745 !important;
+    color: #28a745 !important;
+}
+
+.messagelist li.error {
+    background: rgba(220, 38, 38, 0.2) !important;
+    border-color: var(--unihanko-accent-secondary) !important;
+    color: var(--unihanko-accent-secondary) !important;
+}
+
+/* ============================================
+   MODALS
+   ============================================ */
+.modal-content {
+    background: var(--unihanko-bg-card) !important;
+    border: var(--brutal-border-thick) !important;
+    box-shadow: var(--brutal-shadow-hover) !important;
+    border-radius: 0 !important;
+}
+
+.modal-header {
+    background: var(--unihanko-bg-darker) !important;
+    border-bottom: var(--brutal-border) !important;
+    padding: var(--spacing-lg) !important;
+}
+
+.modal-title {
+    color: var(--unihanko-text-primary) !important;
+    font-weight: 900 !important;
+}
+
+.modal-body {
+    padding: var(--spacing-xl) !important;
+    color: var(--unihanko-text-primary) !important;
+}
+
+.modal-footer {
+    background: var(--unihanko-bg-darker) !important;
+    border-top: var(--brutal-border) !important;
+    padding: var(--spacing-lg) !important;
+}
+
+/* ============================================
+   TABS
+   ============================================ */
+.nav-tabs {
+    border-bottom: var(--brutal-border) !important;
+}
+
+.nav-tabs .nav-link {
+    background: var(--unihanko-bg-card) !important;
+    border: var(--brutal-border) !important;
+    border-bottom: none !important;
+    color: var(--unihanko-text-secondary) !important;
+    padding: var(--spacing-md) var(--spacing-lg) !important;
+    font-weight: 700 !important;
+    margin-right: var(--spacing-sm) !important;
+    transition: all 0.2s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    background: rgba(255, 107, 53, 0.1) !important;
+    color: var(--unihanko-text-primary) !important;
+    transform: translateY(-2px);
+}
+
+.nav-tabs .nav-link.active {
+    background: var(--unihanko-bg-darker) !important;
+    border-bottom-color: var(--unihanko-bg-darker) !important;
+    color: var(--unihanko-accent-primary) !important;
+    font-weight: 900 !important;
+}
+
+.tab-content {
+    background: var(--unihanko-bg-darker) !important;
+    border: var(--brutal-border) !important;
+    border-top: none !important;
+    padding: var(--spacing-lg) !important;
+}
+
+/* ============================================
+   INLINE FORMSETS
+   ============================================ */
+.inline-group {
+    background: var(--unihanko-bg-card) !important;
+    border: var(--brutal-border) !important;
+    box-shadow: var(--brutal-shadow) !important;
+    padding: var(--spacing-lg) !important;
+    margin-bottom: var(--spacing-lg) !important;
+}
+
+.inline-group h2 {
+    color: var(--unihanko-text-primary) !important;
+    font-weight: 900 !important;
+    border-bottom: 4px solid var(--unihanko-accent-primary) !important;
+    padding-bottom: var(--spacing-sm) !important;
+    margin-bottom: var(--spacing-md) !important;
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--unihanko-bg-darker);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--unihanko-accent-primary);
+    border: 2px solid var(--unihanko-bg-darker);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #ff8555;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+.main-footer {
+    background: var(--unihanko-bg-darker) !important;
+    border-top: var(--brutal-border-thick) !important;
+    color: var(--unihanko-text-secondary) !important;
+    padding: var(--spacing-lg) !important;
+    font-weight: 500;
+}
+
+.main-footer a {
+    color: var(--unihanko-accent-primary) !important;
+    font-weight: 700 !important;
+    text-decoration: none;
+}
+
+.main-footer a:hover {
+    color: #ff8555 !important;
+    text-decoration: underline;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 768px) {
+    :root {
+        --spacing-xs: 0.2rem;
+        --spacing-sm: 0.4rem;
+        --spacing-md: 0.8rem;
+        --spacing-lg: 1rem;
+        --spacing-xl: 1.5rem;
+    }
+    
+    .btn {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.9rem !important;
+    }
+    
+    .card-header,
+    .card-body {
+        padding: var(--spacing-md) !important;
+    }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .main-sidebar,
+    .main-header,
+    .main-footer {
+        display: none !important;
+    }
+    
+    .card,
+    .table {
+        border: 1px solid black !important;
+        box-shadow: none !important;
+    }
+}
+
+
+/* ============================================
+   FIX 3: NAVBAR ACCOUNT & LANGUAGE BUTTONS
+   Target them specifically without affecting dropdowns
+   ============================================ */
+
+/* The actual clickable navbar buttons/links */
+.navbar-nav > .nav-item > .nav-link,
+.navbar-nav > .nav-item > a.nav-link,
+a.nav-link[data-toggle="dropdown"] {
+    background: transparent !important;
+    border: 2px solid transparent !important;
+    border-radius: 0 !important;
+    color: var(--unihanko-text-secondary) !important;
+    padding: 0.5rem 1rem !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+    box-shadow: none !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    height: auto !important;
+    min-height: auto !important;
+}
+
+.navbar-nav > .nav-item > .nav-link:hover,
+.navbar-nav > .nav-item > a.nav-link:hover,
+a.nav-link[data-toggle="dropdown"]:hover {
+    background: rgba(255, 107, 53, 0.1) !important;
+    border: 2px solid var(--unihanko-accent-primary) !important;
+    color: var(--unihanko-text-primary) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Icons inside navbar buttons */
+.navbar-nav .nav-link i,
+.navbar-nav .nav-link .fa,
+.navbar-nav .nav-link .fas,
+.navbar-nav .nav-link .far {
+    color: var(--unihanko-accent-primary) !important;
+    font-size: 1.2rem !important;
+}
+
+/* Dropdown menus */
+.navbar-nav .dropdown-menu {
+    background: var(--unihanko-bg-card) !important;
+    border: 4px solid var(--unihanko-border) !important;
+    border-radius: 0 !important;
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.4) !important;
+    margin-top: 0.5rem !important;
+    padding: 0.5rem 0 !important;
+}
+
+.navbar-nav .dropdown-item {
+    background: transparent !important;
+    border-left: 4px solid transparent !important;
+    color: var(--unihanko-text-secondary) !important;
+    padding: 0.5rem 1rem !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+
+.navbar-nav .dropdown-item:hover {
+    background: rgba(255, 107, 53, 0.1) !important;
+    border-left-color: var(--unihanko-accent-primary) !important;
+    color: var(--unihanko-text-primary) !important;
+    transform: translateX(4px) !important;
+}
+
+/* ============================================
+   NUCLEAR OPTION: Ultra-specific overrides
+   If buttons still broken, these force it
+   ============================================ */
+
+/* Force submit buttons with maximum specificity */
+/* Target form-control class on submit buttons specifically */
+.submit-row input.form-control[type="submit"],
+.submit-row button.form-control[type="submit"],
+input.form-control[type="submit"],
+button.form-control[type="submit"],
+.form-control[type="submit"] {
+    height: auto !important;
+    min-height: 48px !important;
+    padding: 0.75rem 1.5rem !important;
+    
+    /* Reapply neobrutalist */
+    background: var(--unihanko-accent-primary) !important;
+    border: 4px solid var(--unihanko-accent-primary) !important;
+    border-radius: 0 !important;
+    color: #ffffff !important;
+    font-family: 'Noto Sans JP', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: .875rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.4) !important;
+    transition: all 0.2s ease !important;
+    overflow: scroll !important;
+}
+
+.submit-row input.form-control[type="submit"]:hover,
+.submit-row button.form-control[type="submit"]:hover,
+input.form-control[type="submit"]:hover,
+button.form-control[type="submit"]:hover {
+    background: #ff8555 !important;
+    border-color: #ff8555 !important;
+    transform: translate(-2px, -2px) !important;
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5) !important;
+}
+
+
+/* ============================================
+   UNIHANKO SPECIFIC CUSTOMIZATIONS
+   ============================================ */
+
+/* Calendar preview fields */
+.field-calendar_preview .readonly { 
+    padding: 0; 
+    border: 0; 
+    background: transparent; 
+}
+
+.uh-calwrap { 
+    width: 100%; 
+}
+
+#ts-calendar { 
+    width: 100%; 
+    min-height: 720px; 
+}
+
+/* Full-width calendar fields */
+.field-work_calendar_preview .col-sm-7,
+.field-leave_calendar_preview .col-sm-7,
+.field-pto_infobox .col-sm-7,
+.field-work_infobox .col-sm-7,
+.field-signatures_box .col-sm-7 {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+}
+
+.field-calendar_preview label,
+.field-calendar_preview .col-sm-2 {
+    display: none !important;
+}
+
+/* Yellow highlighted temp reference fields */
+.field-elected_person_text_reference input,
+.field-elected_role_text_reference input {
+    background-color: #fff3cd !important;
+    border: 2px solid #ffc107 !important;
+}
+
+/* Hide "Save and add another" button */
+input[name="_addanother"],
+button[name="_addanother"] {
+    display: none !important;
+}
+
+/* Hide related widget action icons */
+.related-widget-wrapper .related-widget-wrapper-link { 
+    display: none !important; 
+}
+
+/* Workflow state indicators (left border) */
+tbody tr:has(td.field-status_text span.js-state[data-state="draft"]) {
+    border-left: 8px solid #6c757d;
+}
+tbody tr:has(td.field-status_text span.js-state[data-state="submitted"]) {
+    border-left: 8px solid #ffc107;
+}
+tbody tr:has(td.field-status_text span.js-state[data-state="wiref"]) {
+    border-left: 8px solid #0dcaf0;
+}
+tbody tr:has(td.field-status_text span.js-state[data-state="final"]) {
+    border-left: 8px solid #198754;
+}
+tbody tr:has(td.field-status_text span.js-state[data-state="rejected-final"]) {
+    border-left: 8px solid #dc3545;
+}
+
+/* Lock state indicators (right border) */
+tbody tr:has(td.field-active_text .js-state[data-state="ok"]) {
+    border-right: 8px solid #2dd587;
+}
+tbody tr:has(td.field-active_text .js-state[data-state="off"]) {
+    border-right: 8px solid #6d1717;
+}
