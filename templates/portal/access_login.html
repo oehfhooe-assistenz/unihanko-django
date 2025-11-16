@@ -35,16 +35,18 @@
             {% endif %}
         </div>
 
-        <div class="form-group">
-            <label for="id_captcha_0" class="form-label">{{ form.captcha.label }}</label>
-            {{ form.captcha }}
-            {% if form.captcha.errors %}
-                <ul class="errorlist">
-                    {% for error in form.captcha.errors %}
-                    <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
+        <div class="captcha-container">
+            <div class="form-group">
+                <label for="id_captcha_0" class="form-label">{{ form.captcha.label }}</label>
+                {{ form.captcha }}
+                {% if form.captcha.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.captcha.errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
         </div>
 
         {% if form.non_field_errors %}
@@ -57,7 +59,7 @@
 
         <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
             <button type="submit" class="btn">{% trans "Continue" %}</button>
-            <a href="{% url 'portal:semester_list' %}" class="btn btn-secondary">{% trans "Back" %}</a>
+            <a href="{% url 'portal:academia:semester_list' %}" class="btn btn-secondary">{% trans "Back" %}</a>
         </div>
     </form>
 </div>

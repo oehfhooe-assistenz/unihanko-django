@@ -6,176 +6,170 @@
 
 <div class="card">
     <h2 class="card-title">{{ semester.display_name }}</h2>
-    <p style="color: #94a3b8;">
-        {{ semester.code}} | {{ semester.start_date|date:"d.m.Y" }} - {{ semester.end_date|date:"d.m.Y" }}
+    <p class="text-muted">
+        {% trans "Filing Period" %}: {{ semester.filing_start|date:"d.m.Y" }} - {{ semester.filing_end|date:"d.m.Y" %}
     </p>
 </div>
 
-<form method="post" id="filing-form">
+<form method="post" id="ects-filing-form">
     {% csrf_token %}
-
+    
     <div class="card">
-        <h2 class="card-title">{% trans "1. Select Your Role" %}</h2>
+        <!-- Step 1: Person Role Selection -->
+        <div class="form-section-compact">
+            <h4 class="form-section-title">
+                📋 {% trans "Select Your Role" %}
+            </h4>
+            
+            <div class="form-group-compact">
+                <label class="form-label-compact">{{ form.person_role.label }}</label>
+                {{ form.person_role }}
+                {% if form.person_role.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.person_role.errors %}<li>{{ error }}</li>{% endfor %}
+                    </ul>
+                {% endif %}
+                {% if form.person_role.help_text %}
+                    <span class="form-help">{{ form.person_role.help_text }}</span>
+                {% endif %}
+            </div>
 
-        <div class="form-group">
-            <label for="id_person_role" class="form-label">{{ form.person_role.label }}</label>
-            {{ form.person_role }}
-            {% if form.person_role.errors %}
-                <ul class="errorlist">
-                    {% for error in form.person_role.errors %}
-                    <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-            {% if form.person_role.help_text %}
-                <span class="form-help">{{ form.person_role.help_text }}</span>
-            {% endif %}
+            <div class="form-group-compact">
+                <label class="form-label-compact">{{ form.student_note.label }}</label>
+                {{ form.student_note }}
+                {% if form.student_note.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.student_note.errors %}<li>{{ error }}</li>{% endfor %}
+                    </ul>
+                {% endif %}
+                {% if form.student_note.help_text %}
+                    <span class="form-help">{{ form.student_note.help_text }}</span>
+                {% endif %}
+            </div>
         </div>
-    </div>
 
-    <div class="card">
-        <h2 class="card-title">{% trans "2. Add Your Courses" %}</h2>
-        <p style="color: #94a3b8; margin-bottom: 1.5rem;">
-            {% trans "Add up to 10 courses. At least one of course code or course name is required for each entry." %}
-        </p>
+        <!-- Step 2: Course Entry -->
+        <div class="form-section-compact">
+            <h4 class="form-section-title">
+                📚 {% trans "Add Your Courses" %} <span class="course-counter">(0/6)</span>
+            </h4>
+            
+            <p class="help-text mb-2">
+                {% trans "Add up to 6 courses. Each course needs a code OR name, plus ECTS amount." %}
+            </p>
 
-        {{ course_formset.management_form }}
-
-        <div id="course-forms">
-            {% for course_form in course_formset %}
-            <div class="course-form-entry" style="background: #2a2a2a; padding: 1rem; margin-bottom: 1rem; border: 2px solid #444;">
-                <h4 style="color: #FF6B35; margin-bottom: 1rem;">{% trans "Course" %} #{{ forloop.counter }}</h4>
-
-                <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 1rem; margin-bottom: 0.5rem;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" style="font-size: 0.9rem;">{{ course_form.course_code.label }}</label>
-                        {{ course_form.course_code }}
-                        {% if course_form.course_code.errors %}
-                            <ul class="errorlist">
-                                {% for error in course_form.course_code.errors %}
-                                <li>{{ error }}</li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
+            <div class="courses-container">
+                {{ course_formset.management_form }}
+                {% for course_form in course_formset %}
+                <div class="course-entry" data-course-index="{{ forloop.counter0 }}">
+                    <div class="course-entry-header">
+                        <h5 class="course-title">{% trans "Course" %} {{ forloop.counter }}</h5>
                     </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" style="font-size: 0.9rem;">{{ course_form.course_name.label }}</label>
-                        {{ course_form.course_name }}
-                        {% if course_form.course_name.errors %}
-                            <ul class="errorlist">
-                                {% for error in course_form.course_name.errors %}
-                                <li>{{ error }}</li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" style="font-size: 0.9rem;">{{ course_form.ects_amount.label }}</label>
-                        {{ course_form.ects_amount }}
-                        {% if course_form.ects_amount.errors %}
-                            <ul class="errorlist">
-                                {% for error in course_form.ects_amount.errors %}
-                                <li>{{ error }}</li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
+                    
+                    <div class="form-grid-compact">
+                        <div class="form-group-compact">
+                            <label class="form-label-compact">{{ course_form.course_code.label }}</label>
+                            {{ course_form.course_code }}
+                        </div>
+                        <div class="form-group-compact">
+                            <label class="form-label-compact">{{ course_form.course_name.label }}</label>
+                            {{ course_form.course_name }}
+                        </div>
+                        <div class="form-group-compact">
+                            <label class="form-label-compact">{{ course_form.ects_amount.label }}</label>
+                            {{ course_form.ects_amount }}
+                            {% if course_form.ects_amount.help_text %}
+                                <span class="form-help">{{ course_form.ects_amount.help_text }}</span>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
+                {% endfor %}
+            </div>
 
-                {% if course_form.non_field_errors %}
+            <div class="courses-summary">
+                <p><strong>{% trans "Total ECTS" %}:</strong> <span id="total-ects-display">0.0</span></p>
+            </div>
+        </div>
+
+        <!-- Step 3: Affidavit -->
+        <div class="form-section-compact">
+            <h4 class="form-section-title">
+                ✅ {% trans "Confirmation" %}
+            </h4>
+
+            {% if affidavit_1 %}
+            <div class="disclaimer-text">
+                <h5>{% trans "Affidavit" %}</h5>
+                <p>{{ affidavit_1|linebreaks }}</p>
+            </div>
+
+            <div class="form-group-compact">
+                <label class="checkbox-label">
+                    {{ form.affidavit1_confirmed }}
+                    <span class="checkbox-text">
+                        <strong>{% trans "I confirm the above statement" %}</strong>
+                    </span>
+                </label>
+                {% if form.affidavit1_confirmed.errors %}
                     <ul class="errorlist">
-                        {% for error in course_form.non_field_errors %}
-                        <li>{{ error }}</li>
-                        {% endfor %}
+                        {% for error in form.affidavit1_confirmed.errors %}<li>{{ error }}</li>{% endfor %}
                     </ul>
                 {% endif %}
             </div>
-            {% endfor %}
-        </div>
-
-        {% if course_formset.non_form_errors %}
-            <ul class="errorlist">
-                {% for error in course_formset.non_form_errors %}
-                <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    </div>
-
-    <div class="card">
-        <h2 class="card-title">{% trans "3. Notes (Optional)" %}</h2>
-
-        <div class="form-group">
-            <label for="id_student_note" class="form-label">{{ form.student_note.label }}</label>
-            {{ form.student_note }}
-            {% if form.student_note.errors %}
-                <ul class="errorlist">
-                    {% for error in form.student_note.errors %}
-                    <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-            {% if form.student_note.help_text %}
-                <span class="form-help">{{ form.student_note.help_text }}</span>
             {% endif %}
         </div>
-    </div>
 
-    <div class="card">
-        <h2 class="card-title">{% trans "4. Affidavit" %}</h2>
-
-        <div style="background: #2a2a2a; padding: 1.5rem; margin-bottom: 1.5rem; border-left: 4px solid #FF6B35;">
-            <p style="line-height: 1.6; white-space: pre-wrap;">{{ affidavit_1 }}</p>
+        <!-- Submit -->
+        <div class="form-actions-compact">
+            <button type="submit" class="btn" id="submit-btn">
+                ✅ {% trans "Submit Request" %}
+            </button>
         </div>
 
-        <div class="form-group">
-            <label style="display: flex; align-items: start; gap: 0.75rem; cursor: pointer;">
-                {{ form.affidavit1_confirmed }}
-                <span style="flex: 1;">
-                    {{ form.affidavit1_confirmed.label }}
-                    {% if form.affidavit1_confirmed.errors %}
-                        <ul class="errorlist">
-                            {% for error in form.affidavit1_confirmed.errors %}
-                            <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </span>
-            </label>
-        </div>
-    </div>
-
-    {% if form.non_field_errors %}
-        <ul class="errorlist" style="margin-bottom: 1rem;">
-            {% for error in form.non_field_errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-
-    <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-        <button type="submit" class="btn">{% trans "Submit Request" %}</button>
-        <a href="{% url 'portal:semester_list' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
+        <p class="help-text mt-2">
+            {% trans "After submitting, you'll receive a reference code. Use it to download your form, get signatures, and upload the signed version." %}
+        </p>
     </div>
 </form>
 
+<div class="mt-3">
+    <a href="{% url 'portal:academia:semester_list' %}" class="btn btn-secondary">
+        ← {% trans "Back to Semesters" %}
+    </a>
+</div>
+
 {% endblock %}
 
-{% block extra_css %}
-<style>
-    /* Make the select box searchable-looking */
-    #id_person_role {
-        height: auto;
-        min-height: 40px;
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calculate total ECTS
+    function calculateTotalEcts() {
+        let total = 0;
+        document.querySelectorAll('input[name$="-ects_amount"]').forEach(input => {
+            const value = parseFloat(input.value) || 0;
+            total += value;
+        });
+        
+        document.getElementById('total-ects-display').textContent = total.toFixed(1);
+        
+        // Update course counter
+        const filledCourses = Array.from(document.querySelectorAll('input[name$="-ects_amount"]'))
+            .filter(input => parseFloat(input.value) > 0).length;
+        
+        document.querySelector('.course-counter').textContent = `(${filledCourses}/6)`;
+        
+        return total;
     }
 
-    /* Responsive grid for courses */
-    @media (max-width: 768px) {
-        .course-form-entry > div {
-            grid-template-columns: 1fr !important;
-        }
-    }
-</style>
+    // Course input listeners
+    document.querySelectorAll('input[name$="-ects_amount"]').forEach(input => {
+        input.addEventListener('input', calculateTotalEcts);
+    });
+
+    // Initialize
+    calculateTotalEcts();
+});
+</script>
 {% endblock %}

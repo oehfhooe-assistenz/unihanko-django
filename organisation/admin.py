@@ -57,6 +57,7 @@ class OrgInfoAdmin(
                 ("bank_bic"),
                 ("org_tax_id"),
                 ("default_reference_label"),
+                ("payment_plan_disclaimer"),
                 ),
         }),
         (_("Legal signatories"), {
@@ -67,6 +68,12 @@ class OrgInfoAdmin(
                 ("org_dty_chair3"),
                 ("org_wiref"),
                 ("org_dty_wiref"),
+            )
+        }),
+        (_("ECTS Self Service Affidavits"), {
+            "fields": (
+                ("ects_affidavit_1"),
+                ("ects_affidavit_2"),
             )
         }),
     )

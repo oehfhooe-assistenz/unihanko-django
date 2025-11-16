@@ -305,9 +305,11 @@ class FiscalYear(models.Model):
 class PaymentPlan(models.Model):
     class Status(models.TextChoices):
         DRAFT     = "DRAFT", _("Draft")
+        PENDING   = "PENDING", _("Pending")
         ACTIVE    = "ACTIVE", _("Active")
-        FINISHED  = "FINISHED", _("Finished")
         CANCELLED = "CANCELLED", _("Cancelled")
+        FINISHED  = "FINISHED", _("Finished")
+
 
     IBAN_SHAPE = r"^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$"
     BIC_SHAPE  = r"^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$"
@@ -665,6 +667,7 @@ class PaymentPlan(models.Model):
             if not self.fiscal_year_id:
                 raise ValidationError({"fiscal_year": _("Fiscal year is required.")})
             self.plan_code = self._generate_plan_code()
+            self.status = paymentplan_status(self)
         super().save(*args, **kwargs)
 
 

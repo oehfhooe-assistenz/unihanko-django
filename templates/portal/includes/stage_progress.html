@@ -1,0 +1,39 @@
+{% load i18n %}
+{# Reusable stage progress indicator - pass current_stage and stage_type #}
+
+{% if stage_type == "ects" %}
+    <div class="stage-progress-inline">
+        <span class="stage-pill {% if current_stage == 'DRAFT' %}current{% endif %}">{% trans "Draft" %}</span>
+        <span class="stage-arrow">→</span>
+        <span class="stage-pill {% if current_stage == 'SUBMITTED' %}current{% elif current_stage in 'VERIFIED,APPROVED,REJECTED,TRANSFERRED' %}completed{% else %}future{% endif %}">{% trans "Submitted" %}</span>
+        <span class="stage-arrow">→</span>
+        <span class="stage-pill {% if current_stage == 'VERIFIED' %}current{% elif current_stage in 'APPROVED,REJECTED,TRANSFERRED' %}completed{% else %}future{% endif %}">{% trans "Verified" %}</span>
+        <span class="stage-arrow">→</span>
+        {% if current_stage == 'REJECTED' %}
+            <span class="stage-pill current">{% trans "Rejected" %}</span>
+        {% elif current_stage in 'APPROVED,TRANSFERRED' %}
+            <span class="stage-pill completed">{% trans "Approved" %}</span>
+        {% else %}
+            <span class="stage-pill future">{% trans "Approved" %}</span>
+        {% endif %}
+    </div>
+
+{% elif stage_type == "payment" %}
+    <div class="stage-progress-inline">
+        <span class="stage-pill {% if current_stage == 'DRAFT' %}current{% endif %}">{% trans "Draft" %}</span>
+        <span class="stage-arrow">→</span>
+        <span class="stage-pill {% if current_stage == 'PENDING' %}current{% elif current_stage in 'ACTIVE,FINISHED,CANCELLED' %}completed{% else %}future{% endif %}">{% trans "Pending" %}</span>
+        <span class="stage-arrow">→</span>
+        {% if current_stage == 'CANCELLED' %}
+            <span class="stage-pill current">{% trans "Cancelled" %}</span>
+        {% elif current_stage in 'ACTIVE,FINISHED' %}
+            <span class="stage-pill completed">{% trans "Active" %}</span>
+            {% if current_stage == 'FINISHED' %}
+                <span class="stage-arrow">→</span>
+                <span class="stage-pill current">{% trans "Finished" %}</span>
+            {% endif %}
+        {% else %}
+            <span class="stage-pill future">{% trans "Active" %}</span>
+        {% endif %}
+    </div>
+{% endif %}

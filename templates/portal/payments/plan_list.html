@@ -1,117 +1,408 @@
 {% extends "portal/base.html" %}
-{% load i18n %}
+{% load i18n portal_extras %}
 
 {% block content %}
 <h1 class="page-title">{% trans "Your Payment Plans" %}</h1>
 
 <div class="card">
     <h2 class="card-title">{{ fiscal_year.label }}</h2>
-    <p style="color: #94a3b8;">
+    <p class="text-muted">
         {% trans "Welcome" %}, {{ person.first_name }} {{ person.last_name }}
     </p>
 </div>
 
-{% if draft_plans %}
-    <div class="card">
-        <h2 class="card-title">{% trans "Plans Requiring Action" %}</h2>
-        <p style="color: #94a3b8; margin-bottom: 1.5rem;">
-            {% trans "The following payment plans need to be completed. Click on each to enter your banking details." %}
-        </p>
-
-        <div style="display: grid; gap: 1rem;">
-            {% for plan in draft_plans %}
-            <div style="background: #2a2a2a; padding: 1.5rem; border-left: 4px solid #FF6B35;">
-                <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
-                    <div>
-                        <h3 style="font-size: 1.1rem; font-weight: 900; margin-bottom: 0.5rem; color: #FF6B35;">
-                            {{ plan.plan_code }}
-                        </h3>
-                        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">
-                            <strong>{% trans "Role" %}:</strong> {{ plan.person_role.role.name }}
-                        </p>
-                        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">
-                            <strong>{% trans "Period" %}:</strong>
-                            {{ plan.pay_start|date:"d.m.Y" }} - {{ plan.pay_end|date:"d.m.Y" }}
-                        </p>
-                        <p style="color: #94a3b8; font-size: 0.9rem;">
-                            <strong>{% trans "Monthly" %}:</strong> € {{ plan.monthly_amount }}
-                        </p>
-                    </div>
-                    <div>
-                        <a href="{% url 'portal:payments:complete_plan' plan_code=plan.plan_code %}" class="btn">
-                            {% trans "Complete Plan" %} →
-                        </a>
-                    </div>
+{% for plan in all_plans %}
+<div class="card payment-plan-card" data-plan-id="{{ plan.id }}" data-plan-code="{{ plan.plan_code }}">
+    <!-- Plan Header -->
+    <div class="plan-header">
+        <div>
+            <h3 class="card-title mb-1">{{ plan.plan_code }}</h3>
+            <div class="plan-info-grid">
+                <div class="info-item">
+                    <p class="info-label">{% trans "Role" %}</p>
+                    <p class="info-value">{{ plan.person_role.role.name }}</p>
+                </div>
+                <div class="info-item">
+                    <p class="info-label">{% trans "Monthly" %}</p>
+                    <p class="info-value highlight">€ {{ plan.monthly_amount }}</p>
+                </div>
+                <div class="info-item">
+                    <p class="info-label">{% trans "Status" %}</p>
+                        {% include "portal/includes/stage_progress.html" with current_stage=status stage_type="payment" %}
                 </div>
             </div>
-            {% endfor %}
+        </div>
+        <div class="plan-actions">
+            {% if plan.status == 'DRAFT' %}
+                <!-- Only show Complete button for DRAFT plans -->
+                <button class="btn btn-small toggle-btn" 
+                        data-target="form-{{ plan.id }}" 
+                        data-text-complete="⚙️ {% trans 'Complete' %}"
+                        data-text-cancel="❌ {% trans 'Cancel' %}">
+                    ⚙️ {% trans "Complete" %}
+                </button>
+            {% else %}
+                <!-- Show Status button and RECEIPT download for non-DRAFT plans -->
+                <a href="{% url 'portal:payments:plan_pdf' plan_code=plan.plan_code %}" 
+                   class="btn btn-small" target="_blank" title="{% trans 'Download Receipt' %}">
+                    📄 {% trans "RECEIPT" %}
+                </a>
+                <button class="btn btn-secondary btn-small toggle-btn" 
+                        data-target="details-{{ plan.id }}"
+                        data-text-details="👁️ {% trans 'Status' %}"
+                        data-text-close="❌ {% trans 'Close' %}">
+                    👁️ {% trans "Status" %}
+                </button>
+            {% endif %}
         </div>
     </div>
-{% endif %}
 
-{% if all_plans %}
-    <div class="card">
-        <h2 class="card-title">{% trans "All Your Plans" %}</h2>
-        <p style="color: #94a3b8; margin-bottom: 1.5rem;">
-            {% trans "View the status of all your payment plans for this fiscal year." %}
-        </p>
+    <!-- Scrollable Content for DRAFT plans -->
+    {% if plan.status == 'DRAFT' %}
+    <div id="form-{{ plan.id }}" class="collapsible-content hidden">
+        <div class="scrollable-accordion">
+            
+            <!-- Progress Indicator -->
+            <div class="progress-steps">
+                <div class="step-indicator step-banking {{ plan.payee_name|yesno:'completed,active' }}">
+                    <span class="step-number">1</span>
+                    <span class="step-text">{% trans "Banking Details" %}</span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step-indicator step-terms {{ plan.payee_name|yesno:'active,pending' }}">
+                    <span class="step-number">2</span>
+                    <span class="step-text">{% trans "Terms" %}</span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step-indicator step-upload">
+                    <span class="step-number">3</span>
+                    <span class="step-text">{% trans "Upload" %}</span>
+                </div>
+            </div>
 
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="border-bottom: 2px solid #444;">
-                    <th style="text-align: left; padding: 0.75rem; color: #FF6B35;">{% trans "Plan Code" %}</th>
-                    <th style="text-align: left; padding: 0.75rem; color: #FF6B35;">{% trans "Role" %}</th>
-                    <th style="text-align: center; padding: 0.75rem; color: #FF6B35;">{% trans "Status" %}</th>
-                    <th style="text-align: right; padding: 0.75rem; color: #FF6B35;">{% trans "Action" %}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for plan in all_plans %}
-                <tr style="border-bottom: 1px solid #2a2a2a;">
-                    <td style="padding: 0.75rem; font-family: monospace;">{{ plan.plan_code }}</td>
-                    <td style="padding: 0.75rem;">{{ plan.person_role.role.name }}</td>
-                    <td style="padding: 0.75rem; text-align: center;">
-                        <span style="padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-size: 0.85rem; font-weight: 600;
-                                     {% if plan.status == 'DRAFT' %}background: rgba(255, 107, 53, 0.2); color: #FF6B35;
-                                     {% elif plan.status == 'ACTIVE' %}background: rgba(16, 185, 129, 0.2); color: #10b981;
-                                     {% else %}background: rgba(100, 116, 139, 0.2); color: #94a3b8;{% endif %}">
-                            {{ plan.get_status_display }}
+            <!-- Banking Details Section -->
+            <div class="form-section-compact">
+                <h4 class="form-section-title">
+                    {% if plan.payee_name %}
+                        ✅ {% trans "Banking Details Complete" %}
+                    {% else %}
+                        📝 {% trans "Banking Details Required" %}
+                    {% endif %}
+                </h4>
+                
+                {% if not plan.payee_name %}
+                <form method="post" class="banking-form" id="banking-form-{{ plan.id }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="plan_code" value="{{ plan.plan_code }}">
+                    <input type="hidden" name="action" value="save_banking">
+                    
+                    {% with form=plan_forms|lookup:plan.id %}
+                    <div class="form-grid-compact">
+                        <div class="form-group-compact">
+                            <label class="form-label-compact">{{ form.payee_name.label }}</label>
+                            {{ form.payee_name }}
+                            {% if form.payee_name.errors %}
+                                <ul class="errorlist">
+                                    {% for error in form.payee_name.errors %}<li>{{ error }}</li>{% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        <div class="form-group-compact">
+                            <label class="form-label-compact">{{ form.iban.label }}</label>
+                            {{ form.iban }}
+                            {% if form.iban.errors %}
+                                <ul class="errorlist">
+                                    {% for error in form.iban.errors %}<li>{{ error }}</li>{% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        <div class="form-group-compact">
+                            <label class="form-label-compact">{{ form.bic.label }}</label>
+                            {{ form.bic }}
+                            {% if form.bic.errors %}
+                                <ul class="errorlist">
+                                    {% for error in form.bic.errors %}<li>{{ error }}</li>{% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                        <div class="form-group-compact">
+                            <label class="form-label-compact">{{ form.address.label }}</label>
+                            {{ form.address }}
+                            {% if form.address.errors %}
+                                <ul class="errorlist">
+                                    {% for error in form.address.errors %}<li>{{ error }}</li>{% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endwith %}
+                    
+                    <div class="form-actions-compact">
+                        <button type="submit" class="btn btn-small">
+                            📝 {% trans "Save & Continue" %} →
+                        </button>
+                    </div>
+                    
+                    <p class="help-text mt-1">
+                        {% trans "After saving, review terms and upload your signed form below." %}
+                    </p>
+                </form>
+                {% else %}
+                <!-- Show saved banking details summary -->
+                <div class="info-summary">
+                    <p><strong>{{ plan.payee_name }}</strong> • {{ plan.iban_masked }} • {{ plan.bic }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Payment Plan Disclaimer (only show if banking details are filled) -->
+            {% if plan.payee_name and plan.iban and plan.bic and plan.address %}
+            <div class="form-section-compact">
+                <h4 class="form-section-title">
+                    📋 {% trans "Terms & Conditions" %}
+                </h4>
+                
+                {% if org.payment_plan_disclaimer %}
+                <div class="disclaimer-text">
+                    <p>{{ org.payment_plan_disclaimer|linebreaks }}</p>
+                </div>
+                {% else %}
+                <div class="disclaimer-text">
+                    <p>{% trans "Please confirm you agree to the payment plan terms and conditions." %}</p>
+                </div>
+                {% endif %}
+                
+                <div class="form-group-compact">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="disclaimer-{{ plan.id }}" required class="checkbox-input">
+                        <span class="checkbox-text">
+                            <strong>{% trans "I acknowledge and agree to the terms and conditions above" %}</strong>
                         </span>
-                    </td>
-                    <td style="padding: 0.75rem; text-align: right;">
-                        <a href="{% url 'portal:payments:plan_status' plan_code=plan.plan_code %}"
-                           style="color: #FF6B35; text-decoration: none; font-weight: 600;">
-                            {% trans "View" %} →
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Upload form (only show after disclaimer and not yet uploaded) -->
+            {% if not plan.signed_person_at %}
+            <div class="form-section-compact">
+                <h4 class="form-section-title">
+                    📤 {% trans "Upload Signed Form" %}
+                </h4>
+                <p class="help-text mb-2">
+                    {% trans "1. Download the PDF below" %}<br>
+                    {% trans "2. Sign it by hand" %}<br>
+                    {% trans "3. Upload the signed version here" %}
+                </p>
+                
+                <!-- Download link for the blank PDF -->
+                <div class="mb-2">
+                    <a href="{% url 'portal:payments:plan_pdf' plan_code=plan.plan_code %}" 
+                       class="btn btn-secondary btn-small" target="_blank">
+                        📥 {% trans "Download Form (Blank)" %}
+                    </a>
+                </div>
+
+                <!-- Upload Form -->
+                {% with upload_form=upload_forms|lookup:plan.id %}
+                {% if upload_form %}
+                <form method="post" enctype="multipart/form-data" id="upload-form-{{ plan.id }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="plan_code" value="{{ plan.plan_code }}">
+                    <input type="hidden" name="action" value="upload_form">
+                    
+                    <div class="form-grid-compact">
+                        <div class="form-group-compact">
+                            <label class="form-label-compact">{{ upload_form.pdf_file.label }}</label>
+                            {{ upload_form.pdf_file }}
+                            {% if upload_form.pdf_file.errors %}
+                                <ul class="errorlist">
+                                    {% for error in upload_form.pdf_file.errors %}<li>{{ error }}</li>{% endfor %}
+                                </ul>
+                            {% endif %}
+                            <span class="form-help">{{ upload_form.pdf_file.help_text }}</span>
+                        </div>
+                        <div class="form-group-compact">
+                            <label class="form-label-compact">{{ upload_form.signed_person_at.label }}</label>
+                            {{ upload_form.signed_person_at }}
+                            {% if upload_form.signed_person_at.errors %}
+                                <ul class="errorlist">
+                                    {% for error in upload_form.signed_person_at.errors %}<li>{{ error }}</li>{% endfor %}
+                                </ul>
+                            {% endif %}
+                            <span class="form-help">{{ upload_form.signed_person_at.help_text }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions-compact">
+                        <button type="submit" class="btn btn-small" id="upload-btn-{{ plan.id }}" disabled>
+                            📤 {% trans "Complete Process" %}
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+                {% endwith %}
+            </div>
+            {% else %}
+            <!-- Upload confirmed -->
+            <div class="form-section-compact">
+                <h4 class="form-section-title">
+                    ✅ {% trans "Upload Complete" %}
+                </h4>
+                <div class="info-summary">
+                    <p>{% trans "Your signed form has been uploaded successfully." %}</p>
+                    <p>{% trans "Signed on" %}: {{ plan.signed_person_at|date:"d.m.Y" }}</p>
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+
+        </div>
     </div>
-{% else %}
-    <div class="card">
-        <p style="color: #94a3b8; text-align: center;">
-            {% trans "No payment plans found for this fiscal year." %}
-        </p>
+    {% endif %}
+
+    <!-- Collapsible Content for non-DRAFT plans -->
+    {% if plan.status != 'DRAFT' %}
+    <div id="details-{{ plan.id }}" class="collapsible-content hidden">
+        <div class="scrollable-accordion">
+            
+            <!-- Plan Details -->
+            <div class="form-section-compact">
+                <h4 class="form-section-title">{% trans "Plan Details" %}</h4>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <p class="info-label">{% trans "Role" %}</p>
+                        <p class="info-value">{{ plan.person_role.role.name }}</p>
+                    </div>
+                    <div class="info-item">
+                        <p class="info-label">{% trans "Monthly Amount" %}</p>
+                        <p class="info-value highlight">€ {{ plan.monthly_amount }}</p>
+                    </div>
+                    <div class="info-item">
+                        <p class="info-label">{% trans "Fiscal Year" %}</p>
+                        <p class="info-value">{{ plan.fiscal_year.label }}</p>
+                    </div>
+                    {% if plan.signed_person_at %}
+                    <div class="info-item">
+                        <p class="info-label">{% trans "Signed on" %}</p>
+                        <p class="info-value">{{ plan.signed_person_at|date:"d.m.Y" }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Download section for completed plans -->
+            <div class="form-section-compact">
+                <h4 class="form-section-title">{% trans "Documents" %}</h4>
+                <a href="{% url 'portal:payments:plan_pdf' plan_code=plan.plan_code %}" 
+                   class="btn btn-small" target="_blank">
+                    📄 {% trans "Download Payment Plan PDF" %}
+                </a>
+            </div>
+        </div>
     </div>
+    {% endif %}
+</div>
+{% endfor %}
+
+{% if not all_plans %}
+<div class="card text-center">
+    <p class="text-muted">
+        {% trans "No payment plans found for this fiscal year." %}
+    </p>
+</div>
 {% endif %}
 
-<div style="margin-top: 2rem;">
-    <a href="{% url 'portal:payments:fy_list' %}" class="btn btn-secondary">{% trans "Back to Fiscal Years" %}</a>
+<div class="mt-3">
+    <a href="{% url 'portal:payments:fy_list' %}" class="btn btn-secondary">
+        ← {% trans "Back to Fiscal Years" %}
+    </a>
 </div>
 
 {% endblock %}
 
-{% block extra_css %}
-<style>
-    @media (max-width: 768px) {
-        table {
-            font-size: 0.85rem;
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we just saved banking details
+    const urlParams = new URLSearchParams(window.location.search);
+    const planSaved = urlParams.get('plan_saved');
+    
+    // Check for success message about banking details
+    let bankingJustSaved = false;
+    document.querySelectorAll('.message.success').forEach(msg => {
+        if (msg.textContent.includes('Banking details saved')) {
+            bankingJustSaved = true;
         }
-        th, td {
-            padding: 0.5rem !important;
+    });
+
+    // Handle accordion toggles
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const target = document.getElementById(targetId);
+            
+            if (!target) return;
+            
+            const isHidden = target.classList.contains('hidden');
+            
+            if (isHidden) {
+                target.classList.remove('hidden');
+                target.classList.add('show');
+                this.classList.add('active');
+                
+                const cancelText = this.getAttribute('data-text-cancel') || '❌ Cancel';
+                const closeText = this.getAttribute('data-text-close') || '❌ Close';
+                this.textContent = cancelText || closeText;
+            } else {
+                target.classList.add('hidden');
+                target.classList.remove('show');
+                this.classList.remove('active');
+                
+                const completeText = this.getAttribute('data-text-complete') || '⚙️ Complete';
+                const detailsText = this.getAttribute('data-text-details') || '👁️ Status';
+                this.textContent = completeText || detailsText;
+            }
+        });
+    });
+
+    // Keep accordion open after banking details save
+    if (bankingJustSaved && planSaved) {
+        const planCard = document.querySelector(`[data-plan-code="${planSaved}"]`);
+        if (planCard) {
+            const toggleBtn = planCard.querySelector('.toggle-btn');
+            const accordion = planCard.querySelector('.collapsible-content');
+            
+            if (toggleBtn && accordion) {
+                accordion.classList.remove('hidden');
+                accordion.classList.add('show');
+                toggleBtn.classList.add('active');
+                toggleBtn.textContent = '❌ Cancel';
+                
+                // Scroll to disclaimer section
+                setTimeout(() => {
+                    const disclaimerSection = accordion.querySelector('.form-section-compact:nth-child(3)');
+                    if (disclaimerSection) {
+                        disclaimerSection.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center' 
+                        });
+                    }
+                }, 300);
+            }
         }
     }
-</style>
+
+    // Handle disclaimer checkbox to enable/disable upload button
+    document.querySelectorAll('[id^="disclaimer-"]').forEach(checkbox => {
+        const planId = checkbox.id.split('-')[1];
+        const uploadBtn = document.getElementById(`upload-btn-${planId}`);
+        
+        if (uploadBtn) {
+            checkbox.addEventListener('change', function() {
+                uploadBtn.disabled = !this.checked;
+            });
+        }
+    });
+});
+</script>
 {% endblock %}

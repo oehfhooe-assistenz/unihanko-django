@@ -48,6 +48,41 @@ def generate_reference_code(semester_code, last_name):
     return f"{semester_code}-{name_part}-{number_part}"
 
 
+def inboxrequest_stage(ir) -> str:
+    """Compute stage from HankoSign + upload state."""
+    from hankosign.utils import has_sig
+    
+    # Check for rejection
+    if has_sig(ir, 'REJECT', 'CHAIR'):
+        return 'REJECTED'
+
+    # Check if transferred to audit
+    from academia_audit.models import AuditEntry
+    if AuditEntry.objects.filter(
+        audit_semester__semester=ir.semester,
+        person=ir.person_role.person,
+        inbox_requests=ir
+    ).exists():
+        return 'TRANSFERRED'
+
+    # Check approvals
+    if has_sig(ir, 'APPROVE', 'CHAIR'):
+        return 'APPROVED'
+
+    if has_sig(ir, 'VERIFY', ''):
+        return 'VERIFIED'
+
+    # Check if form uploaded
+    if ir.uploaded_form and ir.affidavit2_confirmed_at:
+        return 'SUBMITTED'
+
+    # Check if courses entered
+    if ir.affidavit1_confirmed_at and ir.courses.exists():
+        return 'DRAFT'
+
+    return 'DRAFT'
+
+
 # --- Models ------------------------------------------------------------------
 
 class Semester(models.Model):
@@ -208,6 +243,13 @@ class InboxRequest(models.Model):
     reimbursement requests. Requests are verified by staff and approved
     by chair before being included in the semester audit.
     """
+    class Stage(models.TextChoices):
+        DRAFT     = "DRAFT", _("Draft")
+        SUBMITTED = "SUBMITTED", _("Submitted")
+        VERIFIED  = "VERIFIED", _("Verified")
+        APPROVED  = "APPROVED", _("Approved")
+        REJECTED  = "REJECTED", _("Rejected")
+        TRANSFERRED = "TRANSFERRED", _("Transferred to Audit")
 
     # Core relationships
     semester = models.ForeignKey(
@@ -223,6 +265,14 @@ class InboxRequest(models.Model):
         related_name='ects_requests',
         verbose_name=_("Person Role"),
         help_text=_("The role under which ECTS are being claimed")
+    )
+
+    stage = models.CharField(
+        _("Stage"),
+        max_length=12,
+        choices=Stage.choices,
+        default=Stage.DRAFT,
+        help_text=_("Current workflow stage. Auto-computed from HankoSign signatures.")
     )
 
     # Reference & access
@@ -328,6 +378,7 @@ class InboxRequest(models.Model):
             if not self.reference_code:
                 raise ValidationError(_("Could not generate unique reference code"))
 
+        self.stage = inboxrequest_stage(self)
         super().save(*args, **kwargs)
 
     def clean(self):
@@ -368,44 +419,6 @@ class InboxRequest(models.Model):
                         }
                     )
 
-    @property
-    def stage(self):
-        """
-        Derive stage from HankoSign signatures and upload state.
-
-        Returns:
-            str: One of DRAFT, SUBMITTED, VERIFIED, APPROVED, REJECTED, TRANSFERRED
-        """
-        # Check for rejection first
-        if has_sig(self, 'REJECT', 'CHAIR'):
-            return 'REJECTED'
-
-        # Check if transferred to audit (check if AuditEntry exists)
-        # Avoid circular import by doing late import
-        from academia_audit.models import AuditEntry
-        if AuditEntry.objects.filter(
-            audit_semester__semester=self.semester,
-            person=self.person_role.person,
-            inbox_requests=self
-        ).exists():
-            return 'TRANSFERRED'
-
-        # Check HankoSign approvals
-        if has_sig(self, 'APPROVE', 'CHAIR'):
-            return 'APPROVED'
-
-        if has_sig(self, 'VERIFY', ''):
-            return 'VERIFIED'
-
-        # Check if form uploaded
-        if self.uploaded_form and self.affidavit2_confirmed_at:
-            return 'SUBMITTED'
-
-        # Check if courses entered
-        if self.affidavit1_confirmed_at and self.courses.exists():
-            return 'DRAFT'
-
-        return 'DRAFT'
 
     @property
     def total_ects(self):

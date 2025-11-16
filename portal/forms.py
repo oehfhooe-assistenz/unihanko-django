@@ -70,6 +70,8 @@ class AccessCodeForm(forms.Form):
         )
 
 
+# Update in portal/forms.py
+
 class CourseForm(forms.Form):
     """
     Form for a single course entry.
@@ -96,15 +98,27 @@ class CourseForm(forms.Form):
 
     ects_amount = forms.DecimalField(
         label=_("ECTS"),
-        max_digits=3,
-        decimal_places=1,
-        min_value=Decimal('0.1'),
+        max_digits=4,  # Increased to allow up to 99.5
+        decimal_places=1,  # Still 1 decimal place for consistency
+        min_value=Decimal('0.5'),  # Minimum 0.5 ECTS
+        max_value=Decimal('15.0'),  # Maximum 15 ECTS per course
+        required=False,
         widget=forms.NumberInput(attrs={
-            'placeholder': _('e.g., 3.0'),
+            'placeholder': _('e.g., 3, 5.5, 7'),
             'class': 'form-input',
-            'step': '0.5'
-        })
+            'step': '0.5'  # Allow 0.5 increments
+        }),
+        help_text=_("Enter whole numbers (e.g., 5) or half values (e.g., 5.5)")
     )
+    
+    def clean_ects_amount(self):
+        """Allow whole numbers by converting them to .0 decimal format"""
+        ects = self.cleaned_data.get('ects_amount')
+        if ects is not None:
+            # Convert to ensure proper decimal format
+            # This handles both "5" -> "5.0" and "5.5" -> "5.5"
+            return Decimal(str(float(ects)))
+        return ects
 
     def clean(self):
         cleaned_data = super().clean()
@@ -127,11 +141,11 @@ class CourseForm(forms.Form):
         return cleaned_data
 
 
-# Formset for up to 10 courses
+# Formset for up to 6 courses (reduced from 10)
 CourseFormSet = formset_factory(
     CourseForm,
-    extra=10,
-    max_num=10,
+    extra=6,  # Reduced from 10
+    max_num=6,  # Reduced from 10
     validate_max=True
 )
 
@@ -311,82 +325,39 @@ class PaymentAccessForm(forms.Form):
             )
 
 
-class BankingDetailsForm(forms.ModelForm):
-    """
-    Form for completing banking details on a payment plan.
-    """
-    disclaimer_confirmed = forms.BooleanField(
-        label=_("I confirm"),
-        required=True,
-        error_messages={
-            'required': _("You must confirm the disclaimer to proceed.")
-        }
-    )
+# In portal/forms.py - Update your BankingDetailsForm
 
+class BankingDetailsForm(forms.ModelForm):
+    """Form for users to complete banking details (without reference field)"""
+    
     class Meta:
         model = PaymentPlan
-        fields = ['payee_name', 'iban', 'bic', 'address', 'reference']
+        fields = ['payee_name', 'iban', 'bic', 'address']  # Removed 'reference'
+        
         widgets = {
-            'payee_name': forms.TextInput(attrs={
-                'class': 'form-input',
-                'placeholder': _('Full name as it appears on your bank account')
-            }),
-            'iban': forms.TextInput(attrs={
-                'class': 'form-input',
-                'placeholder': _('AT00 0000 0000 0000 0000')
-            }),
-            'bic': forms.TextInput(attrs={
-                'class': 'form-input',
-                'placeholder': _('e.g., BKAUATWW')
-            }),
-            'address': forms.Textarea(attrs={
-                'class': 'form-textarea',
-                'rows': 3,
-                'placeholder': _('Street and number\nPostal code and city\nCountry')
-            }),
-            'reference': forms.TextInput(attrs={
-                'class': 'form-input',
-                'placeholder': _('Optional reference text for bank transfer')
-            }),
+            'payee_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Full name on bank account'}),
+            'iban': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'AT12 3456 7890 1234 5678'}),
+            'bic': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'RZOOAT2L'}),
+            'address': forms.Textarea(attrs={'class': 'form-input', 'rows': 3, 'placeholder': 'Street, Number\nPostal Code, City\nCountry'}),
         }
+        
         help_texts = {
-            'payee_name': _("Name of the account holder"),
-            'iban': _("International Bank Account Number"),
-            'bic': _("Bank Identifier Code (SWIFT)"),
-            'address': _("Full postal address"),
-            'reference': _("Optional reference for the payment (e.g., invoice number)"),
+            'payee_name': 'Name of the account holder',
+            'iban': 'International Bank Account Number',
+            'bic': 'Bank Identifier Code (SWIFT)',
+            'address': 'Full postal address of account holder',
         }
 
     def clean_iban(self):
-        """Basic IBAN validation"""
-        iban = self.cleaned_data.get('iban', '').strip().upper().replace(' ', '')
-
-        if not iban:
-            raise ValidationError(_("IBAN is required."))
-
-        # Basic format check (2 letter country code + 2 digits + up to 30 alphanumeric)
-        if len(iban) < 15 or len(iban) > 34:
-            raise ValidationError(_("IBAN length is invalid."))
-
-        if not iban[:2].isalpha() or not iban[2:4].isdigit():
-            raise ValidationError(_("IBAN format is invalid. Should start with country code and 2 digits."))
-
+        iban = self.cleaned_data.get('iban', '').replace(' ', '').upper()
+        if not iban.startswith('AT') or len(iban) != 20:
+            raise forms.ValidationError('Please enter a valid Austrian IBAN (AT followed by 18 digits)')
         return iban
 
     def clean_bic(self):
-        """Basic BIC validation"""
-        bic = self.cleaned_data.get('bic', '').strip().upper()
-
-        if not bic:
-            raise ValidationError(_("BIC is required."))
-
-        # BIC is either 8 or 11 characters
+        bic = self.cleaned_data.get('bic', '').upper()
         if len(bic) not in [8, 11]:
-            raise ValidationError(_("BIC must be 8 or 11 characters long."))
-
-        if not bic.isalnum():
-            raise ValidationError(_("BIC must contain only letters and numbers."))
-
+            raise forms.ValidationError('BIC must be 8 or 11 characters long')
         return bic
 
 

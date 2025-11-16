@@ -36,16 +36,18 @@
             {% endif %}
         </div>
 
-        <div class="form-group">
-            <label for="id_captcha_0" class="form-label">{{ form.captcha.label }}</label>
-            {{ form.captcha }}
-            {% if form.captcha.errors %}
-                <ul class="errorlist">
-                    {% for error in form.captcha.errors %}
-                    <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
+        <div class="captcha-container">
+            <div class="form-group">
+                <label for="id_captcha_0" class="form-label">{{ form.captcha.label }}</label>
+                {{ form.captcha }}
+                {% if form.captcha.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.captcha.errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
         </div>
 
         {% if form.non_field_errors %}

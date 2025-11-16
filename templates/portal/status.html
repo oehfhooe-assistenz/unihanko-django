@@ -2,222 +2,398 @@
 {% load i18n %}
 
 {% block content %}
-<h1 class="page-title">{% trans "Request Status" %}</h1>
+<h1 class="page-title">{% trans "ECTS Request Status" %}</h1>
 
-<!-- Prominent reference code banner -->
-<div style="background: #1a1a1a; border: 4px solid #FF6B35; padding: 1rem 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 6px 6px 0 #000;">
-    <div>
-        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Your Reference Code" %}</p>
-        <p style="font-size: 1.5rem; font-weight: 900; color: #FF6B35; font-family: monospace; letter-spacing: 2px;">{{ inbox_request.reference_code }}</p>
+<div class="card">
+    <h2 class="card-title">{{ inbox_request.semester.display_name }}</h2>
+    <p class="text-muted">
+        {% trans "Welcome" %}, {{ inbox_request.person_role.person.first_name }} {{ inbox_request.person_role.person.last_name }}
+    </p>
+</div>
+
+<div class="card payment-plan-card" data-request-id="{{ inbox_request.id }}" data-reference="{{ inbox_request.reference_code }}">
+    <!-- Request Header -->
+    <div class="plan-header">
+        <div>
+            <h3 class="card-title mb-1">{{ inbox_request.reference_code }}</h3>
+            <div class="plan-info-grid">
+                <div class="info-item">
+                    <p class="info-label">{% trans "Role" %}</p>
+                    <p class="info-value">{{ inbox_request.person_role.role.name }}</p>
+                </div>
+                <div class="info-item">
+                    <p class="info-label">{% trans "Total ECTS" %}</p>
+                    <p class="info-value highlight">{{ total_ects }} ECTS</p>
+                </div>
+                <div class="info-item">
+                    <p class="info-label">{% trans "Stage" %}</p>
+                    {% include "portal/includes/stage_progress.html" with current_stage=stage stage_type="ects" %}
+                </div>
+            </div>
+        </div>
+        <div class="plan-actions">
+            {% if stage in 'VERIFIED,APPROVED,REJECTED,TRANSFERRED' %}
+                <a href="{% url 'portal:academia:request_pdf' reference_code=inbox_request.reference_code %}" 
+                   class="btn btn-small" target="_blank">
+                    📄 {% trans "RECEIPT" %}
+                </a>
+            {% endif %}
+            
+            {% if stage in 'DRAFT,SUBMITTED' %}
+                <button class="btn btn-small toggle-btn" 
+                        data-target="form-{{ inbox_request.id }}" 
+                        data-text-complete="⚙️ {% trans 'Complete' %}"
+                        data-text-cancel="❌ {% trans 'Cancel' %}">
+                    ⚙️ {% trans "Complete" %}
+                </button>
+            {% else %}
+                <button class="btn btn-secondary btn-small toggle-btn" 
+                        data-target="details-{{ inbox_request.id }}"
+                        data-text-details="👁️ {% trans 'Details' %}"
+                        data-text-close="❌ {% trans 'Close' %}">
+                    👁️ {% trans "Details" %}
+                </button>
+            {% endif %}
+        </div>
     </div>
-    <div style="text-align: right;">
-        <p style="color: #94a3b8; font-size: 0.85rem;">{% trans "Save this code to check your status later" %}</p>
-        <button onclick="copyCode()" class="btn" style="margin-top: 0.5rem; padding: 0.5rem 1rem; font-size: 0.9rem;">
-            {% trans "Copy Code" %}
+
+    <!-- Collapsible Content for DRAFT/SUBMITTED -->
+    {% if stage in 'DRAFT,SUBMITTED' %}
+    <div id="form-{{ inbox_request.id }}" class="collapsible-content hidden">
+        <div class="scrollable-accordion">
+            
+            <!-- Progress Steps -->
+            <div class="progress-steps">
+                <div class="step-indicator step-filed completed">
+                    <span class="step-number">✓</span>
+                    <span class="step-text">{% trans "Filed" %}</span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step-indicator step-upload {{ inbox_request.uploaded_form|yesno:'completed,active' }}">
+                    <span class="step-number">2</span>
+                    <span class="step-text">{% trans "Upload Form" %}</span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step-indicator step-processing {{ inbox_request.uploaded_form|yesno:'active,pending' }}">
+                    <span class="step-number">3</span>
+                    <span class="step-text">{% trans "Processing" %}</span>
+                </div>
+            </div>
+
+            <!-- Request Summary -->
+            <div class="form-section-compact">
+                <h4 class="form-section-title">
+                    ✅ {% trans "Request Summary" %}
+                </h4>
+                
+                <div class="info-summary">
+                    <p><strong>{{ inbox_request.person_role.person.first_name }} {{ inbox_request.person_role.person.last_name }}</strong></p>
+                    <p>{{ inbox_request.person_role.role.name }}</p>
+                    <p>{% trans "Filed" %}: {{ inbox_request.created_at|date:"d.m.Y H:i" }}</p>
+                </div>
+
+                <h5 class="mt-2 mb-1">{% trans "Courses" %}</h5>
+                <div class="courses-summary">
+                    {% for course in inbox_request.courses.all %}
+                    <div class="course-list-item">
+                        <span>
+                            {% if course.course_code %}{{ course.course_code }}{% endif %}
+                            {% if course.course_code and course.course_name %} - {% endif %}
+                            {% if course.course_name %}{{ course.course_name }}{% endif %}
+                        </span>
+                        <span class="highlight">{{ course.ects_amount }} ECTS</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- ECTS Breakdown -->
+                <div class="ects-breakdown">
+                    <div class="ects-row">
+                        <span>{% trans "Your Total ECTS" %}:</span>
+                        <strong>{{ total_ects }}</strong>
+                    </div>
+                    <div class="ects-row">
+                        <span>{% trans "Role Entitlement" %}:</span>
+                        <strong>{{ inbox_request.person_role.role.ects_cap }}</strong>
+                    </div>
+                    <div class="ects-row">
+                        <span>{% trans "Semester Adjustment" %}:</span>
+                        <strong>{{ inbox_request.semester.ects_adjustment|stringformat:"+.1f" }}</strong>
+                    </div>
+                    <div class="ects-row total-row">
+                        <span>{% trans "Max Entitled" %}:</span>
+                        <strong>{{ max_ects }}</strong>
+                    </div>
+                </div>
+
+                {% if inbox_request.student_note %}
+                <div class="mt-2">
+                    <p class="info-label">{% trans "Your Note" %}</p>
+                    <p>{{ inbox_request.student_note }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Download PDF Section -->
+            <div class="form-section-compact">
+                <h4 class="form-section-title">
+                    📄 {% trans "Download Form for Signatures" %}
+                </h4>
+                <p class="help-text mb-2">
+                    1. {% trans "Download your PDF form below" %}<br>
+                    2. {% trans "Get it signed by both your lecturer and yourself (handwritten or electronic)" %}<br>
+                    3. {% trans "Upload the twice-signed version below" %}
+                </p>
+                
+                <div class="mb-2">
+                    <a href="{% url 'portal:academia:request_pdf' reference_code=inbox_request.reference_code %}" 
+                       class="btn btn-secondary btn-small" target="_blank">
+                        📥 {% trans "Download Form (Blank)" %}
+                    </a>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            {% if not inbox_request.uploaded_form %}
+            <div class="form-section-compact">
+                <h4 class="form-section-title">
+                    📤 {% trans "Upload Signed Form" %}
+                </h4>
+
+                {% if affidavit_2 %}
+                <div class="disclaimer-text">
+                    <h5>{% trans "Upload Declaration" %}</h5>
+                    <p>{{ affidavit_2|linebreaks }}</p>
+                </div>
+
+                <div class="form-group-compact">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="affidavit2-{{ inbox_request.id }}" required class="checkbox-input">
+                        <span class="checkbox-text">
+                            <strong>{% trans "I confirm the above statement" %}</strong>
+                        </span>
+                    </label>
+                </div>
+                {% endif %}
+                
+                <form method="post" enctype="multipart/form-data" id="upload-form-{{ inbox_request.id }}">
+                    {% csrf_token %}
+                    
+                    <div class="form-grid-compact">
+                        <div class="form-group-compact">
+                            <label class="form-label-compact">{% trans "Signed PDF File" %}</label>
+                            {{ upload_form.uploaded_form }}
+                            {% if upload_form.uploaded_form.errors %}
+                                <ul class="errorlist">
+                                    {% for error in upload_form.uploaded_form.errors %}<li>{{ error }}</li>{% endfor %}
+                                </ul>
+                            {% endif %}
+                            <span class="form-help">{% trans "Make sure all signatures are present (max 20MB)" %}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions-compact">
+                        <button type="submit" class="btn btn-small" id="upload-btn-{{ inbox_request.id }}" disabled>
+                            📤 {% trans "Submit Signed Form" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% else %}
+            <div class="form-section-compact">
+                <h4 class="form-section-title">
+                    ✅ {% trans "Form Uploaded Successfully" %}
+                </h4>
+                <div class="info-summary">
+                    <p>{% trans "Your signed form has been uploaded and is being processed by our team." %}</p>
+                    <p>{% trans "Uploaded" %}: {{ inbox_request.uploaded_form_at|date:"d.m.Y H:i" }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Collapsible Content for Completed Stages -->
+    {% if stage not in 'DRAFT,SUBMITTED' %}
+    <div id="details-{{ inbox_request.id }}" class="collapsible-content hidden">
+        <div class="scrollable-accordion">
+            
+            <!-- Status Info -->
+            <div class="form-section-compact">
+                <h4 class="form-section-title">{% trans "Request Information" %}</h4>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <p class="info-label">{% trans "Person" %}</p>
+                        <p class="info-value">{{ inbox_request.person_role.person.first_name }} {{ inbox_request.person_role.person.last_name }}</p>
+                    </div>
+                    <div class="info-item">
+                        <p class="info-label">{% trans "Role" %}</p>
+                        <p class="info-value">{{ inbox_request.person_role.role.name }}</p>
+                    </div>
+                    <div class="info-item">
+                        <p class="info-label">{% trans "Filed" %}</p>
+                        <p class="info-value">{{ inbox_request.created_at|date:"d.m.Y" }}</p>
+                    </div>
+                    {% if inbox_request.uploaded_form_at %}
+                    <div class="info-item">
+                        <p class="info-label">{% trans "Form Submitted" %}</p>
+                        <p class="info-value">{{ inbox_request.uploaded_form_at|date:"d.m.Y" }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Course Details -->
+            <div class="form-section-compact">
+                <h4 class="form-section-title">{% trans "Course Details" %}</h4>
+                <div class="courses-summary">
+                    {% for course in inbox_request.courses.all %}
+                    <div class="course-list-item">
+                        <div>
+                            <strong>
+                                {% if course.course_code %}{{ course.course_code }}{% endif %}
+                                {% if course.course_code and course.course_name %} - {% endif %}
+                                {% if course.course_name %}{{ course.course_name }}{% endif %}
+                            </strong>
+                        </div>
+                        <span class="highlight">{{ course.ects_amount }} ECTS</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- ECTS Breakdown -->
+                <div class="ects-breakdown mt-2">
+                    <div class="ects-row">
+                        <span>{% trans "Your Total ECTS" %}:</span>
+                        <strong>{{ total_ects }}</strong>
+                    </div>
+                    <div class="ects-row">
+                        <span>{% trans "Role Entitlement" %}:</span>
+                        <strong>{{ inbox_request.person_role.role.ects_cap }}</strong>
+                    </div>
+                    <div class="ects-row">
+                        <span>{% trans "Semester Adjustment" %}:</span>
+                        <strong>{{ inbox_request.semester.ects_adjustment|stringformat:"+.1f" }}</strong>
+                    </div>
+                    <div class="ects-row total-row">
+                        <span>{% trans "Max Entitled" %}:</span>
+                        <strong>{{ max_ects }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents -->
+            <div class="form-section-compact">
+                <h4 class="form-section-title">{% trans "Documents" %}</h4>
+                <div class="form-actions-compact">
+                    <a href="{% url 'portal:academia:request_pdf' reference_code=inbox_request.reference_code %}" 
+                       class="btn btn-small" target="_blank">
+                        📄 {% trans "Download Request Form" %}
+                    </a>
+                    {% if inbox_request.uploaded_form %}
+                    <a href="{{ inbox_request.uploaded_form.url }}" 
+                       class="btn btn-secondary btn-small" target="_blank">
+                        📎 {% trans "View Signed Form" %}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Quick Reference Copy -->
+<div class="card">
+    <h4 class="card-title">{% trans "Your Reference Code" %}</h4>
+    <div class="reference-code-box">
+        <input type="text" 
+               value="{{ inbox_request.reference_code }}" 
+               readonly 
+               class="reference-code-input"
+               id="reference-code-input">
+        <button class="btn btn-small copy-btn" 
+                onclick="copyReferenceCode()" 
+                id="copy-btn">
+            📋 {% trans "Copy" %}
         </button>
     </div>
-</div>
-
-<div class="card">
-    <h2 class="card-title">{% trans "Request Details" %}</h2>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
-        <div>
-            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Semester" %}</p>
-            <p style="font-weight: 600;">{{ inbox_request.semester.display_name }}</p>
-        </div>
-        <div>
-            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Person" %}</p>
-            <p style="font-weight: 600;">{{ inbox_request.person_role.person.first_name }} {{ inbox_request.person_role.person.last_name }}</p>
-        </div>
-        <div>
-            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Role" %}</p>
-            <p style="font-weight: 600;">{{ inbox_request.person_role.role.name }}</p>
-        </div>
-        <div>
-            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.25rem;">{% trans "Total ECTS" %}</p>
-            <p style="font-weight: 600; color: #FF6B35;">{{ inbox_request.total_ects }}</p>
-        </div>
-    </div>
-</div>
-
-<div class="card">
-    <h2 class="card-title">{% trans "Current Status" %}</h2>
-
-    <div style="margin: 1.5rem 0;">
-        {% if stage == 'DRAFT' %}
-            <div style="background: rgba(255, 107, 53, 0.1); border-left: 4px solid #FF6B35; padding: 1rem;">
-                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem;">{% trans "DRAFT" %}</p>
-                <p style="color: #94a3b8;">{% trans "Your request has been created. Please download the form below, have it signed by your professors, then upload it here." %}</p>
-            </div>
-        {% elif stage == 'SUBMITTED' %}
-            <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid #3b82f6; padding: 1rem;">
-                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; color: #3b82f6;">{% trans "SUBMITTED" %}</p>
-                <p style="color: #94a3b8;">{% trans "Your signed form has been uploaded. It is awaiting verification by staff." %}</p>
-            </div>
-        {% elif stage == 'VERIFIED' %}
-            <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; padding: 1rem;">
-                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; color: #10b981;">{% trans "VERIFIED" %}</p>
-                <p style="color: #94a3b8;">{% trans "Your form has been verified by staff. It is now awaiting approval by the chair." %}</p>
-            </div>
-        {% elif stage == 'APPROVED' %}
-            <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; padding: 1rem;">
-                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; color: #10b981;">{% trans "APPROVED" %}</p>
-                <p style="color: #94a3b8;">{% trans "Your request has been approved by the chair. It will be included in the semester audit." %}</p>
-            </div>
-        {% elif stage == 'REJECTED' %}
-            <div style="background: rgba(220, 38, 38, 0.1); border-left: 4px solid #dc2626; padding: 1rem;">
-                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; color: #dc2626;">{% trans "REJECTED" %}</p>
-                <p style="color: #94a3b8;">{% trans "Your request has been rejected. Please contact the office for more information." %}</p>
-            </div>
-        {% elif stage == 'TRANSFERRED' %}
-            <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; padding: 1rem;">
-                <p style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; color: #10b981;">{% trans "TRANSFERRED" %}</p>
-                <p style="color: #94a3b8;">{% trans "Your request has been transferred to the audit system." %}</p>
-            </div>
-        {% endif %}
-    </div>
-
-    <div style="margin-top: 2rem;">
-        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.5rem;">
-            <strong>{% trans "Submitted" %}:</strong> {{ inbox_request.created_at|date:"d.m.Y H:i" }}
-        </p>
-        {% if inbox_request.uploaded_form_at %}
-        <p style="color: #94a3b8; font-size: 0.9rem;">
-            <strong>{% trans "Form uploaded" %}:</strong> {{ inbox_request.uploaded_form_at|date:"d.m.Y H:i" }}
-        </p>
-        {% endif %}
-    </div>
-</div>
-
-<div class="card">
-    <h2 class="card-title">{% trans "Course List" %}</h2>
-
-    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
-        <thead>
-            <tr style="border-bottom: 2px solid #444;">
-                <th style="text-align: left; padding: 0.75rem; color: #FF6B35;">{% trans "Code" %}</th>
-                <th style="text-align: left; padding: 0.75rem; color: #FF6B35;">{% trans "Name" %}</th>
-                <th style="text-align: right; padding: 0.75rem; color: #FF6B35;">{% trans "ECTS" %}</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for course in inbox_request.courses.all %}
-            <tr style="border-bottom: 1px solid #2a2a2a;">
-                <td style="padding: 0.75rem;">{{ course.course_code|default:"—" }}</td>
-                <td style="padding: 0.75rem;">{{ course.course_name|default:"—" }}</td>
-                <td style="padding: 0.75rem; text-align: right; font-weight: 600;">{{ course.ects_amount }}</td>
-            </tr>
-            {% endfor %}
-            <tr style="border-top: 2px solid #FF6B35;">
-                <td colspan="2" style="padding: 0.75rem; text-align: right; font-weight: 600;">{% trans "Total" %}:</td>
-                <td style="padding: 0.75rem; text-align: right; font-weight: 600; color: #FF6B35; font-size: 1.1rem;">{{ inbox_request.total_ects }}</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-
-{% if inbox_request.student_note %}
-<div class="card">
-    <h2 class="card-title">{% trans "Notes" %}</h2>
-    <p style="line-height: 1.6; white-space: pre-wrap;">{{ inbox_request.student_note }}</p>
-</div>
-{% endif %}
-
-<div class="card">
-    <h2 class="card-title">{% trans "Download Form" %}</h2>
-    <p style="margin-bottom: 1.5rem; color: #94a3b8;">
-        {% trans "Download the PDF form, have it signed by your professors, then upload it below." %}
+    <p class="help-text mt-1">
+        {% trans "Save this code to check your request status or upload documents later." %}
     </p>
-    <a href="{% url 'portal:request_pdf' inbox_request.reference_code %}" class="btn" target="_blank">
-        {% trans "Download PDF Form" %}
+</div>
+
+<div class="mt-3">
+    <a href="{% url 'portal:academia:semester_list' %}" class="btn btn-secondary">
+        ← {% trans "Back to Semesters" %}
     </a>
 </div>
 
-{% if upload_form %}
-<div class="card">
-    <h2 class="card-title">{% trans "Upload Signed Form" %}</h2>
-
-    <div style="background: #2a2a2a; padding: 1.5rem; margin-bottom: 1.5rem; border-left: 4px solid #FF6B35;">
-        <p style="line-height: 1.6; white-space: pre-wrap;">{{ affidavit_2 }}</p>
-    </div>
-
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-
-        <div class="form-group">
-            <label for="id_uploaded_form" class="form-label">{{ upload_form.uploaded_form.label }}</label>
-            {{ upload_form.uploaded_form }}
-            {% if upload_form.uploaded_form.errors %}
-                <ul class="errorlist">
-                    {% for error in upload_form.uploaded_form.errors %}
-                    <li>{{ error }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-            {% if upload_form.uploaded_form.help_text %}
-                <span class="form-help">{{ upload_form.uploaded_form.help_text }}</span>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label style="display: flex; align-items: start; gap: 0.75rem; cursor: pointer;">
-                {{ upload_form.affidavit2_confirmed }}
-                <span style="flex: 1;">
-                    {{ upload_form.affidavit2_confirmed.label }}
-                    {% if upload_form.affidavit2_confirmed.errors %}
-                        <ul class="errorlist">
-                            {% for error in upload_form.affidavit2_confirmed.errors %}
-                            <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </span>
-            </label>
-        </div>
-
-        <button type="submit" class="btn">{% trans "Upload Form" %}</button>
-    </form>
-</div>
-{% endif %}
-
-<div style="margin-top: 2rem;">
-    <a href="{% url 'portal:semester_list' %}" class="btn btn-secondary">{% trans "Back to Portal" %}</a>
-</div>
-
-{% endblock %}
-
-{% block extra_css %}
-<style>
-    @media (max-width: 768px) {
-        table {
-            font-size: 0.9rem;
-        }
-        td, th {
-            padding: 0.5rem !important;
-        }
-    }
-</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    function copyCode() {
-        const code = "{{ inbox_request.reference_code }}";
-        navigator.clipboard.writeText(code).then(function() {
-            // Visual feedback
-            const btn = event.target;
-            const originalText = btn.textContent;
-            btn.textContent = "{% trans 'Copied!' %}";
-            btn.style.background = '#10b981';
+function copyReferenceCode() {
+    const input = document.getElementById('reference-code-input');
+    const btn = document.getElementById('copy-btn');
+    
+    input.select();
+    input.setSelectionRange(0, 99999);
+    
+    navigator.clipboard.writeText(input.value).then(function() {
+        const originalText = btn.textContent;
+        btn.textContent = '✓ {% trans "Copied!" %}';
+        setTimeout(function() {
+            btn.textContent = originalText;
+        }, 2000);
+    });
+}
 
-            setTimeout(function() {
-                btn.textContent = originalText;
-                btn.style.background = '#FF6B35';
-            }, 2000);
-        }).catch(function(err) {
-            // Fallback for older browsers
-            alert("{% trans 'Reference Code:' %} " + code);
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle accordion toggles
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const target = document.getElementById(targetId);
+            
+            if (!target) return;
+            
+            const isHidden = target.classList.contains('hidden');
+            
+            if (isHidden) {
+                target.classList.remove('hidden');
+                target.classList.add('show');
+                this.classList.add('active');
+                
+                const cancelText = this.getAttribute('data-text-cancel') || '❌ {% trans "Cancel" %}';
+                const closeText = this.getAttribute('data-text-close') || '❌ {% trans "Close" %}';
+                this.textContent = cancelText || closeText;
+            } else {
+                target.classList.add('hidden');
+                target.classList.remove('show');
+                this.classList.remove('active');
+                
+                const completeText = this.getAttribute('data-text-complete') || '⚙️ {% trans "Complete" %}';
+                const detailsText = this.getAttribute('data-text-details') || '👁️ {% trans "Details" %}';
+                this.textContent = completeText || detailsText;
+            }
         });
-    }
+    });
+
+    // Handle affidavit checkbox
+    document.querySelectorAll('[id^="affidavit2-"]').forEach(checkbox => {
+        const requestId = checkbox.id.split('-')[1];
+        const uploadBtn = document.getElementById(`upload-btn-${requestId}`);
+        
+        if (uploadBtn) {
+            checkbox.addEventListener('change', function() {
+                uploadBtn.disabled = !this.checked;
+            });
+        }
+    });
+});
 </script>
 {% endblock %}

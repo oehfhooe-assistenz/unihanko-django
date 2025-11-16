@@ -12,6 +12,7 @@ from simple_history.admin import SimpleHistoryAdmin
 from concurrency.admin import ConcurrentModelAdmin
 from django.db import transaction
 from django.core.exceptions import PermissionDenied, ValidationError
+from academia.models import inboxrequest_stage
 
 from .models import Semester, InboxRequest, InboxCourse, generate_semester_password
 from people.models import PersonRole, Person
@@ -381,8 +382,8 @@ class InboxRequestAdmin(
         'created_at',
         'active_text',
     )
-
-    list_filter = ('semester', 'created_at')
+    list_display_links = ['reference_code',]
+    list_filter = ('semester', 'stage', 'created_at')
     search_fields = (
         'reference_code',
         'person_role__person__last_name',
@@ -393,7 +394,7 @@ class InboxRequestAdmin(
 
     fieldsets = (
         (_("Identification"), {
-            'fields': ('reference_code', 'semester', 'person_role')
+            'fields': ('reference_code', 'stage', 'semester', 'person_role')
         }),
         (_("Student Input"), {
             'fields': ('student_note',)
@@ -417,6 +418,11 @@ class InboxRequestAdmin(
 
     readonly_fields = (
         'reference_code',
+        'stage',
+        'affidavit1_confirmed_at',
+        'affidavit2_confirmed_at',
+        'uploaded_form_at',
+        'submission_ip',
         'total_ects_readonly',
         'max_ects_readonly',
         'validation_status',
@@ -447,7 +453,7 @@ class InboxRequestAdmin(
                 if n in actions:
                     actions.remove(n)
 
-        stage = obj.stage
+        stage = inboxrequest_stage(obj)
 
         if stage in ('DRAFT', 'SUBMITTED'):
             # Can only verify
@@ -642,6 +648,10 @@ class InboxRequestAdmin(
             'request_obj': obj,
             'org': OrgInfo.get_solo(),
             'signatures': signatures,
+            'signers': [
+                {'label': obj.person_role.person.last_name},
+                {'label': 'LV-Leitung | FH OÖ'},
+            ]
         }
 
         return render_pdf_response(

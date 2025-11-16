@@ -222,7 +222,7 @@ class PaymentPlanAdmin(
         "plan_code_or_hint",
         "created_at", "updated_at",
         "window_preview", "breakdown_preview", "recommended_total_display", "role_monthly_hint",
-        "bank_reference_preview_full", "pdf_file", "submission_ip", "signatures_box",
+        "bank_reference_preview_full", "pdf_file", "submission_ip", "signatures_box", "status",
     )
 
     list_per_page = 50
@@ -401,6 +401,8 @@ class PaymentPlanAdmin(
         
         if not obj:
             return ro
+        
+        ro.extend(['submission_ip'])
         
         # 1. FY locked → full tombstone (year-end close)
         if obj.fiscal_year_id:
