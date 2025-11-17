@@ -10,6 +10,8 @@ from simple_history.admin import SimpleHistoryAdmin
 from django.db import transaction
 from django import forms
 from django.core.exceptions import PermissionDenied, ValidationError
+from annotations.admin import AnnotationInline
+from annotations.views import create_system_annotation
 
 from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action, ManagerOnlyHistoryMixin
 from core.pdf import render_pdf_response
@@ -113,7 +115,7 @@ class AuditSemesterAdmin(
     ManagerOnlyHistoryMixin,
 ):
     resource_classes = [AuditSemesterResource]
-    inlines = [AuditEntryInline]
+    inlines = [AuditEntryInline, AnnotationInline]
     list_display = (
         'status_text',
         'semester_code',
@@ -296,6 +298,7 @@ class AuditSemesterAdmin(
             messages.error(request, _("Lock action not configured."))
             return
         record_signature(request.user, action, obj, note=f"Audit semester {obj.semester.code} locked")
+        create_system_annotation(obj, "LOCK", user=request.user)
         messages.success(request, _("Audit semester locked."))
 
     lock_audit.label = _("Lock Audit")
@@ -315,6 +318,7 @@ class AuditSemesterAdmin(
             messages.error(request, _("Unlock action not configured."))
             return
         record_signature(request.user, action, obj, note=f"Audit semester {obj.semester.code} unlocked")
+        create_system_annotation(obj, "UNLOCK", user=request.user)
         messages.success(request, _("Audit semester unlocked."))
 
     unlock_audit.label = _("Unlock Audit")
@@ -334,7 +338,6 @@ class AuditSemesterAdmin(
                 'skipped': skipped,
             }
         )
-
     synchronize_entries.label = _("Synchronize Audit Entries")
     synchronize_entries.attrs = {"class": "btn btn-block btn-primary", "style": "margin-bottom: 1rem;"}
 
@@ -358,6 +361,7 @@ class AuditSemesterAdmin(
             messages.error(request, _("Verify action not configured."))
             return
         record_signature(request.user, action, obj, note=f"Audit complete for {obj.semester.code}")
+        create_system_annotation(obj, "VERIFY", user=request.user)
         messages.success(request, _("Audit verified complete."))
 
     verify_audit_complete.label = _("Verify Audit Complete")
@@ -380,8 +384,8 @@ class AuditSemesterAdmin(
             messages.error(request, _("Approval action not configured."))
             return
         record_signature(request.user, action, obj, note=f"Audit approved for {obj.semester.code}")
+        create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Audit approved by chair."))
-
     approve_audit.label = _("Approve (Chair)")
     approve_audit.attrs = {"class": "btn btn-block btn-success", "style": "margin-bottom: 1rem;"}
 
@@ -399,8 +403,8 @@ class AuditSemesterAdmin(
             messages.error(request, _("Reject action not configured."))
             return
         record_signature(request.user, action, obj, note=f"Audit rejected for {obj.semester.code}")
+        create_system_annotation(obj, "REJECT", user=request.user)
         messages.warning(request, _("Audit rejected. Please review and re-verify."))
-
     reject_audit.label = _("Reject (Chair)")
     reject_audit.attrs = {"class": "btn btn-block btn-danger", "style": "margin-bottom: 1rem;"}
 
@@ -423,6 +427,7 @@ class AuditSemesterAdmin(
         obj.save(update_fields=['audit_sent_university_at'])
 
         record_signature(request.user, action, obj, note=f"Audit sent to university for {obj.semester.code}")
+        create_system_annotation(obj, "VERIFY", user=request.user)
         messages.success(request, _("Verified: Audit sent to university."))
 
     verify_audit_sent.label = _("Verify Audit Sent")

@@ -1,0 +1,1101 @@
+{% load static i18n annotation_tags %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📝 PROTOKOL-KUN Mk. 1 — UniHanko</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{% static 'img/unihanko-logo.svg' %}">
+    
+    <!-- Noto Sans JP Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- TinyMCE -->
+    <script src="{% static 'tinymce/tinymce.min.js' %}"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #1a1a1a;
+            --bg-darker: #0f0f0f;
+            --bg-card: #252525;
+            --accent-orange: #FF6B35;
+            --accent-red: #DC2626;
+            --accent-yellow: #FFB84D;
+            --accent-blue: #3B82F6;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --border-color: #3a3a3a;
+            --border-thick: 4px solid #3a3a3a;
+            --shadow: 6px 6px 0 rgba(0, 0, 0, 0.5);
+        }
+        
+        body {
+            font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: var(--bg-darker);
+            border-bottom: var(--border-thick);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: 1px;
+            color: var(--text-primary);
+        }
+        
+        .header-title .emoji {
+            font-size: 1.8rem;
+        }
+        
+        .back-link {
+            background: transparent;
+            color: var(--accent-orange);
+            border: 3px solid var(--accent-orange);
+            padding: 0.5rem 1.2rem;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+        }
+        
+        .back-link:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.4);
+            background: rgba(255, 107, 53, 0.1);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .session-selector {
+            background: var(--bg-card);
+            border: var(--border-thick);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .session-selector h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .session-info {
+            padding: 1rem;
+            background: var(--bg-darker);
+            border: 3px solid var(--accent-orange);
+            margin-top: 1rem;
+        }
+        
+        .session-info h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-orange);
+            margin-bottom: 0.5rem;
+        }
+        
+        .session-info p {
+            margin-bottom: 0.25rem;
+        }
+        
+        .session-info-notice {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: rgba(255, 107, 53, 0.1);
+            border-left: 3px solid var(--accent-orange);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .locked-notice {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(220, 38, 38, 0.1);
+            border-left: 4px solid var(--accent-red);
+        }
+        
+        .locked-notice strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--accent-red);
+        }
+        
+        .protokol-select,
+        .protokol-input,
+        .protokol-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-darker);
+            border: 3px solid var(--border-color);
+            color: var(--text-primary);
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .protokol-select:focus,
+        .protokol-input:focus,
+        .protokol-textarea:focus {
+            outline: none;
+            border-color: var(--accent-orange);
+        }
+        
+        .notes-field {
+            border: 3px solid var(--accent-yellow) !important;
+            background: rgba(255, 184, 77, 0.05) !important;
+        }
+        
+        label {
+            display: block;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+        
+        .field-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .items-list {
+            margin-top: 2rem;
+        }
+        
+        .item-card {
+            background: var(--bg-card);
+            border: var(--border-thick);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.2s ease;
+        }
+        
+        .item-card:hover {
+            box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.6);
+        }
+        
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .item-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .item-kind-badge {
+            padding: 0.25rem 0.75rem;
+            background: var(--accent-orange);
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 0.5rem;
+        }
+        
+        .btn {
+            background: var(--accent-orange);
+            color: #fff;
+            border: 4px solid var(--accent-orange);
+            padding: 0.75rem 1.5rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.4);
+            background: #ff8555;
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-secondary);
+            border-color: var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+        
+        .btn-edit {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+        
+        .btn-edit:hover {
+            background: #2563eb;
+        }
+        
+        .btn-danger {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+        
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .add-between-section {
+            text-align: center;
+            padding: 1rem 0;
+            margin: 1rem 0;
+        }
+        
+        .btn-add-between {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 2px dashed var(--border-color);
+            padding: 0.5rem 1.5rem;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-add-between:hover {
+            color: var(--accent-orange);
+            border-color: var(--accent-orange);
+            background: rgba(255, 107, 53, 0.1);
+        }
+        
+        .annotations-section {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 2px solid var(--border-color);
+        }
+        
+        .annotations-section summary {
+            cursor: pointer;
+            font-weight: 700;
+            color: var(--text-secondary);
+            padding: 0.5rem;
+            user-select: none;
+        }
+        
+        .annotations-section summary:hover {
+            color: var(--accent-orange);
+        }
+        
+        .annotation-list {
+            margin: 1rem 0;
+            padding-left: 1rem;
+        }
+        
+        .annotation-item {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background: var(--bg-darker);
+            border-left: 3px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+        
+        .annotation-item.system {
+            border-left-color: var(--accent-orange);
+        }
+        
+        .annotation-meta {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .annotation-form {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .annotation-input {
+            flex: 1;
+            padding: 0.5rem;
+            background: var(--bg-darker);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            font-family: 'Noto Sans JP', sans-serif;
+            font-size: 0.9rem;
+        }
+        
+        .annotation-input:focus {
+            outline: none;
+            border-color: var(--accent-orange);
+        }
+        
+        .btn-annotation {
+            background: var(--accent-orange);
+            color: #fff;
+            border: 3px solid var(--accent-orange);
+            padding: 0.5rem 1rem;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        
+        .btn-annotation:hover {
+            background: #ff8555;
+        }
+        
+        [x-cloak] {
+            display: none !important;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .tox .tox-tinymce {
+            border: 3px solid var(--border-color) !important;
+        }
+        
+        .tox .tox-editor-header {
+            background: var(--bg-darker) !important;
+            border-bottom: 2px solid var(--border-color) !important;
+        }
+        
+        .new-item-section {
+            background: var(--bg-card);
+            border: 4px solid var(--accent-orange);
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .new-item-section.editing {
+            border-color: var(--accent-blue);
+        }
+        
+        .new-item-section h2 {
+            font-size: 1.3rem;
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            color: var(--accent-orange);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .new-item-section.editing h2 {
+            color: var(--accent-blue);
+        }
+        
+        .named-votes-grid {
+            display: grid;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .named-vote-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--bg-darker);
+            border: 2px solid var(--border-color);
+        }
+        
+        .named-vote-row select {
+            width: 200px;
+        }
+        
+        .warning-box {
+            background: rgba(255, 184, 77, 0.1);
+            border-left: 4px solid var(--accent-yellow);
+            padding: 1rem;
+            margin: 1rem 0;
+            color: var(--text-secondary);
+        }
+        
+        .readonly-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: rgba(220, 38, 38, 0.2);
+            border: 2px solid var(--accent-red);
+            color: var(--accent-red);
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-left: 1rem;
+        }
+        
+        .editing-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: rgba(59, 130, 246, 0.2);
+            border: 2px solid var(--accent-blue);
+            color: var(--accent-blue);
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-left: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-title">
+            <span class="emoji">📝</span> PROTOKOL-KUN Mk. 1
+            {% if is_locked %}
+            <span class="readonly-badge">🔒 {% trans "Read Only" %}</span>
+            {% endif %}
+        </div>
+        <a href="/admin/assembly/session/" class="back-link">← {% trans "Back to Admin" %}</a>
+    </div>
+    
+    <!-- Main Container -->
+    <div class="container" x-data="protocolEditor()">
+        
+        <!-- Session Selector -->
+        <div class="session-selector">
+            <h2>{% trans "Session" %}</h2>
+            
+            {% if not session %}
+            <select class="protokol-select" @change="window.location.href = '/assembly/protocol-editor/' + $event.target.value + '/'">
+                <option value="">{% trans "Select a session..." %}</option>
+                {% for s in all_sessions %}
+                <option value="{{ s.pk }}">{{ s.code }} — {{ s.session_date }}</option>
+                {% endfor %}
+            </select>
+            {% else %}
+            <div class="session-info">
+                <h3>{{ session.code }}</h3>
+                <p><strong>{% trans "Date" %}:</strong> {{ session.session_date }}</p>
+                <p><strong>{% trans "Location" %}:</strong> {{ session.location }}</p>
+                
+                <p><strong>{% trans "Attendees" %}:</strong> 
+                {% if session.attendees.all %}
+                    {{ session.attendees.count }}
+                {% else %}
+                    {% trans "None recorded" %}
+                {% endif %}
+                </p>
+                
+                <p><strong>{% trans "Absent" %}:</strong> 
+                {% if session.absent.all %}
+                    {{ session.absent.count }}
+                {% else %}
+                    {% trans "None recorded" %}
+                {% endif %}
+                </p>
+                
+                {% if session.other_attendees %}
+                <p><strong>{% trans "Other Attendees" %}:</strong> {{ session.other_attendees|truncatewords:10 }}</p>
+                {% endif %}
+                
+                <div class="session-info-notice">
+                    ℹ️ {% trans "To edit attendees and other session details, use the admin interface." %}
+                </div>
+                
+                {% if is_locked %}
+                <div class="locked-notice">
+                    <strong>🔒 {% trans "Session Locked" %}</strong>
+                    <span style="font-size: 0.9rem;">
+                        {% trans "This session has been submitted for approval and can no longer be edited in PROTOKOL-KUN. You can still view all items and add annotations. Use the admin interface to withdraw or manage the workflow." %}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        
+        {% if session %}
+        
+        {% if not is_locked %}
+        <!-- EDITABLE MODE: New/Edit Item Form -->
+        <div class="new-item-section" x-show="showNewItemForm" :class="{'editing': editingItemId}">
+            <h2>
+                <span x-show="!editingItemId">{% trans "Add New Item" %}</span>
+                <span x-show="editingItemId" class="editing-badge" x-cloak>✏️ {% trans "Editing Item" %}</span>
+            </h2>
+            
+            <form method="POST" :action="getFormAction()" @submit.prevent="saveItem">
+                {% csrf_token %}
+                
+                <!-- Hidden field for item ID when editing -->
+                <input type="hidden" name="item_id" x-model="editingItemId">
+                
+                <div class="field-group">
+                    <label for="id_kind">{% trans "Kind" %}</label>
+                    <select name="kind" id="id_kind" class="protokol-select" x-model="currentKind" required>
+                        <option value="">{% trans "Select kind..." %}</option>
+                        <option value="PROC">{% trans "Procedural" %}</option>
+                        <option value="RES">{% trans "Resolution" %}</option>
+                        <option value="ELEC">{% trans "Election" %}</option>
+                    </select>
+                </div>
+                
+                <div class="field-group">
+                    <label for="id_title">{% trans "Title" %}</label>
+                    <input type="text" name="title" id="id_title" class="protokol-input" required>
+                </div>
+                
+                <input type="hidden" name="order" id="id_order" x-model="newItemOrder">
+                
+                <!-- PROCEDURAL FIELDS -->
+                <div x-show="currentKind === 'PROC'" x-cloak>
+                    <div class="field-group">
+                        <label for="id_content">{% trans "Content" %}</label>
+                        <textarea name="content" id="id_content" class="protokol-textarea" rows="6"></textarea>
+                    </div>
+                </div>
+                
+                <!-- RESOLUTION / ELECTION FIELDS -->
+                <div x-show="currentKind === 'RES' || currentKind === 'ELEC'" x-cloak>
+                    <div class="field-group">
+                        <label for="id_subject">{% trans "Subject" %}</label>
+                        <textarea name="subject" id="id_subject" class="tinymce"></textarea>
+                    </div>
+                    
+                    <div class="field-group">
+                        <label for="id_discussion">{% trans "Discussion" %}</label>
+                        <textarea name="discussion" id="id_discussion" class="tinymce"></textarea>
+                    </div>
+                    
+                    <div class="field-group">
+                        <label for="id_outcome">{% trans "Outcome" %}</label>
+                        <textarea name="outcome" id="id_outcome" class="tinymce"></textarea>
+                    </div>
+                </div>
+                
+                <!-- VOTING FIELDS (RESOLUTION only) -->
+                <div x-show="currentKind === 'RES'" x-cloak>
+                    <div class="field-group">
+                        <label for="id_voting_mode">{% trans "Voting Mode" %}</label>
+                        <select name="voting_mode" id="id_voting_mode" class="protokol-select" x-model="votingMode">
+                            <option value="NONE">{% trans "None" %}</option>
+                            <option value="COUNT">{% trans "Counted" %}</option>
+                            <option value="NAMED">{% trans "Named" %}</option>
+                        </select>
+                    </div>
+                    
+                    <!-- COUNTED VOTES -->
+                    <div x-show="votingMode === 'COUNT'" x-cloak>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                            <div class="field-group">
+                                <label for="id_votes_for">{% trans "Votes For" %}</label>
+                                <input type="number" name="votes_for" id="id_votes_for" class="protokol-input">
+                            </div>
+                            
+                            <div class="field-group">
+                                <label for="id_votes_against">{% trans "Votes Against" %}</label>
+                                <input type="number" name="votes_against" id="id_votes_against" class="protokol-input">
+                            </div>
+                            
+                            <div class="field-group">
+                                <label for="id_votes_abstain">{% trans "Abstentions" %}</label>
+                                <input type="number" name="votes_abstain" id="id_votes_abstain" class="protokol-input">
+                            </div>
+                        </div>
+                        
+                        <div class="field-group">
+                            <label>
+                                <input type="checkbox" name="passed" id="id_passed" value="true"> {% trans "Passed" %}
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- NAMED VOTES -->
+                    <div x-show="votingMode === 'NAMED'" x-cloak>
+                        <h4 style="margin-top: 1.5rem; margin-bottom: 1rem;">{% trans "Named Votes" %}</h4>
+                        
+                        {% if session.attendees.all %}
+                        <div class="named-votes-grid">
+                            {% for mandate in session.attendees.all %}
+                            <div class="named-vote-row">
+                                <span>{{ mandate.person_role.person.get_full_name }} ({{ mandate.get_officer_role_display }})</span>
+                                <select name="vote_{{ mandate.pk }}" id="id_vote_{{ mandate.pk }}" class="protokol-select">
+                                    <option value="">{% trans "Not voted" %}</option>
+                                    <option value="FOR">{% trans "For" %}</option>
+                                    <option value="AGAINST">{% trans "Against" %}</option>
+                                    <option value="ABSTAIN">{% trans "Abstention" %}</option>
+                                </select>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="warning-box">
+                            ⚠️ {% trans "No attendees recorded for this session. Add attendees in the admin first before using named voting." %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- ELECTION FIELDS -->
+                <div x-show="currentKind === 'ELEC'" x-cloak>
+                    <div class="field-group">
+                        <label for="id_elected_person_text_reference">{% trans "Elected Person (temp)" %}</label>
+                        <input type="text" name="elected_person_text_reference" id="id_elected_person_text_reference" class="protokol-input">
+                    </div>
+                    
+                    <div class="field-group">
+                        <label for="id_elected_role_text_reference">{% trans "Elected Role (temp)" %}</label>
+                        <input type="text" name="elected_role_text_reference" id="id_elected_role_text_reference" class="protokol-input">
+                    </div>
+                </div>
+                
+                <!-- NOTES -->
+                <div class="field-group">
+                    <label for="id_notes">{% trans "Notes" %} <span style="color: var(--accent-yellow);">({% trans "Internal only" %})</span></label>
+                    <textarea name="notes" id="id_notes" class="protokol-textarea notes-field" rows="3"></textarea>
+                </div>
+                
+                <div class="btn-group">
+                    <button type="submit" class="btn">
+                        <span x-show="!editingItemId">{% trans "Save Item" %}</span>
+                        <span x-show="editingItemId" x-cloak>{% trans "Update Item" %}</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" @click="resetFormWithConfirm">{% trans "Clear Form" %}</button>
+                    <button type="button" class="btn btn-secondary" @click="cancelFormWithConfirm">{% trans "Cancel" %}</button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+        
+        <!-- Items List (Both modes) -->
+        <div class="items-list">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.3rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;">
+                    {% trans "Protocol Items" %} ({{ items|length }})
+                    {% if is_locked %}
+                    <span style="color: var(--accent-red); font-size: 0.8rem;">— {% trans "Read Only" %}</span>
+                    {% endif %}
+                </h2>
+            </div>
+            
+            {% for item in items %}
+            <div class="item-card">
+                <div class="item-header">
+                    <div>
+                        <span class="item-kind-badge">{{ item.get_kind_display }}</span>
+                        <div class="item-title">{{ item.order }}. {{ item.title }}</div>
+                        <small style="color: var(--text-secondary);">{{ item.item_code }}</small>
+                    </div>
+                    {% if not is_locked %}
+                    <div class="btn-group">
+                        <button @click="loadItemForEdit({{ item.pk }})" class="btn btn-edit">
+                            ✏️ {% trans "EDIT" %}
+                        </button>
+                        <button @click="deleteItem({{ item.pk }})" class="btn btn-danger">
+                            🗑️ {% trans "DELETE" %}
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if item.kind == 'PROC' %}
+                    <p>{{ item.content|truncatewords:30 }}</p>
+                {% else %}
+                    <div>
+                        {% if item.subject %}<strong>{% trans "Subject" %}:</strong> {{ item.subject|striptags|truncatewords:20 }}<br>{% endif %}
+                        {% if item.discussion %}<strong>{% trans "Discussion" %}:</strong> {{ item.discussion|striptags|truncatewords:20 }}<br>{% endif %}
+                        {% if item.outcome %}<strong>{% trans "Outcome" %}:</strong> {{ item.outcome|striptags|truncatewords:20 }}{% endif %}
+                    </div>
+                {% endif %}
+                
+                {% if item.voting_mode == 'COUNT' %}
+                    <div style="margin-top: 1rem;">
+                        <strong>{% trans "Votes" %}:</strong> 
+                        {{ item.votes_for }} {% trans "for" %}, 
+                        {{ item.votes_against }} {% trans "against" %}, 
+                        {{ item.votes_abstain }} {% trans "abstentions" %}
+                        {% if item.passed %} — <span style="color: #10b981;">✓ {% trans "Passed" %}</span>{% endif %}
+                    </div>
+                {% endif %}
+                
+                {% if item.voting_mode == 'NAMED' %}
+                    <div style="margin-top: 1rem;">
+                        <strong>{% trans "Named Votes" %}:</strong>
+                        <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                        {% for vote in item.named_votes.all %}
+                            <li>{{ vote.mandate.person_role.person.get_full_name }}: <strong>{{ vote.get_vote_display }}</strong></li>
+                        {% empty %}
+                            <li style="color: var(--text-secondary);">{% trans "No votes recorded" %}</li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
+                <!-- Annotations (Available in both modes) -->
+                {% get_annotations_for item as item_annotations %}
+                {% get_content_type_id item as item_ct_id %}
+                <details class="annotations-section">
+                    <summary>💬 {% trans "Annotations" %} ({{ item_annotations|length }})</summary>
+                    
+                    <div class="annotation-list">
+                        {% for annotation in item_annotations %}
+                        <div class="annotation-item {% if annotation.is_system %}system{% endif %}">
+                            <div class="annotation-meta">
+                                <strong>
+                                    {% if annotation.created_by %}
+                                        {{ annotation.created_by.get_full_name }}
+                                    {% else %}
+                                        🤖 SYSTEM
+                                    {% endif %}
+                                </strong>
+                                • {{ annotation.created_at|date:"d.m.Y H:i" }}
+                                • {{ annotation.get_annotation_type_display }}
+                            </div>
+                            <div>{{ annotation.text }}</div>
+                        </div>
+                        {% empty %}
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">{% trans "No annotations yet." %}</p>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Add Annotation Form (Available even in readonly mode) -->
+                    <div class="annotation-form">
+                        <input type="text" 
+                               class="annotation-input" 
+                               placeholder="{% trans 'Add annotation...' %}"
+                               x-ref="annotationInput{{ item.pk }}"
+                               @keyup.enter="addAnnotation({{ item.pk }}, {{ item_ct_id }}, $refs.annotationInput{{ item.pk }}.value)">
+                        <button class="btn-annotation" 
+                                @click="addAnnotation({{ item.pk }}, {{ item_ct_id }}, $refs.annotationInput{{ item.pk }}.value)">
+                            {% trans "SAVE" %}
+                        </button>
+                    </div>
+                </details>
+            </div>
+            
+            <!-- Add-Between Button (Only in editable mode) -->
+            {% if not is_locked %}
+            <div class="add-between-section">
+                <button @click="insertItemAfter({{ item.order }})" class="btn-add-between">
+                    ➕ {% trans "Add item here" %}
+                </button>
+            </div>
+            {% endif %}
+            
+            {% empty %}
+            <p style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                {% trans "No items yet." %}
+            </p>
+            
+            {% if not is_locked %}
+            <div class="add-between-section">
+                <button @click="showNewItemForm = true; newItemOrder = 1" class="btn-add-between">
+                    ➕ {% trans "Add first item" %}
+                </button>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        
+        {% endif %}
+        
+    </div>
+    
+    <script>
+        // Translations
+        const translations = {
+            de: {
+                enterAnnotation: 'Bitte Anmerkung eingeben',
+                clearForm: 'Alle Formularfelder löschen? Dies kann nicht rückgängig gemacht werden.',
+                closeForm: 'Formular schließen ohne zu speichern?',
+                deleteItem: 'Diesen Punkt löschen? Nachfolgende Punkte werden automatisch neu nummeriert.',
+                networkError: 'Netzwerkfehler beim Speichern',
+                errorSaving: 'Fehler beim Speichern',
+                errorDeleting: 'Fehler beim Löschen',
+                errorLoading: 'Fehler beim Laden des Items'
+            },
+            en: {
+                enterAnnotation: 'Please enter annotation text',
+                clearForm: 'Clear all form fields? This cannot be undone.',
+                closeForm: 'Close form without saving?',
+                deleteItem: 'Delete this item? Following items will be renumbered.',
+                networkError: 'Network error while saving',
+                errorSaving: 'Error saving',
+                errorDeleting: 'Error deleting',
+                errorLoading: 'Error loading item'
+            }
+        };
+        
+        const currentLang = document.documentElement.lang || 'de';
+        const t = translations[currentLang] || translations.de;
+        
+        function protocolEditor() {
+            return {
+                currentKind: '',
+                votingMode: 'NONE',
+                showNewItemForm: false,
+                editingItemId: null,
+                newItemOrder: {{ items|length|add:1 }},
+                
+                init() {
+                    this.$nextTick(() => {
+                        if (typeof tinymce !== 'undefined') {
+                            tinymce.init({
+                                selector: 'textarea.tinymce',
+                                height: 300,
+                                menubar: false,
+                                plugins: 'lists link',
+                                toolbar: 'undo redo | bold italic | bullist numlist | link',
+                                skin: 'oxide-dark',
+                                content_css: 'dark',
+                            });
+                        }
+                    });
+                },
+                
+                getFormAction() {
+                    if (this.editingItemId) {
+                        return `/assembly/protocol-editor/{{ session.pk }}/save-item/${this.editingItemId}/`;
+                    }
+                    return '{% url "assembly:protocol_save_item" session.pk %}';
+                },
+                
+                loadItemForEdit(itemId) {
+                    fetch(`/assembly/protocol-editor/{{ session.pk }}/get-item/${itemId}/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                const item = data.item;
+                                
+                                // Set editing state
+                                this.editingItemId = item.id;
+                                this.currentKind = item.kind;
+                                this.votingMode = item.voting_mode;
+                                this.newItemOrder = item.order;
+                                this.showNewItemForm = true;
+                                
+                                // Populate form fields
+                                document.getElementById('id_kind').value = item.kind;
+                                document.getElementById('id_title').value = item.title;
+                                document.getElementById('id_order').value = item.order;
+                                
+                                // PROC fields
+                                if (item.kind === 'PROC') {
+                                    document.getElementById('id_content').value = item.content;
+                                }
+                                
+                                // RES/ELEC fields with TinyMCE
+                                if (item.kind === 'RES' || item.kind === 'ELEC') {
+                                    this.$nextTick(() => {
+                                        if (typeof tinymce !== 'undefined') {
+                                            const subjectEditor = tinymce.get('id_subject');
+                                            const discussionEditor = tinymce.get('id_discussion');
+                                            const outcomeEditor = tinymce.get('id_outcome');
+                                            
+                                            if (subjectEditor) subjectEditor.setContent(item.subject);
+                                            if (discussionEditor) discussionEditor.setContent(item.discussion);
+                                            if (outcomeEditor) outcomeEditor.setContent(item.outcome);
+                                        }
+                                    });
+                                }
+                                
+                                // Voting fields
+                                if (item.kind === 'RES') {
+                                    document.getElementById('id_voting_mode').value = item.voting_mode;
+                                    
+                                    if (item.voting_mode === 'COUNT') {
+                                        if (item.votes_for !== null) {
+                                            document.getElementById('id_votes_for').value = item.votes_for;
+                                        }
+                                        if (item.votes_against !== null) {
+                                            document.getElementById('id_votes_against').value = item.votes_against;
+                                        }
+                                        if (item.votes_abstain !== null) {
+                                            document.getElementById('id_votes_abstain').value = item.votes_abstain;
+                                        }
+                                        if (item.passed !== null) {
+                                            document.getElementById('id_passed').checked = item.passed;
+                                        }
+                                    }
+                                    
+                                    if (item.voting_mode === 'NAMED' && item.named_votes) {
+                                        Object.keys(item.named_votes).forEach(mandateId => {
+                                            const select = document.getElementById(`id_vote_${mandateId}`);
+                                            if (select) {
+                                                select.value = item.named_votes[mandateId];
+                                            }
+                                        });
+                                    }
+                                }
+                                
+                                // ELEC fields
+                                if (item.kind === 'ELEC') {
+                                    document.getElementById('id_elected_person_text_reference').value = item.elected_person_text_reference;
+                                    document.getElementById('id_elected_role_text_reference').value = item.elected_role_text_reference;
+                                }
+                                
+                                // Notes
+                                document.getElementById('id_notes').value = item.notes;
+                                
+                                // Scroll to form
+                                this.$nextTick(() => {
+                                    document.querySelector('.new-item-section').scrollIntoView({ behavior: 'smooth' });
+                                });
+                            } else {
+                                alert(t.errorLoading);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert(t.errorLoading);
+                        });
+                },
+                
+                saveItem(event) {
+                    const form = event.target;
+                    const formData = new FormData(form);
+                    
+                    // Sync TinyMCE editors
+                    if (typeof tinymce !== 'undefined' && tinymce.editors && tinymce.editors.length > 0) {
+                        tinymce.editors.forEach(editor => {
+                            formData.set(editor.id.replace('id_', ''), editor.getContent());
+                        });
+                    }
+                    
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.reload();
+                        } else {
+                            alert(t.errorSaving + ': ' + JSON.stringify(data.errors));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert(t.networkError);
+                    });
+                },
+                
+                resetFormWithConfirm() {
+                    if (!confirm(t.clearForm)) return;
+                    
+                    document.querySelector('form').reset();
+                    this.currentKind = '';
+                    this.votingMode = 'NONE';
+                    this.editingItemId = null;
+                    this.newItemOrder = {{ items|length|add:1 }};
+                    
+                    if (typeof tinymce !== 'undefined' && tinymce.editors && tinymce.editors.length > 0) {
+                        tinymce.editors.forEach(editor => editor.setContent(''));
+                    }
+                },
+                
+                cancelFormWithConfirm() {
+                    if (!confirm(t.closeForm)) return;
+                    this.showNewItemForm = false;
+                    this.editingItemId = null;
+                },
+                
+                deleteItem(itemId) {
+                    if (!confirm(t.deleteItem)) return;
+                    
+                    fetch(`/assembly/protocol-editor/{{ session.pk }}/delete-item/${itemId}/`, {
+                        method: 'POST',
+                        headers: {'X-CSRFToken': '{{ csrf_token }}'}
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) window.location.reload();
+                        else alert(t.errorDeleting + ': ' + data.message);
+                    });
+                },
+                
+                insertItemAfter(order) {
+                    fetch(`/assembly/protocol-editor/{{ session.pk }}/insert-at/${order}/`, {
+                        method: 'GET'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.newItemOrder = data.new_order;
+                            this.editingItemId = null;
+                            this.showNewItemForm = true;
+                            this.$nextTick(() => {
+                                document.querySelector('.new-item-section').scrollIntoView({ behavior: 'smooth' });
+                            });
+                        }
+                    });
+                },
+                
+                addAnnotation(itemId, contentTypeId, text) {
+                    if (!text || !text.trim()) {
+                        alert(t.enterAnnotation);
+                        return;
+                    }
+                    
+                    const formData = new FormData();
+                    formData.append('content_type_id', contentTypeId);
+                    formData.append('object_id', itemId);
+                    formData.append('text', text.trim());
+                    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                    
+                    fetch('/annotations/add/', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) window.location.reload();
+                        else alert(t.errorSaving + ': ' + data.message);
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>

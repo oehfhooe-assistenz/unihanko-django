@@ -21,6 +21,7 @@ from finances.models import paymentplan_status
 from django.core.exceptions import PermissionDenied
 from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for_boolean
 from concurrency.admin import ConcurrentModelAdmin
+from annotations.admin import AnnotationInline
 
 # =============== Import–Export ===============
 class FiscalYearResource(resources.ModelResource):
@@ -187,6 +188,7 @@ class PaymentPlanAdmin(
     resource_classes = [PaymentPlanResource]
     form = PaymentPlanForm
     actions = ("export_selected_pdf",)
+    inlines = [AnnotationInline]
 
     # --- helpers ------------------------------------------------------------
     def _is_manager(self, request) -> bool:

@@ -1,0 +1,39 @@
+/* 
+ * Annotations Admin Inline Styling
+ * Makes annotations less visually prominent in admin
+ */
+
+/* Compact font size for annotation inlines */
+.js-inline-admin-formset.inline-group[id*="annotations"] .tabular tr.form-row.annotation {
+    font-size: 0.85rem !important;
+}
+
+.js-inline-admin-formset.inline-group[id*="annotations"] .tabular td.field-text input,
+.js-inline-admin-formset.inline-group[id*="annotations"] .tabular td.field-text textarea {
+    font-size: 0.85rem !important;
+}
+
+/* Style system annotations differently */
+
+/* Compact spacing */
+
+/* Background color for annotations */
+.js-inline-admin-formset[id*="annotations"] {
+    border-left: 6px solid var(--unihanko-accent-secondary) !important;
+    background: #2a1a14 !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    border-top: none !important;
+    box-shadow: none !important;
+}
+
+.js-inline-admin-formset[id*="annotations"] .card{
+    background: #2a1a14 !important;
+}
+
+/* Target the inline-group container */
+.js-inline-admin-formset.inline-group[id*="annotations"] .card {
+    border: none !important;
+    box-shadow: none !important;
+}
+

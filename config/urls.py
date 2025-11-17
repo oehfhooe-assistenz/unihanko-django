@@ -29,4 +29,6 @@ urlpatterns = [
     path('admin/cockpit/', core_views.admin_cockpit, name='admin_cockpit'),
     path('admin/', admin.site.urls),
     path('markdownx/', include('markdownx.urls')),
+    path('annotations/', include('annotations.urls')),
+    path('assembly/', include('assembly.urls')),
 ]

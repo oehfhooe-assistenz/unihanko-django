@@ -13,7 +13,8 @@ from concurrency.admin import ConcurrentModelAdmin
 from django.db import transaction
 from django.core.exceptions import PermissionDenied, ValidationError
 from academia.models import inboxrequest_stage
-
+from annotations.views import create_system_annotation
+from annotations.admin import AnnotationInline
 from .models import Semester, InboxRequest, InboxCourse, generate_semester_password
 from people.models import PersonRole, Person
 from organisation.models import OrgInfo
@@ -30,7 +31,6 @@ from hankosign.utils import (
     state_snapshot,
     get_action,
     record_signature,
-    has_sig,
     sign_once,
     object_status_span,
     seal_signatures_context,
@@ -173,7 +173,7 @@ class SemesterAdmin(
     list_filter = ('start_date', 'created_at')
     search_fields = ('code', 'display_name')
     ordering = ('-start_date',)
-
+    inlines = [AnnotationInline]
     fieldsets = (
         (_("Basic Information"), {
             'fields': ('code', 'display_name', 'start_date', 'end_date')
@@ -320,6 +320,7 @@ class SemesterAdmin(
             obj,
             note=f"Semester {obj.code} locked for audit"
         )
+        create_system_annotation(obj, "LOCK", user=request.user)
         messages.success(request, _("Semester locked. Public filing closed."))
 
     lock_semester.label = _("Lock Semester")
@@ -343,6 +344,7 @@ class SemesterAdmin(
             obj,
             note=f"Semester {obj.code} unlocked for corrections"
         )
+        create_system_annotation(obj, "UNLOCK", user=request.user)
         messages.warning(request, _("Semester unlocked. Use with caution."))
 
     unlock_semester.label = _("Unlock Semester")
@@ -367,7 +369,7 @@ class InboxRequestAdmin(
 ):
     resource_classes = [InboxRequestResource]
     form = InboxRequestForm
-    inlines = [InboxCourseInline]
+    inlines = [InboxCourseInline, AnnotationInline]
 
     def _is_manager(self, request) -> bool:
         return is_academia_manager(request.user)
@@ -571,6 +573,7 @@ class InboxRequestAdmin(
             obj,
             note=f"Request {obj.reference_code} verified"
         )
+        create_system_annotation(obj, "VERIFY", user=request.user)
         messages.success(request, _("Request verified. Ready for chair approval."))
 
     verify_request.label = _("Verify Request")
@@ -594,6 +597,7 @@ class InboxRequestAdmin(
             obj,
             note=f"Request {obj.reference_code} approved by chair"
         )
+        create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Request approved."))
 
     approve_request.label = _("Approve (Chair)")
@@ -617,6 +621,7 @@ class InboxRequestAdmin(
             obj,
             note=f"Request {obj.reference_code} rejected by chair"
         )
+        create_system_annotation(obj, "REJECT", user=request.user)
         messages.warning(request, _("Request rejected. Student should contact administration."))
 
     reject_request.label = _("Reject (Chair)")

@@ -29,6 +29,49 @@ def int_to_roman(num):
         result.append(r * count)
     return ''.join(result)
 
+def session_status(session) -> str:
+    """
+    Determine Session workflow status from HankoSign signatures.
+    
+    Returns one of: DRAFT | SUBMITTED | APPROVED | VERIFIED | REJECTED
+    
+    Logic:
+      - REJECTED: Any REJECT signature exists
+      - DRAFT: No SUBMIT signature (or withdrawn)
+      - SUBMITTED: Submitted but CHAIR hasn't approved
+      - APPROVED: CHAIR approved but not yet verified
+      - VERIFIED: All done, sent to KoKo/HSG
+    
+    Args:
+        session: Session instance
+        
+    Returns:
+        Status code string (DRAFT|SUBMITTED|APPROVED|VERIFIED|REJECTED)
+    """
+    from hankosign.utils import state_snapshot
+    
+    st = state_snapshot(session)
+    
+    # 1. Check for rejection
+    if st.get("rejected"):
+        return "REJECTED"
+    
+    # 2. Check if submitted
+    if not st.get("submitted"):
+        return "DRAFT"
+    
+    # 3. Check for Chair approval
+    approved = st.get("approved", set())
+    if "CHAIR" not in approved:
+        return "SUBMITTED"
+    
+    # 4. Check for verification (sent to KoKo/HSG)
+    if not st.get("verified"):
+        return "APPROVED"
+    
+    # 5. Everything done
+    return "VERIFIED"
+
 
 # ============================================================================
 # TERM (like FiscalYear)
@@ -51,7 +94,7 @@ class Term(models.Model):
         help_text=_("Only one term can be active at a time")
     )
     
-    notes = models.TextField(_("Notes"), blank=True)
+    #notes = models.TextField(_("Notes"), blank=True)
     
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
@@ -103,7 +146,7 @@ class Composition(models.Model):
         verbose_name=_("Term")
     )
     
-    notes = models.TextField(_("Notes"), blank=True)
+    #notes = models.TextField(_("Notes"), blank=True)
     
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
@@ -223,6 +266,14 @@ class Session(models.Model):
     class Type(models.TextChoices):
         REGULAR = "or", _("Ordentlich")
         EXTRAORDINARY = "ao", _("Außerordentlich")
+
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT", _("Draft")
+        SUBMITTED = "SUBMITTED", _("Submitted")
+        APPROVED = "APPROVED", _("Approved by Chair")
+        VERIFIED = "VERIFIED", _("Sent to KoKo/HSG")
+        REJECTED = "REJECTED", _("Rejected re-work")
+
     
     term = models.ForeignKey(
         Term, on_delete=models.PROTECT,
@@ -239,6 +290,15 @@ class Session(models.Model):
         _("Session type"), max_length=2,
         choices=Type.choices,
         default=Type.REGULAR
+    )
+
+    status = models.CharField(
+        _("Status"),
+        max_length=20,
+        choices=Status.choices,
+        default=Status.DRAFT,
+        db_index=True,
+        help_text=_("Workflow status derived from signatures.")
     )
     
     session_date = models.DateField(_("Session date"))
@@ -277,7 +337,7 @@ class Session(models.Model):
         _("Sent to KoKo/HSG at"), null=True, blank=True
     )
     
-    notes = models.TextField(_("Notes"), blank=True)
+    #notes = models.TextField(_("Notes"), blank=True)
     
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
@@ -296,6 +356,8 @@ class Session(models.Model):
     def save(self, *args, **kwargs):
         if not self.code:
             self.code = self.generate_code()
+        if self.pk:
+            self.status = session_status(self)
         super().save(*args, **kwargs)
     
     def generate_code(self):

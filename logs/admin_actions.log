@@ -20158,3 +20158,683 @@ Traceback (most recent call last):
     ...<3 lines>...
     )
 django.template.exceptions.TemplateSyntaxError: Invalid block tag on line 8: 'endif'. Did you forget to register or load this tag?
+ERROR 2025-11-17 02:02:25,830 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:25,853 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:25,888 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:25,920 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:25,945 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:25,975 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:26,001 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:26,036 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:26,062 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:26,091 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:26,110 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:26,126 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:26,145 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:26,167 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:26,184 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:26,201 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:26,218 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:26,233 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:26,248 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:26,266 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,348 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,364 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,379 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,396 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,413 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,433 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,450 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,467 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,488 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,505 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,529 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,554 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,574 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,594 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,616 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,640 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,670 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,683 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,698 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace
+ERROR 2025-11-17 02:02:27,715 admin_mixins Error in SessionAdmin.open_protocol_editor for object 1: 'assembly' is not a registered namespace
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 81, in reverse
+    extra, resolver = resolver.namespace_dict[ns]
+                      ~~~~~~~~~~~~~~~~~~~~~~~^^^^
+KeyError: 'assembly'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\coding\unihanko-django\core\admin_mixins.py", line 67, in wrapper
+    return func(self, request, obj)
+  File "C:\coding\unihanko-django\assembly\admin.py", line 574, in open_protocol_editor
+    url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+  File "C:\coding\unihanko-django\.venv\Lib\site-packages\django\urls\base.py", line 92, in reverse
+    raise NoReverseMatch("%s is not a registered namespace" % key)
+django.urls.exceptions.NoReverseMatch: 'assembly' is not a registered namespace

@@ -14,6 +14,7 @@
     --unihanko-bg-dark: #1a1a1a;
     --unihanko-bg-darker: #0f0f0f;
     --unihanko-bg-card: #252525;
+    --unihanko-inline-card: #282220;
     --unihanko-accent-primary: #FF6B35;
     --unihanko-accent-secondary: #DC2626;
     --unihanko-text-primary: #ffffff;
@@ -219,7 +220,7 @@ body {
 .card-header {
     background: var(--unihanko-bg-darker) !important;
     border-bottom: var(--brutal-border) !important;
-    padding: var(--spacing-lg) !important;
+    padding: var(--spacing-md) !important;
     font-weight: 700 !important;
     color: var(--unihanko-text-primary) !important;
 }
@@ -690,7 +691,7 @@ fieldset legend {
     background: var(--unihanko-bg-darker) !important;
     border: var(--brutal-border) !important;
     border-top: none !important;
-    padding: var(--spacing-lg) !important;
+    padding: var(--spacing-md) !important;
 }
 
 /* ============================================
@@ -698,18 +699,22 @@ fieldset legend {
    ============================================ */
 .inline-group {
     background: var(--unihanko-bg-card) !important;
-    border: var(--brutal-border) !important;
-    box-shadow: var(--brutal-shadow) !important;
-    padding: var(--spacing-lg) !important;
-    margin-bottom: var(--spacing-lg) !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: var(--spacing-xs) !important;
+    margin-bottom: var(--spacing-xs) !important;
+}
+
+.inline-group .card {
+    background: var(--unihanko-inline-card) !important;
 }
 
 .inline-group h2 {
     color: var(--unihanko-text-primary) !important;
     font-weight: 900 !important;
     border-bottom: 4px solid var(--unihanko-accent-primary) !important;
-    padding-bottom: var(--spacing-sm) !important;
-    margin-bottom: var(--spacing-md) !important;
+    padding-bottom: var(--spacing-xs) !important;
+    margin-bottom: var(--spacing-xs) !important;
 }
 
 /* ============================================
@@ -987,4 +992,12 @@ tbody tr:has(td.field-active_text .js-state[data-state="ok"]) {
 }
 tbody tr:has(td.field-active_text .js-state[data-state="off"]) {
     border-right: 8px solid #6d1717;
+}
+
+div.inline-related {
+    padding: 0 !important;
+}
+
+.card[id="annotations"] .card-header {
+    background: red !important;
 }

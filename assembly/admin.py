@@ -2,17 +2,20 @@ from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
 from django.utils.safestring import mark_safe
 from django.template.loader import render_to_string
+from django.utils.html import format_html
+from django.urls import reverse
 from django.db import transaction
 from django import forms
 from django.utils import timezone
 from django.utils.text import slugify
 from django_object_actions import DjangoObjectActions
+from annotations.views import create_system_annotation
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
 from concurrency.admin import ConcurrentModelAdmin
-from adminsortable2.admin import SortableInlineAdminMixin, SortableAdminBase
-
+from adminsortable2.admin import SortableAdminBase
+from annotations.admin import AnnotationInline
 from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action, ManagerOnlyHistoryMixin
 from core.pdf import render_pdf_response
 from core.utils.authz import is_assembly_manager  # You'll need to create this
@@ -34,7 +37,7 @@ from .models import Term, Composition, Mandate, Session, SessionItem, Vote
 class TermResource(resources.ModelResource):
     class Meta:
         model = Term
-        fields = ('id', 'code', 'label', 'start_date', 'end_date', 'is_active', 'notes')
+        fields = ('id', 'code', 'label', 'start_date', 'end_date', 'is_active')
         export_order = fields
 
 
@@ -102,18 +105,77 @@ class VoteInline(admin.StackedInline):
     extra = 0
     fields = ('mandate', 'vote')
     autocomplete_fields = ('mandate',)
+    
 
-
-class SessionItemInline(SortableInlineAdminMixin, ManagerOnlyHistoryMixin, admin.StackedInline):
+class ElectionItemHRLinksInline(admin.StackedInline):
+    """Inline for editing ELEC items' PersonRole links - stays editable after submission"""
     model = SessionItem
     extra = 0
-    fields = ('kind', 'title', 'item_code')
-    readonly_fields = ('item_code',)
-    show_change_link = True
+    fields = ('item_code', 'title', 'print_dispatch_btn', 'elected_person_role', 
+              'elected_person_text_reference', 'elected_role_text_reference')
+    readonly_fields = ('item_code', 'title', 'print_dispatch_btn')
+    autocomplete_fields = ('elected_person_role',)
     can_delete = False
+    show_change_link = True
+    verbose_name = _("HR Link (Personnel Election)")
+    verbose_name_plural = _("HR Links (Personnel Elections)")
     
-    def get_max_num(self, request, obj=None, **kwargs):
-        return 50
+    def get_queryset(self, request):
+        """Only show ELEC type items"""
+        qs = super().get_queryset(request)
+        return qs.filter(kind=SessionItem.Kind.ELECTION)
+    
+    def has_add_permission(self, request, obj=None):
+        """Don't allow adding items through this inline"""
+        return False
+    
+    def get_readonly_fields(self, request, obj=None):
+        """
+        Keep FK fields editable for managers even after submission.
+        For non-managers, lock everything when session is locked.
+        """
+        ro = list(super().get_readonly_fields(request, obj))
+        
+        # If session exists and is locked
+        if obj:
+            st = state_snapshot(obj)
+            # Non-managers get everything locked
+            if not is_assembly_manager(request.user) and st.get("locked"):
+                ro += ['elected_person_role', 'elected_person_text_reference', 
+                       'elected_role_text_reference']
+        
+        return ro
+    
+    @admin.display(description="📜")
+    def print_dispatch_btn(self, obj):
+        """Render inline print button for dispatch document"""
+        if not obj or not obj.pk:
+            return ""
+        
+        # Check if dispatch can be generated
+        can_print = (
+            obj.elected_person_role and 
+            not obj.elected_person_text_reference and 
+            not obj.elected_role_text_reference
+        )
+        
+        if not can_print:
+            return format_html(
+                '<span style="color: #999; font-size: 0.9em;" title="{}">{}</span>',
+                _("Link PersonRole first"),
+                "—"
+            )
+        
+        # Generate URL to print endpoint
+        url = reverse('admin:assembly_sessionitem_print_dispatch', args=[obj.pk])
+        
+        return format_html(
+            '<a href="{}" class="button" style="padding: 3px 8px; font-size: 0.85em;" '
+            'target="_blank" title="{}">{}</a>',
+            url,
+            _("Print dispatch document"),
+            "📜 PDF"
+        )
 
 
 # ============================================================================
@@ -138,15 +200,13 @@ class TermAdmin(
     list_filter = ('is_active', 'start_date')
     search_fields = ('code', 'label')
     readonly_fields = ('code', 'created_at', 'updated_at', 'signatures_box')
+    inlines = [AnnotationInline]
     
     fieldsets = (
-        (_("Basics"), {
+        (_("Scope"), {
             'fields': ('code', 'label', 'start_date', 'end_date', 'is_active')
         }),
-        (_("Notes"), {
-            'fields': ('notes',)
-        }),
-        (_("HankoSign Workflow"), {
+        (_("Workflow & HankoSign"), {
             'fields': ('signatures_box',)
         }),
         (_("System"), {
@@ -180,7 +240,7 @@ class TermAdmin(
         if obj:
             st = state_snapshot(obj)
             if st.get("explicit_locked"):
-                ro += ['label', 'start_date', 'end_date', 'is_active', 'notes']
+                ro += ['label', 'start_date', 'end_date', 'is_active',]
         return ro
     
     def get_change_actions(self, request, object_id, form_url):
@@ -215,6 +275,7 @@ class TermAdmin(
             messages.error(request, _("Lock action not configured."))
             return
         record_signature(request.user, action, obj, note=_("Term %(code)s locked") % {"code": obj.code})
+        create_system_annotation(obj, "LOCK", user=request.user)
         messages.success(request, _("Term locked."))
     lock_term.label = _("Lock term")
     lock_term.attrs = {"class": "btn btn-block btn-warning", "style": "margin-bottom: 1rem;"}
@@ -234,6 +295,7 @@ class TermAdmin(
             messages.error(request, _("Unlock action not configured."))
             return
         record_signature(request.user, action, obj, note=_("Term %(code)s unlocked") % {"code": obj.code})
+        create_system_annotation(obj, "UNLOCK", user=request.user)
         messages.success(request, _("Term unlocked."))
     unlock_term.label = _("Unlock term")
     unlock_term.attrs = {"class": "btn btn-block btn-success", "style": "margin-bottom: 1rem;"}
@@ -284,13 +346,10 @@ class CompositionAdmin(
     inlines = [MandateInline]
     
     fieldsets = (
-        (_("Term"), {
+        (_("Scope"), {
             'fields': ('term',)
         }),
-        (_("Notes"), {
-            'fields': ('notes',)
-        }),
-        (_("HankoSign"), {
+        (_("Workflow & HankoSign"), {
             'fields': ('signatures_box',)
         }),
         (_("System"), {
@@ -351,33 +410,29 @@ class SessionAdmin(
     ManagerOnlyHistoryMixin
     ):
     resource_classes = [SessionResource]
-    list_display = ('status_text', 'code', 'session_date', 'session_type', 
+    list_display = ('status_text', 'code', 'session_date', 'session_type',
                     'location', 'updated_at')
     list_display_links = ('code',)
-    list_filter = ('session_type', 'term', 'session_date')
+    list_filter = ('status', 'session_type', 'term', 'session_date')
     search_fields = ('code', 'location', 'protocol_number')
     autocomplete_fields = ('term', 'attendees', 'absent')
-    readonly_fields = ('code', 'created_at', 'updated_at', 'signatures_box')
-    inlines = [SessionItemInline]
-    
+    readonly_fields = ('code', 'status', 'created_at', 'updated_at', 'signatures_box')
+    inlines = [ElectionItemHRLinksInline, AnnotationInline]
     filter_horizontal = ('attendees', 'absent')
     
     fieldsets = (
-        (_("Session Details"), {
-            'fields': ('term', 'code', 'session_type', 'session_date', 
-                      'session_time', 'location', 'protocol_number')
+        (_("Scope"), {
+            'fields': ('term', 'code', 'session_type')
+        }),
+        (_("Schedule & Location"), {
+            'fields': ('session_date', 'session_time', 'location', 'protocol_number')
         }),
         (_("Attendance"), {
             'fields': ('attendees', 'absent', 'other_attendees')
         }),
-        (_("Workflow"), {
-            'fields': ('invitations_sent_at', 'minutes_finalized_at', 'sent_koko_hsg_at')
-        }),
-        (_("Notes"), {
-            'fields': ('notes',)
-        }),
-        (_("HankoSign Workflow"), {
-            'fields': ('signatures_box',)
+        (_("Workflow & HankoSign"), {
+            'fields': ('status', 'invitations_sent_at', 'minutes_finalized_at', 
+                    'sent_koko_hsg_at', 'signatures_box')
         }),
         (_("System"), {
             'fields': ('version', 'created_at', 'updated_at')
@@ -385,7 +440,7 @@ class SessionAdmin(
     )
     
     change_actions = ('submit_session', 'withdraw_session', 'approve_session',
-                     'reject_session', 'verify_session', 'print_session')
+                     'reject_session', 'verify_session', 'print_session', 'open_protocol_editor')
     
     def _is_manager(self, request):
         return is_assembly_manager(request.user)
@@ -393,10 +448,16 @@ class SessionAdmin(
     def _is_locked(self, request, obj):
         if not obj:
             return False
-        st = state_snapshot(obj)
         if self._is_manager(request):
             return False
-        return bool(st.get("locked"))
+        # Status is already derived from HankoSign, so use it
+        # Locked if submitted or beyond
+        return obj.status in (
+            Session.Status.SUBMITTED,
+            Session.Status.APPROVED,
+            Session.Status.VERIFIED,
+            Session.Status.REJECTED
+        )
     
     @admin.display(description=_("Status"))
     def status_text(self, obj):
@@ -408,10 +469,12 @@ class SessionAdmin(
     
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
-        if obj and self._is_locked(request, obj):
-            ro += ['term', 'session_type', 'session_date', 'session_time', 
-                   'location', 'protocol_number', 'attendees', 'absent', 
-                   'other_attendees', 'notes']
+        if obj:
+            ro.extend(['term', 'session_type'])
+            if self._is_locked(request, obj):
+                ro += ['session_date', 'session_time', 
+                    'location', 'protocol_number', 'attendees', 'absent', 
+                    'other_attendees']
         return ro
     
     def get_change_actions(self, request, object_id, form_url):
@@ -426,25 +489,28 @@ class SessionAdmin(
                 if n in actions:
                     actions.remove(n)
         
-        st = state_snapshot(obj)
-        approved = st.get("approved", set())
-        submitted = st.get("submitted", False)
-        verified = st.get("verified", False)
-        chair_ok = "CHAIR" in approved or st.get("final")
+        # Use status field instead of state_snapshot
+        status = obj.status
         
-        if chair_ok:
+        # VERIFIED or REJECTED: Can't submit/withdraw/approve/reject anymore
+        if status in (Session.Status.VERIFIED, Session.Status.REJECTED):
             drop("submit_session", "withdraw_session", "approve_session", "reject_session")
-            if not verified:
-                # Can still verify after approval
-                pass
             return actions
         
-        if submitted:
+        # APPROVED: Can verify, can't submit/approve
+        if status == Session.Status.APPROVED:
+            drop("submit_session", "approve_session", "reject_session")
+            return actions
+        
+        # SUBMITTED: Can approve/reject/withdraw, can't submit
+        if status == Session.Status.SUBMITTED:
             drop("submit_session")
-            if approved:
-                drop("withdraw_session")
-        else:
+            return actions
+        
+        # DRAFT: Can only submit
+        if status == Session.Status.DRAFT:
             drop("withdraw_session", "approve_session", "reject_session", "verify_session")
+            return actions
         
         return actions
     
@@ -460,6 +526,7 @@ class SessionAdmin(
             messages.error(request, _("Submit action not configured."))
             return
         record_signature(request.user, action, obj, note=_("Session %(code)s submitted") % {"code": obj.code})
+        create_system_annotation(obj, "SUBMIT", user=request.user)
         messages.success(request, _("Submitted."))
     submit_session.label = _("Submit")
     submit_session.attrs = {"class": "btn btn-block btn-warning", "style": "margin-bottom: 1rem;"}
@@ -479,6 +546,7 @@ class SessionAdmin(
             messages.error(request, _("Withdraw action not configured."))
             return
         record_signature(request.user, action, obj, note=_("Session %(code)s withdrawn") % {"code": obj.code})
+        create_system_annotation(obj, "WITHDRAW", user=request.user)
         messages.success(request, _("Withdrawn."))
     withdraw_session.label = _("Withdraw")
     withdraw_session.attrs = {"class": "btn btn-block btn-secondary", "style": "margin-bottom: 1rem;"}
@@ -498,6 +566,7 @@ class SessionAdmin(
             messages.error(request, _("Approval action not configured."))
             return
         record_signature(request.user, action, obj, note=_("Session %(code)s approved") % {"code": obj.code})
+        create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Approved."))
     approve_session.label = _("Approve (Chair)")
     approve_session.attrs = {"class": "btn btn-block btn-success", "style": "margin-bottom: 1rem;"}
@@ -517,6 +586,7 @@ class SessionAdmin(
             messages.error(request, _("Reject action not configured."))
             return
         record_signature(request.user, action, obj, note=_("Session %(code)s rejected") % {"code": obj.code})
+        create_system_annotation(obj, "REJECT", user=request.user)
         messages.success(request, _("Rejected."))
     reject_session.label = _("Reject")
     reject_session.attrs = {"class": "btn btn-block btn-danger", "style": "margin-bottom: 1rem;"}
@@ -539,7 +609,7 @@ class SessionAdmin(
         # Set timestamp
         obj.sent_koko_hsg_at = timezone.now()
         obj.save(update_fields=['sent_koko_hsg_at'])
-        
+        create_system_annotation(obj, "VERIFY", user=request.user)
         record_signature(request.user, action, obj, note=_("Session %(code)s sent to KoKo/HSG") % {"code": obj.code})
         messages.success(request, _("Verified and sent to KoKo/HSG."))
     verify_session.label = _("Verify (Sent to KoKo/HSG)")
@@ -566,7 +636,19 @@ class SessionAdmin(
         "data-action": "post-object",
         "onclick": RID_JS
     }
-    
+
+    @safe_admin_action
+    def open_protocol_editor(self, request, obj):
+        """Redirect to PROTOKOL-KUN Mk. 1"""
+        url = reverse('assembly:protocol_editor_session', args=[obj.pk])
+        from django.shortcuts import redirect
+        return redirect(url)
+    open_protocol_editor.label = "📝 " + _("Edit/View in P-KUN")
+    open_protocol_editor.attrs = {
+        "class": "btn btn-block",
+        "style": "margin-bottom: 1rem",
+    }
+
     def has_delete_permission(self, request, obj=None):
         return False
 
@@ -623,33 +705,30 @@ class SessionItemAdmin(
     search_fields = ('item_code', 'title', 'session__code')
     autocomplete_fields = ('session', 'elected_person_role')
     readonly_fields = ('item_code', 'created_at', 'updated_at', 'signatures_box')
-    inlines = [VoteInline]
+    inlines = [VoteInline, AnnotationInline]
     
     fieldsets = (
-        (_("Item Details"), {
+        (_("Scope"), {
             'fields': ('session', 'item_code', 'order', 'kind', 'title')
         }),
         (_("Content (Procedural)"), {
             'fields': ('content',),
-            'classes': ('collapse',)
         }),
         (_("Content (Resolution/Election)"), {
             'fields': ('subject', 'discussion', 'outcome'),
-            'classes': ('collapse',)
         }),
         (_("Voting"), {
             'fields': ('voting_mode', 'votes_for', 'votes_against', 
-                      'votes_abstain', 'passed'),
-            'classes': ('collapse',)
+                    'votes_abstain', 'passed'),
         }),
         (_("Election"), {
-            'fields': ('elected_person_role', 'elected_person_text_reference', 'elected_role_text_reference',),
-            'classes': ('collapse',)
+            'fields': ('elected_person_role', 'elected_person_text_reference', 
+                    'elected_role_text_reference',),
         }),
         (_("Notes"), {
-            'fields': ('notes',)
+            'fields': ('notes',),
         }),
-        (_("HankoSign"), {
+        (_("Workflow"), {
             'fields': ('signatures_box',)
         }),
         (_("System"), {
@@ -785,5 +864,10 @@ class SessionItemAdmin(
         return super().has_delete_permission(request, obj)
     
     def get_model_perms(self, request):
-        # Hide from sidebar
-        return {}
+        """
+        Hide from sidebar for non-superusers.
+        Annotations should be managed via inlines.
+        """
+        if not request.user.is_superuser:
+            return {}
+        return super().get_model_perms(request)
