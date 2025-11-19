@@ -77,7 +77,7 @@ body {
 .brand-link .brand-text {
     color: var(--unihanko-text-primary) !important;
     font-weight: 900 !important;
-    font-size: 1.3rem !important;
+    font-size: 1.2rem !important;
     letter-spacing: 1px;
 }
 
@@ -86,7 +86,7 @@ body {
     background: transparent !important;
     color: var(--unihanko-text-secondary) !important;
     border-left: 4px solid transparent !important;
-    padding: var(--spacing-md) var(--spacing-lg) !important;
+    padding: var(--spacing-md) var(--spacing-md) !important;
     margin: var(--spacing-xs) 0 !important;
     font-weight: 500 !important;
     transition: all 0.2s ease;
@@ -186,14 +186,14 @@ body {
    ============================================ */
 .content-wrapper {
     background: var(--unihanko-bg-dark) !important;
-    padding: var(--spacing-xl) !important;
+    padding: var(--spacing-md) !important;
 }
 
 .content-header h1 {
     color: var(--unihanko-text-primary) !important;
     font-weight: 900 !important;
-    font-size: 2rem !important;
-    margin-bottom: var(--spacing-lg) !important;
+    font-size: 1.5rem !important;
+    margin-bottom: var(--spacing-md) !important;
     letter-spacing: 0.5px;
 }
 
@@ -207,7 +207,7 @@ body {
     border: var(--brutal-border) !important;
     box-shadow: var(--brutal-shadow) !important;
     border-radius: 0 !important;
-    margin-bottom: var(--spacing-lg) !important;
+    margin-bottom: var(--spacing-md) !important;
     transition: all 0.3s ease;
 }
 
@@ -228,11 +228,12 @@ body {
 .card-title {
     color: var(--unihanko-text-primary) !important;
     font-weight: 700 !important;
-    font-size: 1.1rem !important;
+    font-size: 1rem !important;
 }
 
 .card-body {
-    padding: var(--spacing-lg) !important;
+    padding: var(--spacing-md) !important;
+    font-size: 0.9rem !important;
 }
 
 /* Dashboard boxes */
@@ -261,7 +262,7 @@ body {
     border: 4px solid !important;
     padding: 0.6rem 1.2rem !important;
     font-weight: 700 !important;
-    font-size: 1rem !important;
+    font-size: .9rem !important;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     transition: all 0.2s ease !important;
@@ -373,6 +374,7 @@ select {
     padding: var(--spacing-md) !important;
     font-weight: 500 !important;
     transition: all 0.2s ease;
+    font-size: 0.9rem !important;
 }
 
 .form-control:focus,
@@ -414,14 +416,14 @@ small {
 fieldset {
     border: var(--brutal-border) !important;
     background: var(--unihanko-bg-card) !important;
-    padding: var(--spacing-lg) !important;
-    margin-bottom: var(--spacing-lg) !important;
+    padding: var(--spacing-md) !important;
+    margin-bottom: var(--spacing-md) !important;
 }
 
 fieldset legend {
     background: var(--unihanko-bg-darker) !important;
     color: var(--unihanko-text-primary) !important;
-    padding: var(--spacing-sm) var(--spacing-lg) !important;
+    padding: var(--spacing-sm) var(--spacing-md) !important;
     font-weight: 900 !important;
     border: var(--brutal-border) !important;
     width: auto !important;
@@ -488,13 +490,13 @@ fieldset legend {
     background: var(--unihanko-bg-card) !important;
     border: var(--brutal-border) !important;
     box-shadow: var(--brutal-shadow) !important;
-    padding: var(--spacing-lg) !important;
+    padding: var(--spacing-md) !important;
 }
 
 #changelist-filter {
     background: var(--unihanko-bg-darker) !important;
     border: var(--brutal-border) !important;
-    padding: var(--spacing-lg) !important;
+    padding: var(--spacing-md) !important;
 }
 
 #changelist-filter h2,
@@ -569,7 +571,7 @@ fieldset legend {
     box-shadow: var(--brutal-shadow) !important;
     padding: var(--spacing-lg) !important;
     font-weight: 700 !important;
-    margin-bottom: var(--spacing-lg) !important;
+    margin-bottom: var(--spacing-md) !important;
 }
 
 .alert-success {
@@ -599,7 +601,7 @@ fieldset legend {
 
 /* Django messages */
 .messagelist {
-    margin: 0 0 var(--spacing-lg) 0 !important;
+    margin: 0 0 var(--spacing-md) 0 !important;
     padding: 0 !important;
     list-style: none !important;
 }
@@ -607,7 +609,7 @@ fieldset legend {
 .messagelist li {
     border: var(--brutal-border) !important;
     box-shadow: var(--brutal-shadow) !important;
-    padding: var(--spacing-lg) !important;
+    padding: var(--spacing-md) !important;
     margin-bottom: var(--spacing-md) !important;
     font-weight: 700 !important;
 }
@@ -637,7 +639,7 @@ fieldset legend {
 .modal-header {
     background: var(--unihanko-bg-darker) !important;
     border-bottom: var(--brutal-border) !important;
-    padding: var(--spacing-lg) !important;
+    padding: var(--spacing-md) !important;
 }
 
 .modal-title {
@@ -653,7 +655,7 @@ fieldset legend {
 .modal-footer {
     background: var(--unihanko-bg-darker) !important;
     border-top: var(--brutal-border) !important;
-    padding: var(--spacing-lg) !important;
+    padding: var(--spacing-md) !important;
 }
 
 /* ============================================
@@ -717,6 +719,7 @@ fieldset legend {
     margin-bottom: var(--spacing-xs) !important;
 }
 
+
 /* ============================================
    SCROLLBAR
    ============================================ */
@@ -774,7 +777,7 @@ fieldset legend {
     
     .btn {
         padding: 0.5rem 1rem !important;
-        font-size: 0.9rem !important;
+        font-size: 0.8rem !important;
     }
     
     .card-header,
@@ -845,7 +848,7 @@ a.nav-link[data-toggle="dropdown"]:hover {
 .navbar-nav .nav-link .fas,
 .navbar-nav .nav-link .far {
     color: var(--unihanko-accent-primary) !important;
-    font-size: 1.2rem !important;
+    font-size: 1.1rem !important;
 }
 
 /* Dropdown menus */

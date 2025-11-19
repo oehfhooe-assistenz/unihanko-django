@@ -87,6 +87,7 @@ JAZZMIN_SETTINGS = {
     "changeform_format_overrides": {
         "finances.paymentplan": "single",
         "organisation.orginfo": "single",
+        "people.personrole": "single",
     },
     "language_chooser": True,                       # header language switcher
 

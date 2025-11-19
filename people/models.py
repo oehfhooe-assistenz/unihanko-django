@@ -55,7 +55,7 @@ class Person(models.Model):
         default=Gender.X,
     )
 
-    notes = models.TextField(_("Notes"), blank=True)
+    notes = models.TextField(_("Record note"), blank=True)
 
     # Link to Django account (optional)
     user = models.OneToOneField(
@@ -172,7 +172,7 @@ class Role(models.Model):
     ects_cap = models.DecimalField(_("ECTS cap"), max_digits=4, decimal_places=1, default=0, help_text=_("The nominal reimbursible ECTS amount assigned to the role re: MOU with the academic board"))
     is_elected = models.BooleanField(_("Elected position"), default=False, help_text=_("Whether this role is elected via an election authority re: HSG 2014"))
     kind = models.CharField(_("Role type"), max_length=16, choices=Kind.choices, default=Kind.OTHER, db_index=True, help_text=_("Type of role within the (legal) personnel structure."))
-    notes = models.TextField(_("Notes"), blank=True)
+    notes = models.TextField(_("Configuration note"), blank=True)
     is_stipend_reimbursed = models.BooleanField(_("Reimbursed via stipend"), default=False, help_text=_("Whether this role is ordinarily reimbursed via stipend [FuGeb]"))
     is_system = models.BooleanField(_("System role"), default=False, help_text=_("Internal/admin role. Ignores stipend/ECTS expectations and is treated separately in policies."))
     default_monthly_amount = models.DecimalField(_("Default monthly stipend"), max_digits=10, decimal_places=2, blank=True, null=True, help_text=_("default monthly pay (if eligible) per Statutes"))
@@ -327,7 +327,7 @@ class PersonRole(models.Model):
     )
 
     # Per-assignment free-text note
-    notes = models.TextField(_("Notes"), blank=True)
+    notes = models.TextField(_("Record note"), blank=True)
 
     history = HistoricalRecords()
     version = AutoIncVersionField()

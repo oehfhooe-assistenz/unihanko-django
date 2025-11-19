@@ -609,8 +609,8 @@ class SessionAdmin(
         # Set timestamp
         obj.sent_koko_hsg_at = timezone.now()
         obj.save(update_fields=['sent_koko_hsg_at'])
-        create_system_annotation(obj, "VERIFY", user=request.user)
         record_signature(request.user, action, obj, note=_("Session %(code)s sent to KoKo/HSG") % {"code": obj.code})
+        create_system_annotation(obj, "VERIFY", user=request.user)
         messages.success(request, _("Verified and sent to KoKo/HSG."))
     verify_session.label = _("Verify (Sent to KoKo/HSG)")
     verify_session.attrs = {"class": "btn btn-block btn-primary", "style": "margin-bottom: 1rem;"}
@@ -728,7 +728,7 @@ class SessionItemAdmin(
         (_("Notes"), {
             'fields': ('notes',),
         }),
-        (_("Workflow"), {
+        (_("Workflow & HankoSign"), {
             'fields': ('signatures_box',)
         }),
         (_("System"), {

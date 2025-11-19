@@ -26,6 +26,8 @@ from django.template.loader import render_to_string
 from core.utils.authz import is_people_manager
 from django.db import transaction
 from django.db.models import Prefetch
+from annotations.admin import AnnotationInline
+from annotations.views import create_system_annotation
 
 # =========================
 # Import–Export resources
@@ -45,6 +47,7 @@ class PersonResource(resources.ModelResource):
             "is_active",
             "created_at",
             "updated_at",
+            "notes"
         )
         export_order = (
             "id",
@@ -58,6 +61,7 @@ class PersonResource(resources.ModelResource):
             "is_active",
             "created_at",
             "updated_at",
+            "notes"
         )
 
 
@@ -175,22 +179,31 @@ class ActiveFilter(admin.SimpleListFilter):
 class PersonRoleInline(admin.StackedInline):
     model = PersonRole
     extra = 0
-    readonly_fields = ("signatures_box",)
+    readonly_fields = ("signatures_box", "election_reference", "created_at", "updated_at", "version")
     fieldsets = (
-        (_("Assignment Details"), {
-            "classes": ("collapse",),
-            "fields": (
-                "role",
-                ("start_date"), ("effective_start"), ("start_reason"),
-                ("end_date"), ("effective_end"), ("end_reason"),
-                ("confirm_date"), ("elected_via"),
-                "signatures_box",
-                "notes",
-                "version",
-            ),
+        (_("Scope"), {
+            "fields": ("person", "role"),
+        }),
+        (_("Dates"), {
+            "fields": ("start_date", "effective_start", "end_date", "effective_end"),
+        }),
+        (_("Reasons"), {
+            "fields": ("start_reason", "end_reason"),
+        }),
+        (_("Election Details"), {
+            "fields": ("confirm_date", "elected_via", "election_reference"),
+        }),
+        (_("Notes"), {  
+            "fields": ("notes",),
+        }),
+        (_("Workflow & HankoSign"), {
+            "fields": ("signatures_box",),
+        }),
+        (_("System"), {
+            "fields": ("version", "created_at", "updated_at"),
         }),
     )
-    autocomplete_fields = ("role", "start_reason", "end_reason")
+    autocomplete_fields = ("role", "start_reason", "end_reason", "elected_via")
     can_delete = False
     show_change_link = True
 
@@ -228,6 +241,30 @@ class PersonRoleInline(admin.StackedInline):
         if self._parent_locked(request, obj):
             return False
         return super().has_delete_permission(request, obj)
+    
+    @admin.display(description=_("Election reference"))
+    def election_reference(self, obj):
+        """Display the session item code for elected assignments"""
+        if not obj or not obj.pk:
+            return "—"
+        if obj.elected_via:
+            return mark_safe(
+                f'<a href="{reverse("admin:assembly_sessionitem_change", args=[obj.elected_via.pk])}" target="_blank">'
+                f'{obj.elected_via.full_identifier}</a>'
+            )
+        return "—"
+    
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        if obj:
+            ro.extend(["person", "role"])
+            # obj here IS the parent Person, so use _parent_locked
+            if self._parent_locked(request, obj):  # ← Changed from _is_locked
+                for f in ("start_date","end_date","effective_start","effective_end",
+                        "start_reason","end_reason","confirm_date","elected_via","notes"):
+                    if f not in ro: ro.append(f)
+        return ro
 
 
 # =========================
@@ -263,29 +300,34 @@ class PersonAdmin(
     list_filter = (ActiveAssignmentFilter, "gender", "is_active",)
     search_fields = ("first_name", "last_name", "email", "student_email", "matric_no")
     autocomplete_fields = ("user",)
-    readonly_fields = ("uuid", "personal_access_code", "created_at", "updated_at", "signatures_box", "mail_merged")
-    inlines = [PersonRoleInline]
+    readonly_fields = ("uuid", "personal_access_code", "created_at", "updated_at", "signatures_box", "mail_merged", "version")
+    inlines = [PersonRoleInline, AnnotationInline]
     actions = ("lock_selected", "unlock_selected", "export_selected_pdf")
 
     fieldsets = (
-        (_("Identity & Status"), {
-            "fields": (("first_name"), ("last_name"), "uuid", "gender", "notes", "is_active"),
+        (_("Scope"), {
+            "fields": ("first_name", "last_name", "uuid", "gender", "is_active"),
         }),
-        (_("Contacts"), {
-            "fields": (("email"), ("student_email"),),
+        (_("Contact"), {
+            "fields": ("email", "student_email"),
         }),
         (_("University"), {
             "fields": ("matric_no",),
         }),
-        (_("Account link"), {
+        (_("Account"), {
             "fields": ("user",),
         }),
-        (_("Personal access code"), {
+        (_("Personal Access Code"), {
             "fields": ("personal_access_code",),
         }),
-        (_("HankoSign Workflow"), {"fields": ("signatures_box",)}),
+        (_("Notes"), {  # ← NEW SECTION
+            "fields": ("notes",),
+        }),
+        (_("Workflow & HankoSign"), {
+            "fields": ("signatures_box",)
+        }),
         (_("System"), {
-            "fields": (("version"), ("created_at"), ("updated_at"),),
+            "fields": ("version", "created_at", "updated_at"),
         }),
     )
 
@@ -386,6 +428,7 @@ class PersonAdmin(
         if not action:
             raise PermissionDenied(_("Lock action is not configured."))
         record_signature(request.user, action, obj, note=_("Personnel record locked"))
+        create_system_annotation(obj, "LOCK", user=request.user)
         return True
     
 
@@ -399,6 +442,7 @@ class PersonAdmin(
         if not action:
             raise PermissionDenied(_("Unlock action is not configured."))
         record_signature(request.user, action, obj, note=_("Personnel record unlocked"))
+        create_system_annotation(obj, "UNLOCK", user=request.user)
         return True
 
     
@@ -445,6 +489,7 @@ class PersonAdmin(
                     already += 1
                     continue
                 record_signature(request.user, action, obj, note=_("Personnel record locked (bulk)"))
+                create_system_annotation(obj, "LOCK", user=request.user)
                 ok += 1
             except Exception:
                 fail += 1
@@ -477,6 +522,7 @@ class PersonAdmin(
                     already += 1
                     continue
                 record_signature(request.user, action, obj, note=_("Personnel record unlocked (bulk)"))
+                create_system_annotation(obj, "UNLOCK", user=request.user)
                 ok += 1
             except Exception:
                 fail += 1
@@ -626,6 +672,24 @@ class RoleAdmin(
     list_display = ("name", "short_name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind_text", "is_system")
     search_fields = ("name",)
     list_filter = ("is_elected","is_stipend_reimbursed", "is_system", "kind",)
+    fieldsets = (
+        (_("Scope"), {
+            "fields": ("name", "short_name"),
+        }),
+        (_("Type & Flags"), {
+            "fields": ("kind", "is_system", "is_elected", "is_stipend_reimbursed"),
+        }),
+        (_("Defaults"), {
+            "fields": ("ects_cap", "default_monthly_amount"),
+        }),
+        (_("Notes"), {
+            "fields": ("notes",),  # Keep notes here - it's a dictionary/config entity
+        }),
+        (_("System"), {
+            "fields": ("version",),
+        }),
+    )
+    readonly_fields = ("version",)
 
     @admin.display(description=_("Role type"), ordering="kind")
     def kind_text(self, obj):
@@ -635,18 +699,6 @@ class RoleAdmin(
         )
         return mark_safe(html)
     
-    def get_fieldsets(self, request, obj=None):
-        return (
-            (_("Basics"), {
-                "fields": ("name", "short_name", "notes"),
-            }),
-            (_("Type & Flags"), {
-                "fields": ("kind", "is_system", "is_elected", "is_stipend_reimbursed"),
-            }),
-            (_("Academic/Finance defaults"), {
-                "fields": ("ects_cap", "default_monthly_amount"),
-            }),
-        )
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -674,7 +726,7 @@ class ReasonAdmin(
     def get_readonly_fields(self, request, obj=None):
         # Once created, keep code immutable (prevents renumbering chaos)
         if obj:
-            return ("code", "name",)
+            return ("code", "name")
         return ()
 
     @admin.display(description=_("Name (localized)"))
@@ -712,10 +764,8 @@ class PersonRoleAdmin(
         "person",
         "role",
         "start_merged",
-        "start_reason",
         "confirm_date",
         "end_merged",
-        "end_reason",
         "updated_at",
         "active_text",
     )
@@ -723,31 +773,30 @@ class PersonRoleAdmin(
     list_filter = (ActiveFilter, "role", "start_reason", "end_reason", "start_date", "end_date", "confirm_date")
     search_fields = ("person__last_name", "person__first_name", "role__name", "notes")
     autocomplete_fields = ("person", "role", "start_reason", "end_reason", "elected_via")
-    readonly_fields = ("signatures_box", "election_reference", "created_at", "updated_at",)
+    readonly_fields = ("signatures_box", "election_reference", "created_at", "updated_at", "version")
     actions = ["offboard_today"]
-
+    inlines = [AnnotationInline]
     fieldsets = (
-        (_("Assignment"), {
-            "fields": (
-                "person", "role",
-                "start_date", "end_date",
-                "effective_start", "effective_end",
-            ),
+        (_("Scope"), {
+            "fields": ("person", "role"),
+        }),
+        (_("Dates"), {
+            "fields": ("start_date", "effective_start", "end_date", "effective_end"),
         }),
         (_("Reasons"), {
             "fields": ("start_reason", "end_reason"),
         }),
-        (_("Confirmation (heads only)"), {
-            "fields": ("confirm_date", "elected_via", "election_reference",),
+        (_("Election Details"), {
+            "fields": ("confirm_date", "elected_via", "election_reference"),
         }),
-        (_("Notes"), {
+        (_("Notes"), {  
             "fields": ("notes",),
         }),
-        (_("HankoSign Workflow"), {
+        (_("Workflow & HankoSign"), {
             "fields": ("signatures_box",),
         }),
         (_("System"), {
-            "fields": ("version", "created_at", "updated_at"),   # if you want it visible
+            "fields": ("version", "created_at", "updated_at"),
         }),
     )
 
@@ -805,11 +854,12 @@ class PersonRoleAdmin(
     def start_merged(self, obj):
         d = obj.effective_start or obj.start_date
         html = render_to_string(
-            "admin/people/_date_cell.html",
+            "admin/people/_date_reason_cell.html",  # ← Renamed
             {
                 "date": d,
                 "is_effective": bool(obj.effective_start),
                 "label": _("start date"),
+                "reason": obj.start_reason,  # ← NEW
             },
         )
         return mark_safe(html)
@@ -819,11 +869,12 @@ class PersonRoleAdmin(
     def end_merged(self, obj):
         d = obj.effective_end or obj.end_date
         html = render_to_string(
-            "admin/people/_date_cell.html",
+            "admin/people/_date_reason_cell.html",  # ← Renamed
             {
                 "date": d,
                 "is_effective": bool(obj.effective_end),
                 "label": _("end date"),
+                "reason": obj.end_reason,  # ← NEW
             },
         )
         return mark_safe(html)
@@ -1046,10 +1097,12 @@ class PersonRoleAdmin(
 
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
-        if obj and self._is_locked(request, obj):
-            for f in ("person","role","start_date","end_date","effective_start","effective_end",
-                    "start_reason","end_reason","confirm_date","elected_via","notes"):
-                if f not in ro: ro.append(f)
+        if obj:
+            ro.extend(["person", "role"])
+            if self._is_locked(request, obj):
+                for f in ("start_date","end_date","effective_start","effective_end",
+                        "start_reason","end_reason","confirm_date","elected_via","notes"):
+                    if f not in ro: ro.append(f)
         return ro
     
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
