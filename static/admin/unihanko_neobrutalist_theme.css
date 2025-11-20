@@ -707,6 +707,7 @@ fieldset legend {
     margin-bottom: var(--spacing-xs) !important;
 }
 
+
 .inline-group .card {
     background: var(--unihanko-inline-card) !important;
 }
@@ -913,10 +914,35 @@ button.form-control[type="submit"],
 input.form-control[type="submit"]:hover,
 button.form-control[type="submit"]:hover {
     background: #ff8555 !important;
-    border-color: #ff8555 !important;
+    border-color: #928f8e !important;
     transform: translate(-2px, -2px) !important;
     box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5) !important;
 }
+
+.submit-row input.form-control[type="_delete"],
+.submit-row button.form-control[type="_delete"],
+input.form-control[type="_delete"],
+button.form-control[type="_delete"],
+.form-control[type="_delete"] {
+    height: auto !important;
+    min-height: 48px !important;
+    padding: 0.75rem 1.5rem !important;
+
+}
+
+.cancel-link.form-control {
+    height: auto !important;
+    min-height: 48px !important;
+    padding: 0.75rem 1.5rem !important;
+}
+
+.sticky-top[id="jazzy-actions"] a.form-control {
+    height: auto !important;
+    min-height: 48px !important;
+    padding: 0.75rem 1.5rem !important;
+}
+
+
 
 
 /* ============================================

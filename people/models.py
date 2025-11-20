@@ -103,6 +103,23 @@ class Person(models.Model):
             ),
         ]
 
+    def clean(self):
+        errors = {}
+        
+        # Check for duplicate matric_no (only if set)
+        if self.matric_no:
+            existing = Person.objects.filter(
+                matric_no=self.matric_no
+            ).exclude(pk=self.pk).exists()
+            
+            if existing:
+                errors["matric_no"] = _(
+                    "This matriculation number is already assigned to another person."
+                )
+        
+        if errors:
+            raise ValidationError(errors)
+
     def __str__(self):
         return f"{self.last_name}, {self.first_name}"
 
@@ -395,6 +412,20 @@ class PersonRole(models.Model):
         super().clean()
 
         errors = {}
+
+        # Check for duplicate (person, role, start_date)
+        if self.person_id and self.role_id and self.start_date:
+            existing = PersonRole.objects.filter(
+                person_id=self.person_id,
+                role_id=self.role_id,
+                start_date=self.start_date
+            ).exclude(pk=self.pk).exists()
+        
+        if existing:
+            errors["__all__"] = _(
+                "An assignment for this person in this role with this start date already exists. "
+                "Please adjust the start date or edit the existing assignment."
+            )
 
         if self.role and getattr(self.role, "is_system", False):
             # System roles shouldn't carry confirmation paperwork

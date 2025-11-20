@@ -337,14 +337,12 @@ class PaymentPlan(models.Model):
     pay_end      = models.DateField(_("Pay end (optional)"), blank=True, null=True)
 
     # Money
-    monthly_amount = models.DecimalField(_("Monthly amount"), max_digits=10, decimal_places=2, help_text=_("Monthly amount derived from assigned role. Can be edited."))
-    total_override = models.DecimalField(_("Total amount (plan)"), max_digits=10, decimal_places=2, blank=True, null=True, help_text=_("Total amount derived from auto-calculation ['richtwert']. Can be edited."))
+    monthly_amount = models.DecimalField(_("Monthly amount"), max_digits=10, decimal_places=2, blank=True, null=True, help_text=_("Monthly amount derived from assigned role. Can be edited."))
+    total_override = models.DecimalField(_("Total amount (override)"), max_digits=10, decimal_places=2, blank=True, null=True, help_text=_("Total amount derived from auto-calculation ['richtwert']. Can be edited."))
 
     # Status + lightweight audit
     status       = models.CharField(_("Status"), max_length=10, choices=Status.choices, default=Status.DRAFT, help_text=_("Status of payment plan. Payment plans can only be fully edited if they are in the DRAFT stage."))
-    status_note  = models.CharField(_("Status note (short)"), max_length=200, blank=True, help_text=_("Short note describing the current status. Optional."))
-    notes        = models.TextField(_("Notes (internal)"), blank=True, help_text=_("Longer notes for internal use (e.g. 'Buchungsvermerke'). Optional."))
-
+    
     # Non-Hankosign 'Signature' (dates are enough for now)
     signed_person_at = models.DateField(_("Signed by payee on"), blank=True, null=True, help_text=_("Date of signature received."))
 
@@ -552,21 +550,51 @@ class PaymentPlan(models.Model):
 
     def clean(self):
         errors = {}
-
+        
+        # Check for existing open plan (before DB constraint fails)
+        if not self.pk:  # Only on creation
+            if self.person_role_id and self.fiscal_year_id:
+                existing_plan = PaymentPlan.objects.filter(
+                    person_role_id=self.person_role_id,
+                    fiscal_year_id=self.fiscal_year_id
+                ).exclude(
+                    status__in=[PaymentPlan.Status.CANCELLED, PaymentPlan.Status.FINISHED]
+                ).first()  # ← Single query
+                
+                if existing_plan:  # ← Just check if not None
+                    if existing_plan.status == PaymentPlan.Status.DRAFT:
+                        errors["__all__"] = _(
+                            "An open payment plan already exists for this assignment in this fiscal year. "
+                            "Please edit or delete the existing draft plan first."
+                        )
+                    else:
+                        errors["__all__"] = _(
+                            "An open payment plan already exists for this assignment in this fiscal year. "
+                            "Please edit the existing plan or cancel it via workflow actions."
+                        )
+                        
         # Prevent FY changes after creation (keeps plan_code stable)
         if self.pk:
             orig = PaymentPlan.objects.only("fiscal_year_id").get(pk=self.pk)
             if orig.fiscal_year_id != self.fiscal_year_id:
                 errors["fiscal_year"] = _("You cannot change the fiscal year after creation.")
 
-        # Ensure FY present (protect against weird admin states)
+        # Ensure FY present
         if not self.fiscal_year_id:
             errors["fiscal_year"] = _("Fiscal year is required.")
+
+        # Auto-fill monthly_amount on creation (before validation)
+        if not self.pk and self.person_role_id:
+            if self.monthly_amount is None:
+                try:
+                    role_default = self.person_role.role.default_monthly_amount
+                    self.monthly_amount = role_default if role_default is not None else Decimal("0.00")
+                except Exception:
+                    self.monthly_amount = Decimal("0.00")
 
         # Ensure window intersects FY and is coherent
         if self.fiscal_year_id:
             fy = self.fiscal_year
-            # If overrides are provided, ensure they at least overlap FY
             if self.pay_start and (self.pay_start > fy.end):
                 errors["pay_start"] = _("Pay start must be within or before the fiscal year end.")
             if self.pay_end and (self.pay_end < fy.start):
@@ -588,8 +616,7 @@ class PaymentPlan(models.Model):
             pr = self.person_role
             fy = self.fiscal_year
             pr_start = pr.effective_start or pr.start_date
-            pr_end   = pr.effective_end   or pr.end_date
-            # treat missing dates as open
+            pr_end = pr.effective_end or pr.end_date
             if pr_start and pr_start > fy.end or pr_end and pr_end < fy.start:
                 errors["person_role"] = _("Selected assignment does not overlap the fiscal year.")
 
@@ -603,10 +630,8 @@ class PaymentPlan(models.Model):
                 required_errors["reference"] = _("Required when leaving Draft.")
             if not (self.cost_center or "").strip():
                 required_errors["cost_center"] = _("Required when leaving Draft.")
-            # monthly_amount already validated non-negative; ensure present:
             if self.monthly_amount is None:
                 required_errors["monthly_amount"] = _("Required when leaving Draft.")
-            # IBAN/BIC presence (shape already validated via validators/ checksum)
             if not (self.iban or "").strip():
                 required_errors["iban"] = _("Required when leaving Draft.")
             if not (self.bic or "").strip():
@@ -662,12 +687,34 @@ class PaymentPlan(models.Model):
         
     # ---------- Save hook ----------
     def save(self, *args, **kwargs):
-        # Assign plan_code once, on create
-        if not self.pk and not self.plan_code:
+        if not self.pk:  # First save only
+            # 1. Validate fiscal_year exists
             if not self.fiscal_year_id:
                 raise ValidationError({"fiscal_year": _("Fiscal year is required.")})
-            self.plan_code = self._generate_plan_code()
+            
+            # 2. Auto-fill monthly_amount from role
+            if not self.monthly_amount and self.person_role_id:
+                try:
+                    role_default = self.person_role.role.default_monthly_amount
+                    self.monthly_amount = role_default if role_default is not None else Decimal("0.00")
+                except Exception:
+                    self.monthly_amount = Decimal("0.00")
+            
+            # 3. Auto-fill pay window from PersonRole ∩ FiscalYear
+            if not self.pay_start or not self.pay_end:
+                default_start, default_end = self._default_window_from_pr_and_fy()
+                if not self.pay_start:
+                    self.pay_start = default_start
+                if not self.pay_end:
+                    self.pay_end = default_end
+            
+            # 4. Generate plan_code
+            if not self.plan_code:
+                self.plan_code = self._generate_plan_code()
+            
+            # 5. Set initial status
             self.status = paymentplan_status(self)
+        
         super().save(*args, **kwargs)
 
 

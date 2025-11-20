@@ -10,30 +10,60 @@ groups:
     inherits: []
     models: {}
     custom_perms: {}
+  
+  "foundation:helppages:viewer":
+    inherits: []
+    models:
+      helppages.HelpPage: [view]
+    custom_perms: {}
+
+  "foundation:annotations:commenter":
+    inherits: []
+    models:
+      annotations.Annotation: [view, add, change, delete]
+    custom_perms: {}
+
+  "foundation:personnel:viewer":  # ← Renamed from module:personnel:viewer
+    inherits: []
+    models:
+      people.Person: [view]
+      people.PersonRole: [view]
+      people.Role: [view]
+      people.RoleTransitionReason: [view]
+    custom_perms: {}
+
+  "feature:basics":  # ← Bundle all foundation groups
+    inherits:
+      - "foundation:helppages:viewer"
+      - "foundation:annotations:commenter"
+      - "foundation:personnel:viewer"
+    models: {}
+    custom_perms: {}
 
   "module:employees:editor":
-    inherits: []
+    inherits:
+      - "feature:basics"
     models:
       employees.Employee: [view]
       employees.HolidayCalendar: [view]
-      employees.EmploymentDocument: [view, add, change]
+      employees.EmploymentDocument: [view, add, change, delete]
       employees.TimeSheet: [view, add, change]
-      employees.TimeEntry: [view, add, change]
+      employees.TimeEntry: [view, add, change, delete]
+      employees.EmployeeLeaveYear: [view]
     custom_perms: {}
 
   "module:employees:manager":
     inherits:
       - "module:employees:editor"
     models:
-      employees.Employee: [view, add, change]
-      employees.HolidayCalendar: [view, add, change]
-      employees.EmploymentDocument: [view, add, change]
-      employees.TimeSheet: [view, add, change]
-      employees.TimeEntry: [view, add, change]
+      employees.Employee: [add, change]
+      employees.HolidayCalendar: [add, change]
+      employees.EmployeeLeaveYear: [change]
     custom_perms: {}
 
   "module:organisation:editor":
-    inherits: []
+    inherits:
+      - "feature:basics"
     models:
       organisation.OrgInfo: [view]
     custom_perms: {}
@@ -42,43 +72,43 @@ groups:
     inherits:
       - "module:organisation:editor"
     models:
-      organisation.OrgInfo: [view, change]
+      organisation.OrgInfo: [change]
     custom_perms: {}
 
   "module:personnel:editor":
-    inherits: []
+    inherits:
+      - "feature:basics"
     models:
-      people.Person:             [view, add, change]
-      people.PersonRole:         [view, add, change]
-      people.Role:               [view]          # view-only so autocomplete works
-      people.RoleTransitionReason: [view]        # view-only (dictionary lookups)
-    custom_perms: {}                            # add model-specific permissions here if needed later
+      people.Person:             [add, change]
+      people.PersonRole:         [add, change]
+    custom_perms: {}                            
 
   "module:personnel:manager":
     inherits:
       - "module:personnel:editor"
     models:
-      people.Role:               [view, add, change]
-      people.RoleTransitionReason: [view, add, change]
+      people.Role:               [add, change]
+      people.RoleTransitionReason: [add, change]
     custom_perms: {}
   
   "module:finances:editor":
-    inherits: []
+    inherits:
+      - "feature:basics"
     models:
       finances.FiscalYear:       [view]
-      finances.PaymentPlan:      [view]
+      finances.PaymentPlan:      [view, add, change]
     custom_perms: {}
 
   "module:finances:manager":
     inherits:
       - "module:finances:editor"
     models:
-      finances.FiscalYear:      [view, add, change]
-      finances.PaymentPlan:    [view, add, change]
+      finances.PaymentPlan: [delete]
     custom_perms: {} 
 
   "module:hankosign:editor":
-    inherits: []
+    inherits:
+      - "feature:basics"
     models:
       hankosign.Action: [view]
       hankosign.Policy: [view]
@@ -90,27 +120,29 @@ groups:
     inherits:
       - "module:hankosign:editor"
     models:
-      hankosign.Action: [view, add, change]
-      hankosign.Policy: [view, add, change]
-      hankosign.Signatory: [view, add, change]
-      hankosign.Signature: [view, add, change]
+      hankosign.Action: [add, change]
+      hankosign.Policy: [add, change]
+      hankosign.Signatory: [add, change]
+      hankosign.Signature: [add, change]
     custom_perms: {}
 
   "module:helppages:editor":
-    inherits: []
+    inherits:
+      - "feature:basics"
     models:
-      helppages.HelpPage: [view, change]
+      helppages.HelpPage: [view]
     custom_perms: {}
 
   "module:helppages:manager":
     inherits:
       - "module:helppages:editor"
     models:
-      helppages.HelpPage: [view, change]
+      helppages.HelpPage: [change]
   custom_perms: {}
 
   "module:assembly:editor":
-    inherits: []
+    inherits:
+      - "feature:basics"
     models:
       assembly.Term: [view]
       assembly.Composition: [view]
@@ -124,16 +156,14 @@ groups:
     inherits:
       - "module:assembly:editor"
     models:
-      assembly.Term: [view, add, change]
-      assembly.Composition: [view, add, change]
-      assembly.Mandate: [view, add, change]
-      assembly.Session: [view, add, change]
-      assembly.SessionItem: [view, add, change, delete]
-      assembly.Vote: [view, add, change]
+      assembly.Term: [add, change]
+      assembly.Composition: [add, change]
+      assembly.Mandate: [add, change]
     custom_perms: {}
 
   "module:academia:editor":
-    inherits: []
+    inherits:
+      - "feature:basics"
     models:
       academia.Semester: [view]
       academia.InboxRequest: [view, add, change]
@@ -144,13 +174,12 @@ groups:
     inherits:
       - "module:academia:editor"
     models:
-      academia.Semester: [view, add, change]
-      academia.InboxRequest: [view, add, change]
-      academia.InboxCourse: [view, add, change, delete]
+      academia.Semester: [add, change]
     custom_perms: {}
 
   "module:academia_audit:editor":
-    inherits: []
+    inherits:
+      - "feature:basics"
     models:
       academia_audit.AuditSemester: [view]
       academia_audit.AuditEntry: [view]
@@ -160,6 +189,6 @@ groups:
     inherits:
       - "module:academia_audit:editor"
     models:
-      academia_audit.AuditSemester: [view, add, change]
-      academia_audit.AuditEntry: [view, add, change]
+      academia_audit.AuditSemester: [add, change]
+      academia_audit.AuditEntry: [add, change]
     custom_perms: {}

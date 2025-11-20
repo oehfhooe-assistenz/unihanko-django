@@ -22,6 +22,7 @@ from django.core.exceptions import PermissionDenied
 from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for_boolean
 from concurrency.admin import ConcurrentModelAdmin
 from annotations.admin import AnnotationInline
+from annotations.views import create_system_annotation
 
 # =============== Import–Export ===============
 class FiscalYearResource(resources.ModelResource):
@@ -80,53 +81,60 @@ class PaymentPlanForm(forms.ModelForm):
         obj = self.instance
 
         # Help texts (keep your original window/richtwert notes)
-        if "pay_start" in F:
-            F["pay_start"].help_text = _(
-                "Optional. Leave empty on first save to default to the assignment/FY window. "
-                "We hard-clamp to the fiscal year."
-            )
-        if "pay_end" in F:
-            F["pay_end"].help_text = _(
-                "Optional. Leave empty on first save to default to the assignment/FY window. "
-                "Must not be before start."
-            )
+        if obj.pk:
+            if "monthly_amount" in F:
+                F["monthly_amount"].help_text = _(
+                    "Auto-filled from role default. Adjust if needed for this specific plan."
+                )
+            
+            if "pay_start" in F:
+                F["pay_start"].help_text = _(
+                    "Auto-calculated from assignment dates ∩ fiscal year. Adjust if needed."
+                )
+            
+            if "pay_end" in F:
+                F["pay_end"].help_text = _(
+                    "Auto-calculated from assignment dates ∩ fiscal year. Adjust if needed."
+                )
 
         # (2) No silent autofill of name/amount. Only default the reference on *add*.
         if not obj.pk and "reference" in F and not self.initial.get("reference"):
             self.initial["reference"] = "Funktionsgebühr"
 
-        # (3) Suggestion chips (visible/nudgy, but won’t change data unless clicked)
-        suggested_name = ""
-        try:
-            if getattr(obj, "person_role_id", None):
-                p = obj.person_role.person
-                suggested_name = f"{(p.first_name or '').strip()} {(p.last_name or '').strip()}".strip()
-        except Exception:
-            pass
 
-        def _chip(label: str, field_id: str, value: str) -> str:
-            if not value:
-                return ""
-            # inline JS to set the input value
-            return (
-                f'<a class="uh-chip" '
-                f'style="margin-left:.5rem; padding:2px 8px; border-radius:999px; background:#eef2ff; '
-                f'border:1px solid #c7d2fe; cursor:pointer; font-weight:600;" '
-                f'onclick="(function(){{var el=document.getElementById(\'{field_id}\'); if(el){{el.value={value!r}; el.dispatchEvent(new Event(\'change\'));}}}})()">'
-                f'{label}</a>'
-            )
+        if obj.pk:
+            # (3) Suggestion chips (visible/nudgy, but won’t change data unless clicked)
+            suggested_name = ""
+            try:
+                if getattr(obj, "person_role_id", None):
+                    p = obj.person_role.person
+                    suggested_name = f"{(p.first_name or '').strip()} {(p.last_name or '').strip()}".strip()
+            except Exception:
+                pass
 
-        if "payee_name" in F:
-            F["payee_name"].help_text = mark_safe(
-                _("<strong>Tip:</strong> Use the assignment holder’s name")
-                + _chip(_("Use name"), "id_payee_name", suggested_name)
-            )
+            def _chip(label: str, field_id: str, value: str) -> str:
+                if not value:
+                    return ""
+                # inline JS to set the input value
+                return (
+                    f'<a class="uh-chip" '
+                    f'style="margin-left:.5rem; padding:2px 8px; border-radius:999px; background:#eef2ff; '
+                    f'border:1px solid #c7d2fe; cursor:pointer; font-weight:600;" '
+                    f'onclick="(function(){{var el=document.getElementById(\'{field_id}\'); if(el){{el.value={value!r}; el.dispatchEvent(new Event(\'change\'));}}}})()">'
+                    f'{label}</a>'
+                )
 
-        if "reference" in F:
-            F["reference"].help_text = mark_safe(
-                _("<strong>Tip:</strong> Default reference")
-                + _chip(_("Use “Funktionsgebühr”"), "id_reference", "Funktionsgebühr")
-            )
+            if "payee_name" in F:
+                F["payee_name"].help_text = mark_safe(
+                    _("<strong>Tip:</strong> Use the assignment holder’s name")
+                    + _chip(_("Use name"), "id_payee_name", suggested_name)
+                )
+
+            if "reference" in F:
+                F["reference"].help_text = mark_safe(
+                    _("<strong>Tip:</strong> Default reference")
+                    + _chip(_("Use “Funktionsgebühr”"), "id_reference", "Funktionsgebühr")
+                )
 
     # Normalize banking inputs
     def clean_iban(self):
@@ -224,45 +232,48 @@ class PaymentPlanAdmin(
         "plan_code_or_hint",
         "created_at", "updated_at",
         "window_preview", "breakdown_preview", "recommended_total_display", "role_monthly_hint",
-        "bank_reference_preview_full", "pdf_file", "submission_ip", "signatures_box", "status",
+        "bank_reference_preview_full", "pdf_file", "submission_ip", "signatures_box", "status", "version"
     )
 
     list_per_page = 50
     ordering = ("-created_at",)
 
     fieldsets = (
-        (_("Admin Sets: Scope"), {
-            "fields": ("plan_code_or_hint", "person_role", "fiscal_year"),
+        (_("Scope"), {
+            "fields": ("plan_code_or_hint", "person_role", "fiscal_year", "status"),
         }),
-        (_("Admin Sets: Budget"), {
-            "fields": ("cost_center",),
-        }),
-        (_("Admin Sets: Standing Invoice Window"), {
-            "fields": (("pay_start"), ("pay_end"), "window_preview"),
-        }),
-        (_("Admin Sets: Monetary Amounts"), {
-            "fields": (("monthly_amount"), "role_monthly_hint", ("total_override"), "recommended_total_display", "breakdown_preview"),
-        }),
-        (_("Public Completes: Payee & Banking"), {
+        (_("Budget"), {
             "fields": (
-                ("payee_name",), ("iban"), ("bic"),
-                ("address"), "reference",
-                "bank_reference_preview_full",
+                "cost_center",
+                "monthly_amount", "role_monthly_hint",
+                "total_override", "recommended_total_display",
+                "breakdown_preview"
             ),
+            "description": "ℹ️ " + _("Financial parameters set by WiRef."),
         }),
-        (_("Public Completes: Signature & Upload"), {
-            "fields": (("signed_person_at"), ("pdf_file"), ("submission_ip")),
+        (_("Payment Window"), {
+            "fields": ("pay_start", "pay_end", "window_preview"),
         }),
-        (_("HankoSign Workflow"), {
+        (_("Banking"), {
+            "fields": (
+                "payee_name", "iban", "bic", "address",
+                "reference",
+                "bank_reference_preview_full"
+            ),
+            "description": _("Payee details completed via portal. Reference text set by admin."),
+        }),
+        (_("Submission"), {
+            "fields": ("signed_person_at", "pdf_file", "submission_ip"),
+            "description": "ℹ️ " + _("Received from payee via public portal."),
+        }),
+        (_("Workflow & HankoSign"), {
             "fields": ("signatures_box",),
         }),
-        (_("Status & Notes"), {
-            "fields": (("status"), ("status_note"), ("notes")),
-        }),
         (_("System"), {
-            "fields": (("created_at"), ("updated_at"), ("version"),),
+            "fields": ("created_at", "updated_at", "version"),
         }),
     )
+
 
     # --- computed displays --------------------------------------------------
     @admin.display(description=_("Window"))
@@ -416,7 +427,6 @@ class PaymentPlanAdmin(
                     "payee_name", "iban", "bic", "reference", "address",
                     "pay_start", "pay_end",
                     "monthly_amount", "total_override",
-                    "notes", "status_note",
                     "signed_person_at",
                 ]
         
@@ -429,7 +439,6 @@ class PaymentPlanAdmin(
                 ro.extend(["person_role", "fiscal_year"])
         
         elif status == "PENDING":
-            # Most fields locked, notes editable for corrections
             ro.extend([
                 "person_role", "fiscal_year", "cost_center",
                 "payee_name", "iban", "bic", "reference", "address",
@@ -445,7 +454,6 @@ class PaymentPlanAdmin(
                 "payee_name", "iban", "bic", "reference", "address",
                 "pay_start", "pay_end",
                 "monthly_amount", "total_override",
-                "notes", "status_note",
                 "signed_person_at",
             ])
         
@@ -556,6 +564,7 @@ class PaymentPlanAdmin(
             messages.error(request, _("Submit action not configured."))
             return
         record_signature(request.user, action, obj, note=_("Payment plan %(code)s submitted") % {"code": f"{obj.plan_code}"})
+        create_system_annotation(obj, "SUBMIT", user=request.user)
         messages.success(request, _("Submitted."))
     submit_plan.label = _("Submit")
     submit_plan.attrs = {
@@ -580,6 +589,7 @@ class PaymentPlanAdmin(
             messages.error(request, _("Withdraw action not configured."))
             return
         record_signature(request.user, action, obj, note=_("Payment plan %(code)s withdrawn") % {"code": f"{obj.plan_code}"})
+        create_system_annotation(obj, "WITHDRAW", user=request.user)
         messages.success(request, _("Withdrawn."))
     withdraw_plan.label = _("Withdraw")
     withdraw_plan.attrs = {
@@ -603,6 +613,7 @@ class PaymentPlanAdmin(
             messages.error(request, _("WiRef approval action not configured."))
             return
         record_signature(request.user, action, obj, note=_("Payment plan %(code)s approved (WiRef)") % {"code": f"{obj.plan_code}"})
+        create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Approved (WiRef)."))
     approve_wiref.label = _("Approve (WiRef)")
     approve_wiref.attrs = {
@@ -626,6 +637,7 @@ class PaymentPlanAdmin(
             messages.error(request, _("Chair approval action not configured."))
             return
         record_signature(request.user, action, obj, note=_("Payment plan %(code)s approved (Chair)") % {"code": f"{obj.plan_code}"})
+        create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Approved (Chair)."))
     approve_chair.label = _("Approve (Chair)")
     approve_chair.attrs = {
@@ -650,6 +662,7 @@ class PaymentPlanAdmin(
             messages.error(request, _("Verify action not configured."))
             return
         record_signature(request.user, action, obj, note=_("Payment plan %(code)s bank-transaction verified (WiRef)") % {"code": f"{obj.plan_code}"})
+        create_system_annotation(obj, "VERIFY", user=request.user)
         messages.success(request, _("Banking verified. Plan is now ACTIVE."))
     verify_banking.label = _("Verify banking")
     verify_banking.attrs = {
@@ -666,6 +679,7 @@ class PaymentPlanAdmin(
             messages.error(request, _("Cancel action not configured."))
             return
         record_signature(request.user, action, obj, note=_("Payment plan %(code)s cancelled (WiRef or Chair)") % {"code": f"{obj.plan_code}"})
+        create_system_annotation(obj, "REJECT", user=request.user)
         messages.success(request, _("Cancelled."))
     cancel_plan.label = _("Cancel plan")
     cancel_plan.attrs = {
@@ -742,14 +756,29 @@ class PaymentPlanAdmin(
             messages.info(
                 request,
                 mark_safe(
-                    _("Draft: please review payee name, address, IBAN/BIC, reference and cost center manually. No fields are auto-filled.")
+                    _("Draft: please wait for payment plan filing by person, then review if all fields are present and correct.")
                 ),
             )
         return super().change_view(request, object_id, form_url, extra_context)
 
     # --- policy -------------------------------------------------------------
     def has_delete_permission(self, request, obj=None):
-        return False
+        """
+        Allow deletion only for DRAFT status plans (if FY not locked).
+        Once submitted, must use Cancel action for audit trail.
+        """
+        if not obj:
+            return super().has_delete_permission(request, obj)
+        
+        # Check FY lock first
+        if obj.fiscal_year_id:
+            fy_st = state_snapshot(obj.fiscal_year)
+            if fy_st.get("explicit_locked"):
+                return False
+        
+        # Only allow deletion for DRAFT status
+        status = paymentplan_status(obj)
+        return status == "DRAFT"
 
     # ---------------- FY-aware Add behaviour ----------------
     def has_add_permission(self, request):
@@ -814,10 +843,73 @@ class PaymentPlanAdmin(
                 w.attrs["data-autocomplete-url"] = f"{url}{sep}fy={fy_forward}"
         return form
 
-    # IMPORTANT: no prefill of monthly_amount/payee_name here anymore
-    def get_changeform_initial_data(self, request):
-        return super().get_changeform_initial_data(request)
+    def get_fields(self, request, obj=None):
+        """
+        Ultra-minimal first save: show only scope + reference.
+        After save, show everything with smart defaults.
+        """
+        if not obj:  # Initial ADD form
+            return [
+                "person_role",
+                "fiscal_year", 
+                "cost_center",
+                "reference",
+            ]
+        
+        # After first save, show all fields (normal fieldsets apply)
+        return None  # Use fieldsets as defined
 
+    def get_fieldsets(self, request, obj=None):
+        """Only show full fieldsets after first save."""
+        if not obj:
+            # Minimal fieldsets for creation
+            return (
+                (_("Scope"), {
+                    "fields": ("person_role", "fiscal_year", "cost_center"),
+                    "description": _("Define the assignment and fiscal context for this payment plan."),
+                }),
+                (_("Banking"), {
+                    "fields": ("reference",),
+                    "description": _("Optional: Set payment reference text now (default: 'Funktionsgebühr')."),
+                }),
+            )
+        
+        # Full fieldsets after save
+        return (
+            (_("Scope"), {
+                "fields": ("plan_code_or_hint", "person_role", "fiscal_year", "status"),
+            }),
+            (_("Budget"), {
+                "fields": (
+                    "cost_center",
+                    "monthly_amount", "role_monthly_hint",
+                    "total_override", "recommended_total_display",
+                    "breakdown_preview"
+                ),
+                "description": _("Financial parameters set by WiRef."),
+            }),
+            (_("Payment Window"), {
+                "fields": ("pay_start", "pay_end", "window_preview"),
+            }),
+            (_("Banking"), {
+                "fields": (
+                    "payee_name", "iban", "bic", "address",
+                    "reference",
+                    "bank_reference_preview_full"
+                ),
+                "description": _("Payee details completed via portal. Reference text set by admin."),
+            }),
+            (_("Submission"), {
+                "fields": ("signed_person_at", "pdf_file", "submission_ip"),
+                "description": _("Received from payee via public portal."),
+            }),
+            (_("Workflow & HankoSign"), {
+                "fields": ("signatures_box",),
+            }),
+            (_("System"), {
+                "fields": ("created_at", "updated_at", "version"),
+            }),
+        )
 
 # =============== FiscalYear Admin ===============
 @admin.register(FiscalYear)
@@ -831,7 +923,7 @@ class FiscalYearAdmin(
     ):
     resource_classes = [FiscalYearResource]
     form = FiscalYearForm
-
+    inlines = [AnnotationInline]
     # --- helpers ------------------------------------------------------------
     def _is_manager(self, request) -> bool:
         return is_finances_manager(request.user)
@@ -851,11 +943,15 @@ class FiscalYearAdmin(
     readonly_fields = ("created_at", "updated_at", "active_text", "signatures_box")
 
     fieldsets = (
-        (_("Basics"), {"fields": (("start"), ("end"), "code", "label", "is_active", )}),
-        (_("HankoSign Workflow"), {
-        "fields": ("signatures_box",),
+        (_("Scope"), {
+            "fields": ("start", "end", "code", "label", "is_active"),
         }),
-        (_("System"), {"fields": (("created_at"), ("updated_at"),)}),
+        (_("Workflow & HankoSign"), {
+            "fields": ("signatures_box",),
+        }),
+        (_("System"), {
+            "fields": ("created_at", "updated_at"),
+        }),
     )
 
 
@@ -1056,6 +1152,7 @@ class FiscalYearAdmin(
             messages.error(request, _("Lock action not configured."))
             return
         record_signature(request.user, action, obj, note=_("Fiscal year %(code)s locked") % {"code": f"{obj.code}"})
+        create_system_annotation(obj, "LOCK", user=request.user)
         messages.success(request, _("Fiscal year locked."))
     lock_year.label = _("Lock year")
     lock_year.attrs = {
@@ -1080,6 +1177,7 @@ class FiscalYearAdmin(
             messages.error(request, _("Unlock action not configured."))
             return
         record_signature(request.user, action, obj, note=_("Fiscal year %(code)s unlocked") % {"code": f"{obj.code}"})
+        create_system_annotation(obj, "UNLOCK", user=request.user)
         messages.success(request, _("Fiscal year unlocked."))
     unlock_year.label = _("Unlock year")
     unlock_year.attrs = {

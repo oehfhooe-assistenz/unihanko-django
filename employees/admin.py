@@ -36,6 +36,8 @@ from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Exists, OuterRef, Subquery, F, Q, BooleanField, ExpressionWrapper
 from hankosign.models import Signature
+from annotations.admin import AnnotationInline
+from annotations.views import create_system_annotation
 # =========================
 # Import–Export resources
 # =========================
@@ -210,6 +212,8 @@ class EmployeeLeaveYearInline(admin.StackedInline):
     model = EmployeeLeaveYear
     extra = 0
     can_delete = False
+    verbose_name = _("PTO Year Breakdown")
+    verbose_name_plural = _("PTO Years Breakdown")
     fields = (
         "label_year",
         "period_start",
@@ -229,7 +233,7 @@ class EmployeeLeaveYearInline(admin.StackedInline):
         "taken_minutes",
         "remaining_minutes",
     )
-
+    
     def has_add_permission(self, request, obj):
         return False
 
@@ -266,16 +270,16 @@ class EmployeeAdmin(
     )
     autocomplete_fields = ("person_role",)
     readonly_fields = ("daily_expected", "created_at", "updated_at", "signatures_box")
-    inlines = [EmploymentDocumentInline, EmployeeLeaveYearInline]
+    inlines = [EmployeeLeaveYearInline, EmploymentDocumentInline]
 
     fieldsets = (
-        (_("Assignment"), {"fields": ("person_role", "is_active")}),
+        (_("Scope"), {"fields": ("person_role", "is_active")}),
         (_("Work terms"), {"fields": ("weekly_hours", "saldo_minutes", "daily_expected")}),
         (_("PTO terms"), {"fields": ("annual_leave_days_base", "annual_leave_days_extra", "leave_reset_override")}),
         (_("Personal data"), {"fields": ("insurance_no", "dob",)}),
         (_("Miscellaneous"), {"fields": ("notes",)}),
-        (_("HankoSign Workflow"), {"fields": ("signatures_box",)}),
-        (_("System"), {"fields": (("created_at"), ("updated_at"),)}),
+        (_("Workflow & HankoSign"), {"fields": ("signatures_box",)}),
+        (_("System"), {"fields": ("created_at", "updated_at",)}),
     )
 
 
@@ -344,7 +348,7 @@ class EmployeeAdmin(
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
         if obj and not request.user.is_superuser:
-            ro += ["person_role", ]
+            ro += ["person_role",]
         return ro
 
 
@@ -414,6 +418,7 @@ class EmploymentDocumentAdmin(
     ):
     form = EmploymentDocumentAdminForm
     resource_classes = [EmploymentDocumentResource]
+    inlines = [AnnotationInline]
     list_display = ("status_text", "code", "employee", "kind_text", "title", "period_display", "updated_at")
     list_display_links = ("code",)
     list_filter = ("kind", "is_active", "start_date", "end_date",)
@@ -425,13 +430,13 @@ class EmploymentDocumentAdmin(
         "employee__person_role__role__name",
     )
     autocomplete_fields = ("employee",)
-    readonly_fields = ("code", "created_at", "updated_at", "signatures_box",)
+    readonly_fields = ("code", "created_at", "updated_at", "signatures_box", "version",)
 
     fieldsets = (
-        (_("Scope"), {"fields": ("employee",)}),
+        (_("Scope"), {"fields": ("employee", "code",)}),
         (_("Document"), {"fields": ("kind", "title", "start_date", "end_date", "is_active", "relevant_third_party", "pdf_file", "details")}),
-        (_("HankoSign Workflow"), {"fields": ("signatures_box",)}),
-        (_("System"), {"fields": ("code", "version", "created_at", "updated_at")}),
+        (_("Workflow & HankoSign"), {"fields": ("signatures_box",)}),
+        (_("System"), {"fields": ("version", "created_at", "updated_at")}),
     )
 
 
@@ -467,7 +472,19 @@ class EmploymentDocumentAdmin(
 
 
     def has_delete_permission(self, request, obj=None):
-        return False
+        """Allow deletion only for draft documents (not yet submitted)."""
+        if not obj:
+            return False  # No bulk delete from changelist
+        
+        # Check workflow state
+        st = state_snapshot(obj)
+        
+        # Can delete if still in draft (not submitted)
+        if st["submitted"]:
+            return False  # Already in workflow, must use workflow actions
+        
+        # Draft documents can be deleted
+        return True
 
 
     def get_readonly_fields(self, request, obj=None):
@@ -678,6 +695,7 @@ class EmploymentDocumentAdmin(
             messages.error(request, _("Submission action is not configured."))
             return
         record_signature(request.user, action, obj, note=_("Document %(code)s submitted") % {"code": f"{obj.code}"})
+        create_system_annotation(obj, "SUBMIT", user=request.user)
         messages.success(request, _("Submitted."))
     submit_doc.label = _("Submit")
     submit_doc.attrs = {"class": "btn btn-block btn-warning","style": "margin-bottom: 1rem;",}
@@ -698,6 +716,7 @@ class EmploymentDocumentAdmin(
             messages.error(request, _("Withdraw action is not configured."))
             return
         record_signature(request.user, action, obj, note=_("Document %(code)s withdrawn") % {"code": f"{obj.code}"})
+        create_system_annotation(obj, "WITHDRAW", user=request.user)
         messages.success(request, _("Withdrawn."))
     withdraw_doc.label = _("Withdraw submission")
     withdraw_doc.attrs = {"class": "btn btn-block btn-secondary","style": "margin-bottom: 1rem;",}
@@ -718,6 +737,7 @@ class EmploymentDocumentAdmin(
             messages.error(request, _("WiRef approval action is not configured."))
             return
         record_signature(request.user, action, obj, note=_("Document %(code)s approved (WiRef)") % {"code": f"{obj.code}"})
+        create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Approved (WiRef)."))
     approve_wiref_doc.label = _("Approve (WiRef)")
     approve_wiref_doc.attrs = {"class": "btn btn-block btn-success","style": "margin-bottom: 1rem;",}
@@ -738,6 +758,7 @@ class EmploymentDocumentAdmin(
             messages.error(request, _("Chair approval action is not configured."))
             return
         record_signature(request.user, action, obj, note=_("Document %(code)s approved (Chair)") % {"code": f"{obj.code}"})
+        create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Approved (Chair)."))
     approve_chair_doc.label = _("Approve (Chair)")
     approve_chair_doc.attrs = {"class": "btn btn-block btn-success","style": "margin-bottom: 1rem;",}
@@ -758,6 +779,7 @@ class EmploymentDocumentAdmin(
             messages.error(request, _("WiRef rejection action is not configured."))
             return
         record_signature(request.user, action, obj, note=_("Document %(code)s rejected (WiRef)") % {"code": f"{obj.code}"})
+        create_system_annotation(obj, "REJECT", user=request.user)
         messages.success(request, _("Rejected (WiRef)."))
     reject_wiref_doc.label = _("Reject (WiRef)")
     reject_wiref_doc.attrs = {"class": "btn btn-block btn-danger","style": "margin-bottom: 1rem;",}
@@ -778,6 +800,7 @@ class EmploymentDocumentAdmin(
             messages.error(request, _("Chair rejection action is not configured."))
             return
         record_signature(request.user, action, obj, note=_("Document %(code)s rejected (Chair)") % {"code": f"{obj.code}"})
+        create_system_annotation(obj, "REJECT", user=request.user)
         messages.success(request, _("Rejected (Chair)."))
     reject_chair_doc.label = _("Reject (Chair)")
     reject_chair_doc.attrs = {"class": "btn btn-block btn-danger","style": "margin-bottom: 1rem;",}
@@ -900,7 +923,6 @@ class TimeSheetAdmin(
         "created_at",
         "updated_at",
         "pdf_file",
-        "export_payload",
         "totals_preview",
         "work_calendar_preview",
         "leave_calendar_preview",
@@ -908,15 +930,14 @@ class TimeSheetAdmin(
         "work_infobox",
         "signatures_box",
     )
-    inlines = []
+    inlines = [AnnotationInline]
 
     fieldsets = (
-        (_("Scope"), {"fields": (("employee"), ("year"), ("month"),)}),
+        (_("Scope"), {"fields": ("employee", "year", "month", "totals_preview",)}),
         (_("Work Calendar"), {"fields": ("work_calendar_preview", "work_infobox")}),
         (_("Leave Calendar"), {"fields": ("leave_calendar_preview", "pto_infobox",)}),
-        (_("HankoSign Workflow"), {"fields": ("signatures_box",),}),
-        (_("Exports"), {"fields": ("pdf_file", "export_payload", "totals_preview")}),
-        (_("System"), {"fields": (("version"), ("created_at"), ("updated_at"))}),
+        (_("Workflow & HankoSign"), {"fields": ("pdf_file", "signatures_box",),}),
+        (_("System"), {"fields": ("version", "created_at", "updated_at")}),
     )
 
     @admin.display(description=_("Work Calendar"))
@@ -930,7 +951,6 @@ class TimeSheetAdmin(
 
     # ---- server-rendered calendar preview (chips in cells, no day modal) ----
     def _render_calendar(self, obj, *, allow_kinds: str, show_kinds: set[str], title: str, cal_type: str):
-        print(f"DEBUG: _render_calendar called for {obj}")
         from django.utils.translation import gettext_lazy as _t
         if not obj or not obj.pk:
             return _t("— save first to see the calendar —")
@@ -1264,6 +1284,7 @@ class TimeSheetAdmin(
             messages.error(request, _("Submission action is not configured."))
             return
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s submitted") % {"period": f"{obj.year}-{obj.month:02d}"})
+        create_system_annotation(obj, "SUBMIT", user=request.user)
         messages.success(request, _("Timesheet submitted."))
     submit_timesheet.label = _("Submit")
     submit_timesheet.attrs = {"class": "btn btn-block btn-warning", "style": "margin-bottom: 1rem;",}
@@ -1285,6 +1306,7 @@ class TimeSheetAdmin(
             messages.error(request, _("Withdraw action is not configured."))
             return
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s withdrawn") % {"period": f"{obj.year}-{obj.month:02d}"})
+        create_system_annotation(obj, "WITHDRAW", user=request.user)
         messages.success(request, _("Submission withdrawn."))
     withdraw_timesheet.label = _("Withdraw submission")
     withdraw_timesheet.attrs = {"class": "btn btn-block btn-secondary", "style": "margin-bottom: 1rem;",}
@@ -1306,6 +1328,7 @@ class TimeSheetAdmin(
             messages.error(request, _("WiRef approval action is not configured."))
             return
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s approved") % {"period": f"{obj.year}-{obj.month:02d}"})
+        create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Approved by WiRef."))
     approve_wiref.label = _("Approve (WiRef)")
     approve_wiref.attrs = {"class": "btn btn-block btn-success", "style": "margin-bottom: 1rem;",}
@@ -1327,6 +1350,7 @@ class TimeSheetAdmin(
             messages.error(request, _("Chair approval action is not configured."))
             return
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s approved") % {"period": f"{obj.year}-{obj.month:02d}"})
+        create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Approved by Chair."))
     approve_chair.label = _("Approve (Chair)")
     approve_chair.attrs = {"class": "btn btn-block btn-success", "style": "margin-bottom: 1rem;",}
@@ -1348,6 +1372,7 @@ class TimeSheetAdmin(
             messages.error(request, _("WiRef rejection action is not configured."))
             return
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s rejected") % {"period": f"{obj.year}-{obj.month:02d}"})
+        create_system_annotation(obj, "REJECT", user=request.user)
         messages.success(request, _("Rejected by WiRef."))
     reject_wiref.label = _("Reject (WiRef)")
     reject_wiref.attrs = {"class": "btn btn-block btn-danger", "style": "margin-bottom: 1rem;",}
@@ -1369,6 +1394,7 @@ class TimeSheetAdmin(
             messages.error(request, _("Chair rejection action is not configured."))
             return
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s rejected") % {"period": f"{obj.year}-{obj.month:02d}"})
+        create_system_annotation(obj, "REJECT", user=request.user)
         messages.success(request, _("Rejected by Chair."))
     reject_chair.label = _("Reject (Chair)")
     reject_chair.attrs = {"class": "btn btn-block btn-danger", "style": "margin-bottom: 1rem;",}
@@ -1390,6 +1416,7 @@ class TimeSheetAdmin(
             messages.error(request, _("Lock action is not configured."))
             return
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s locked") % {"period": f"{obj.year}-{obj.month:02d}"})
+        create_system_annotation(obj, "LOCK", user=request.user)
         messages.success(request, _("Locked."))
     lock_timesheet.label = _("Lock")
     lock_timesheet.attrs = {"class": "btn btn-block btn-secondary", "style": "margin-bottom: 1rem;"}
@@ -1407,6 +1434,7 @@ class TimeSheetAdmin(
             messages.error(request, _("Unlock action is not configured."))
             return
         record_signature(request.user, action, obj, note=_("Timesheet %(period)s unlocked") % {"period": f"{obj.year}-{obj.month:02d}"})
+        create_system_annotation(obj, "UNLOCK", user=request.user)
         messages.success(request, _("Unlocked."))
     unlock_timesheet.label = _("Unlock")
     unlock_timesheet.attrs = {"class": "btn btn-block btn-warning", "style": "margin-bottom: 1rem;"}
@@ -1611,5 +1639,5 @@ try { window.close(); } catch(e) {}
         if self._parent_locked(request, obj):
             return False
         return super().has_delete_permission(request, obj)
-    
+
 

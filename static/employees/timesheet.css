@@ -346,3 +346,74 @@
 .ts-infobox .note.neg { color: #ef4444; font-weight: 900; }
 .ts-infobox .note.pos { color: #10b981; font-weight: 900; }
 .ts-infobox .note.muted { opacity: .7; }
+
+/* Add to the END of your timesheet.css file */
+
+/* ========== DELETE BUTTON INTEGRATION ========== */
+
+/* Make chip li a positioned container */
+.ts-chips .chip {
+  position: relative;
+  display: block;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  width: 100%;
+}
+
+/* Keep chip link at full width but make room for button */
+.ts-chips .chip a {
+  display: block;
+  width: 100%;
+  padding: .6rem .75rem;
+  padding-right: 32px; /* Space for delete button */
+  border-radius: 0;
+  border: 3px solid rgba(255, 255, 255, .2);
+  text-decoration: none;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Delete button - positioned absolutely within chip li */
+.chip-delete-btn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 3px solid rgba(220, 38, 38, 0.6); /* BRUTALIST: thicker border */
+  border-radius: 0; /* BRUTALIST: no rounded corners */
+  background: rgba(220, 38, 38, 0.85);
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 16px;
+  font-weight: 900; /* BRUTALIST: extra bold */
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3); /* BRUTALIST: offset shadow */
+}
+
+.chip-delete-btn:hover {
+  opacity: 1;
+  transform: translateY(-50%) translate(-1px, -1px); /* BRUTALIST: lift on hover */
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
+  background: rgba(220, 38, 38, 1);
+  border-color: rgba(220, 38, 38, 0.8);
+}
+
+.chip-delete-btn:active {
+  transform: translateY(-50%) translate(1px, 1px); /* BRUTALIST: press down */
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+}

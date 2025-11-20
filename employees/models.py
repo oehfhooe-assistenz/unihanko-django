@@ -107,6 +107,24 @@ class HolidayCalendar(models.Model):
             )
         ]
 
+    def clean(self):
+        errors = {}
+        
+        # Check for another active calendar
+        if self.is_active:
+            existing = HolidayCalendar.objects.filter(
+                is_active=True
+            ).exclude(pk=self.pk).exists()
+            
+            if existing:
+                errors["is_active"] = _(
+                    "Another holiday calendar is already active. "
+                    "Deactivate it first or uncheck this field."
+                )
+        
+        if errors:
+            raise ValidationError(errors)
+
     def __str__(self) -> str:
         return self.name
 
@@ -264,7 +282,7 @@ class Employee(models.Model):
 
     dob = models.DateField(_("Date of birth"), blank=True, null=True, help_text=_("Date of birth"))
 
-    notes = models.TextField(_("Notes"), blank=True)
+    notes = models.TextField(_("Record note"), blank=True)
 
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
@@ -325,7 +343,7 @@ class EmployeeLeaveYear(models.Model):
     - If reset=July 1 → days from 2025-07-01..2026-06-30 are label_year=2025, etc.
     """
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name="leave_years", verbose_name=_("Employee"))
-    label_year = models.PositiveIntegerField(_("PTO year label"))
+    label_year = models.PositiveIntegerField(_("Year"))
     period_start = models.DateField(_("Period start"))
     period_end = models.DateField(_("Period end (exclusive)"))
 
@@ -346,6 +364,25 @@ class EmployeeLeaveYear(models.Model):
 
     def __str__(self):
         return f"{self.employee} — PTO {self.label_year}"
+    
+
+    def clean(self):
+        errors = {}
+        
+        # Check for duplicate PTO year
+        if self.employee_id and self.label_year:
+            existing = EmployeeLeaveYear.objects.filter(
+                employee_id=self.employee_id,
+                label_year=self.label_year
+            ).exclude(pk=self.pk).exists()
+            
+            if existing:
+                errors["__all__"] = _(
+                    "A PTO year record already exists for this employee in {year}."
+                ).format(year=self.label_year)
+        
+        if errors:
+            raise ValidationError(errors)
 
     # ---- helpers ----
     @staticmethod
@@ -564,7 +601,7 @@ class TimeSheet(models.Model):
     closing_saldo_minutes = models.IntegerField(_("Closing balance (minutes)"), default=0)
 
     pdf_file = models.FileField(_("Signed PDF (optional)"), upload_to="employee/timesheets/%Y/%m/", null=True, blank=True)
-    export_payload = models.JSONField(_("Export payload (optional)"), null=True, blank=True)
+    #export_payload = models.JSONField(_("Export payload (optional)"), null=True, blank=True)
 
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
@@ -643,8 +680,21 @@ class TimeSheet(models.Model):
             )
 
     def clean(self):
-        super().clean()
         errors = {}
+        
+        # Check for duplicate timesheet
+        if self.employee_id and self.year and self.month:
+            existing = TimeSheet.objects.filter(
+                employee_id=self.employee_id,
+                year=self.year,
+                month=self.month
+            ).exclude(pk=self.pk).exists()
+            
+            if existing:
+                errors["__all__"] = _(
+                    "A timesheet already exists for this employee in {year}-{month:02d}."
+                ).format(year=self.year, month=self.month)
+        
         if errors:
             raise ValidationError(errors)
 
@@ -725,6 +775,21 @@ class TimeEntry(models.Model):
 
         # ⬇️ NEW: prevent any add/change when parent is locked
         ts = self.timesheet if self.timesheet_id else None
+
+        # Check for duplicate entry
+        if self.timesheet_id and self.date and self.kind:
+            existing = TimeEntry.objects.filter(
+                timesheet_id=self.timesheet_id,
+                date=self.date,
+                kind=self.kind,
+                comment=self.comment or ""
+            ).exclude(pk=self.pk).exists()
+            
+            if existing:
+                errors["__all__"] = _(
+                    "An identical entry already exists for this date and type."
+                )
+
         if ts and state_snapshot(ts)["explicit_locked"]:
             errors["timesheet"] = _("Timesheet is locked; entries cannot be modified.")
 
