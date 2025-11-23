@@ -27,18 +27,28 @@ class AuditSemester(models.Model):
         verbose_name=_("Semester")
     )
 
+    # Audit tracking
+    audit_generated_at = models.DateTimeField(
+        _("Audit Generated At"),
+        null=True,
+        blank=True,
+        help_text=_("When audit entries were last synchronized")
+    )
+
+    audit_pdf = models.FileField(
+        _("Audit PDF"),
+        upload_to='academia/audits/',
+        null=True,
+        blank=True,
+        help_text=_("Generated audit report for university")
+    )
+
     # Audit workflow timestamps
     audit_sent_university_at = models.DateTimeField(
-        _("Audit Sent to University At"),
+        _("Audit sent to university at"),
         null=True,
         blank=True,
         help_text=_("Timestamp when audit was sent to university administration")
-    )
-
-    # Notes
-    notes = models.TextField(
-        _("Notes"),
-        blank=True
     )
 
     # Timestamps
@@ -59,6 +69,18 @@ class AuditSemester(models.Model):
 
     def clean(self):
         super().clean()
+        errors = {}
+
+        # Check for duplicate semester (OneToOneField)
+        if self.semester_id:
+            existing = AuditSemester.objects.filter(
+                semester_id=self.semester_id
+            ).exclude(pk=self.pk).exists()
+            
+            if existing:
+                errors['semester'] = _(
+                    "An audit already exists for this semester."
+                )
 
         # Check if locked via HankoSign
         if self.pk:
@@ -66,9 +88,10 @@ class AuditSemester(models.Model):
             st = state_snapshot(original)
 
             if st.get("explicit_locked"):
-                raise ValidationError(
-                    _("Audit semester is locked. Cannot modify.")
-                )
+                errors['__all__'] = _("Audit semester is locked. Cannot modify.")
+
+        if errors:
+            raise ValidationError(errors)
 
 
 class AuditEntry(models.Model):
@@ -159,7 +182,7 @@ class AuditEntry(models.Model):
 
     # Manual adjustments
     notes = models.TextField(
-        _("Notes"),
+        _("Record note"),
         blank=True,
         help_text=_("Optional notes for manual adjustments or corrections")
     )
@@ -188,22 +211,32 @@ class AuditEntry(models.Model):
 
     def clean(self):
         super().clean()
+        errors = {}
 
-        # Check if parent audit semester is locked (pseudo-child)
+        # Check for duplicate (audit_semester, person)
+        if self.audit_semester_id and self.person_id:
+            existing = AuditEntry.objects.filter(
+                audit_semester_id=self.audit_semester_id,
+                person_id=self.person_id
+            ).exclude(pk=self.pk).exists()
+            
+            if existing:
+                errors['__all__'] = _(
+                    "This person already has an audit entry for this semester."
+                )
+
+        # Check if parent audit semester is locked
         if self.audit_semester_id:
             semester_st = state_snapshot(self.audit_semester)
             if semester_st.get("explicit_locked"):
-                raise ValidationError(
-                    _("Audit semester is locked. Cannot modify entries.")
-                )
+                errors['__all__'] = _("Audit semester is locked. Cannot modify entries.")
 
         # Validate ECTS calculations
-        if self.reimbursed_ects < 0:
-            raise ValidationError(
-                _("Reimbursed ECTS cannot be negative")
-            )
+        if self.reimbursed_ects and self.reimbursed_ects < 0:
+            errors['reimbursed_ects'] = _("Reimbursed ECTS cannot be negative")
 
-        if self.remaining_ects < 0:
-            raise ValidationError(
-                _("Remaining ECTS cannot be negative")
-            )
+        if self.remaining_ects and self.remaining_ects < 0:
+            errors['remaining_ects'] = _("Remaining ECTS cannot be negative")
+
+        if errors:
+            raise ValidationError(errors)

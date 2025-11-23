@@ -31,7 +31,7 @@
             </tr>
             <tr>
                 <th>{% trans "Status" %}</th>
-                <td>{{ request_obj.get_stage_display }}</td>
+                <td>{{ request_obj.stage }}</td>
             </tr>
         </table>
     </div>
@@ -53,7 +53,7 @@
                 <tr>
                     <td>{{ course.course_code|default:"—" }}</td>
                     <td>{{ course.course_name|default:"—" }}</td>
-                    <td class="text-right">{{ course.ects|floatformat:2 }}</td>
+                    <td class="text-right">{{ course.ects_amount|floatformat:2 }}</td>
                 </tr>
                 {% empty %}
                 <tr>
@@ -77,10 +77,10 @@
                 <th>{% trans "Person Roles" %}</th>
                 <td>
                     {% for pr in request_obj.person_role.person.person_roles.all %}
-                        {% if pr.role.is_eligible_for_ects %}
+                        {% if pr.role.ects_cap > 0 %}
                             {{ pr.role.name }}
                             ({% include '_includes/_date_period.html' with start_date=pr.start_date end_date=pr.end_date %})
-                            — {% trans "Max" %} {{ pr.role.max_ects_per_semester }} {% trans "ECTS/semester" %}
+                            — {% trans "Max" %} {{ pr.role.ects_cap }} {% trans "ECTS/semester" %}
                             {% if not forloop.last %}<br>{% endif %}
                         {% endif %}
                     {% empty %}

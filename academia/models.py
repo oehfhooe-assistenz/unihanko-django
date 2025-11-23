@@ -148,29 +148,6 @@ class Semester(models.Model):
         help_text=_("Bonus/malus ECTS (e.g., +2 or -2) for elected roles")
     )
 
-    # Audit tracking
-    audit_generated_at = models.DateTimeField(
-        _("Audit Generated At"),
-        null=True,
-        blank=True,
-        help_text=_("When audit entries were last synchronized")
-    )
-
-    audit_pdf = models.FileField(
-        _("Audit PDF"),
-        upload_to='academia/audits/',
-        null=True,
-        blank=True,
-        help_text=_("Generated audit report for university")
-    )
-
-    audit_sent_university_at = models.DateTimeField(
-        _("Sent to University At"),
-        null=True,
-        blank=True,
-        help_text=_("When audit was sent to university")
-    )
-
     # Standard fields
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -201,6 +178,11 @@ class Semester(models.Model):
 
     def clean(self):
         super().clean()
+        errors = {}
+
+        # Validate date ordering
+        if self.start_date and self.end_date and self.end_date < self.start_date:
+            errors['end_date'] = _("End date must be on or after start date.")
 
         # Prevent editing if locked
         if self.pk:
@@ -208,8 +190,8 @@ class Semester(models.Model):
             st = state_snapshot(original)
 
             if st.get("explicit_locked"):
-                # Allow updating audit fields even when locked
-                allowed_fields = {'audit_generated_at', 'audit_pdf', 'audit_sent_university_at', 'updated_at'}
+                # ❌ REMOVE references to deleted audit fields!
+                allowed_fields = {'updated_at'}  # Only allow timestamp update
                 changed_fields = set()
 
                 for field in self._meta.get_fields():
@@ -220,11 +202,12 @@ class Semester(models.Model):
                             changed_fields.add(field.verbose_name or field.name)
 
                 if changed_fields:
-                    raise ValidationError(
-                        _("Semester is locked. Cannot modify: %(fields)s") % {
-                            'fields': ', '.join(changed_fields)
-                        }
-                    )
+                    errors['__all__'] = _(
+                        "Semester is locked. Cannot modify: %(fields)s"
+                    ) % {'fields': ', '.join(changed_fields)}
+
+        if errors:
+            raise ValidationError(errors)
 
     @property
     def is_filing_open(self):
@@ -383,25 +366,34 @@ class InboxRequest(models.Model):
 
     def clean(self):
         super().clean()
+        errors = {}
 
-        # Check if parent semester is locked
+        # Check for duplicate request (person_role, semester)
+        if self.person_role_id and self.semester_id:
+            existing = InboxRequest.objects.filter(
+                person_role_id=self.person_role_id,
+                semester_id=self.semester_id
+            ).exclude(pk=self.pk).exists()
+            
+            if existing:
+                errors['__all__'] = _(
+                    "This person already has a request for this semester."
+                )
+
+        # Check if parent semester is locked (existing code - keep as-is)
         if self.semester_id:
             semester = Semester.objects.get(pk=self.semester_id)
             st = state_snapshot(semester)
 
             if st.get("explicit_locked"):
-                raise ValidationError(
-                    _("Semester is locked. Cannot modify requests.")
-                )
+                errors['semester'] = _("Semester is locked. Cannot modify requests.")
 
-        # Check if request itself is locked (for modifications after creation)
+        # Check if request itself is locked (existing code - keep as-is)
         if self.pk:
             original = InboxRequest.objects.get(pk=self.pk)
             st = state_snapshot(original)
 
-            # Allow file upload even if verified
             if has_sig(original, 'VERIFY', ''):
-                # Only allow updating uploaded_form and affidavit2
                 allowed_fields = {'uploaded_form', 'uploaded_form_at', 'affidavit2_confirmed_at', 'updated_at'}
                 changed_fields = set()
 
@@ -413,11 +405,12 @@ class InboxRequest(models.Model):
                             changed_fields.add(field.verbose_name or field.name)
 
                 if changed_fields:
-                    raise ValidationError(
-                        _("Request verified. Cannot modify: %(fields)s") % {
-                            'fields': ', '.join(changed_fields)
-                        }
-                    )
+                    errors['__all__'] = _(
+                        "Request verified. Cannot modify: %(fields)s"
+                    ) % {'fields': ', '.join(changed_fields)}
+
+        if errors:
+            raise ValidationError(errors)
 
 
     @property

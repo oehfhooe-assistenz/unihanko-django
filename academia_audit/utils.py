@@ -234,4 +234,7 @@ def synchronize_audit_entries(audit_semester):
 
             created_count += 1
 
+
+    audit_semester.audit_generated_at = timezone.now()
+    audit_semester.save(update_fields=['audit_generated_at'])
     return created_count, updated_count, skipped_count

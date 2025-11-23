@@ -19,7 +19,7 @@
             </tr>
             <tr>
                 <th>{% trans "Label" %}</th>
-                <td>{{ semester.label }}</td>
+                <td>{{ semester.display_name }}</td>
             </tr>
             <tr>
                 <th>{% trans "Period" %}</th>
@@ -27,7 +27,7 @@
             </tr>
             <tr>
                 <th>{% trans "ECTS Adjustment" %}</th>
-                <td>{% if semester.ects_bonus_malus >= 0 %}+{% endif %}{{ semester.ects_bonus_malus }}</td>
+                <td>{% if semester.ects_adjustment >= 0 %}+{% endif %}{{ semester.ects_adjustment }}</td>
             </tr>
             <tr>
                 <th>{% trans "Generated" %}</th>
@@ -98,8 +98,8 @@
                     <td>{{ entry.aliquoted_ects|floatformat:2 }}</td>
                 </tr>
                 <tr>
-                    <th>{% trans "Bonus/Malus Applied" %}</th>
-                    <td>{% if semester.ects_bonus_malus >= 0 %}+{% endif %}{{ semester.ects_bonus_malus }}</td>
+                    <th>{% trans "Adjustment Applied" %}</th>
+                    <td>{% if semester.ects_adjustment >= 0 %}+{% endif %}{{ semester.ects_adjustment }}</td>
                 </tr>
                 <tr>
                     <th>{% trans "Final ECTS" %}</th>
@@ -128,7 +128,7 @@
                             {% endfor %}
                         </td>
                         <td class="text-right">{{ req.total_ects|floatformat:2 }}</td>
-                        <td>{{ req.get_stage_display }}</td>
+                        <td>{{ req.stage }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -136,7 +136,7 @@
             {% endif %}
 
             {% if entry.notes %}
-            <p><strong>{% trans "Notes" %}:</strong> {{ entry.notes|linebreaksbr }}</p>
+            <p><strong>{% trans "Record note" %}:</strong> {{ entry.notes|linebreaksbr }}</p>
             {% endif %}
         </div>
         {% endfor %}

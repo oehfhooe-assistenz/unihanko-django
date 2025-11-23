@@ -135,10 +135,13 @@ class AuditSemesterAdmin(
         'created_at',
         'updated_at',
         'signatures_box',
+        'audit_generated_at',
+        'audit_sent_university_at',
+        'version'
     )
 
     fieldsets = (
-        (_("Semester Reference"), {
+        (_("Scope"), {
             'fields': (
                 'semester',
                 'semester_code_display',
@@ -147,12 +150,9 @@ class AuditSemesterAdmin(
             )
         }),
         (_("Audit Workflow"), {
-            'fields': ('audit_sent_university_at',)
+            'fields': ('audit_generated_at', 'audit_pdf', 'audit_sent_university_at',)
         }),
-        (_("Notes"), {
-            'fields': ('notes',)
-        }),
-        (_("HankoSign Workflow"), {
+        (_("Workflow & HankoSign"), {
             'fields': ('signatures_box',)
         }),
         (_("System"), {
@@ -231,9 +231,6 @@ class AuditSemesterAdmin(
         ro = list(super().get_readonly_fields(request, obj))
         if obj:
             ro.extend(['semester'])
-            st = state_snapshot(obj)
-            if st.get("explicit_locked"):
-                ro.append('notes')
         return ro
 
     def get_change_actions(self, request, object_id, form_url):
@@ -330,6 +327,7 @@ class AuditSemesterAdmin(
         if not self._is_manager(request):
             raise PermissionDenied(_("Not authorized"))
         created, updated, skipped = synchronize_audit_entries(obj)
+        create_system_annotation(obj, note=f"Synchronized: {created} created, {updated} updated, {skipped} skipped", user=request.user)
         messages.success(
             request,
             _("Audit synchronized: %(created)d created, %(updated)d updated, %(skipped)d skipped (manually checked).") % {
@@ -509,10 +507,10 @@ class AuditEntryAdmin(
     list_filter = ('audit_semester', 'checked_at')
     search_fields = ('person__last_name', 'person__first_name')
     autocomplete_fields = ('audit_semester', 'person')
-    readonly_fields = ('created_at', 'updated_at', 'calculation_details_display')
-
+    readonly_fields = ('created_at', 'updated_at', 'calculation_details_display', 'version')
+    inlines = [AnnotationInline]
     fieldsets = (
-        (_("Audit Entry"), {
+        (_("Scope"), {
             'fields': ('audit_semester', 'person')
         }),
         (_("ECTS Calculations"), {
@@ -527,7 +525,7 @@ class AuditEntryAdmin(
         (_("Manual Review"), {
             'fields': ('checked_at',)
         }),
-        (_("Notes"), {
+        (_("Record note"), {
             'fields': ('notes',)
         }),
         (_("System"), {

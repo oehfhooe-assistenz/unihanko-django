@@ -46,7 +46,7 @@ class SemesterResource(resources.ModelResource):
     class Meta:
         model = Semester
         fields = (
-            'id', 'code', 'display_name', 'start_date', 'end_date',
+            'code', 'display_name', 'start_date', 'end_date',
             'filing_start', 'filing_end', 'ects_adjustment', 'created_at', 'updated_at'
         )
         export_order = fields
@@ -56,7 +56,7 @@ class InboxRequestResource(resources.ModelResource):
     class Meta:
         model = InboxRequest
         fields = (
-            'id', 'reference_code', 'semester', 'person_role',
+            'reference_code', 'semester', 'person_role',
             'student_note', 'created_at', 'updated_at'
         )
         export_order = fields
@@ -132,12 +132,37 @@ class InboxCourseInline(admin.StackedInline):
     extra = 1
     fields = ('course_code', 'course_name', 'ects_amount')
 
+    def _parent_locked(self, request, parent_obj):
+        """Check if parent InboxRequest OR its semester is locked."""
+        if not parent_obj:
+            return False
+        
+        # Check InboxRequest lock
+        st = state_snapshot(parent_obj)
+        if st.get('locked'):
+            return True
+        
+        # Check Semester lock
+        if parent_obj.semester:
+            semester_st = state_snapshot(parent_obj.semester)
+            if semester_st.get('explicit_locked'):
+                return True
+        
+        return False
+
+    def has_add_permission(self, request, obj):
+        if self._parent_locked(request, obj):
+            return False
+        return super().has_add_permission(request, obj)
+
+    def has_change_permission(self, request, obj=None):
+        if self._parent_locked(request, obj):
+            return False
+        return super().has_change_permission(request, obj)
+
     def has_delete_permission(self, request, obj=None):
-        # obj is the parent InboxRequest
-        if obj:
-            st = state_snapshot(obj)
-            if st.get('locked'):
-                return False
+        if self._parent_locked(request, obj):
+            return False
         return super().has_delete_permission(request, obj)
 
 
@@ -175,7 +200,7 @@ class SemesterAdmin(
     ordering = ('-start_date',)
     inlines = [AnnotationInline]
     fieldsets = (
-        (_("Basic Information"), {
+        (_("Scope"), {  # Also fix naming
             'fields': ('code', 'display_name', 'start_date', 'end_date')
         }),
         (_("Public Filing"), {
@@ -184,11 +209,7 @@ class SemesterAdmin(
         (_("ECTS Configuration"), {
             'fields': ('ects_adjustment',)
         }),
-        (_("Audit Tracking"), {
-            'fields': ('audit_generated_at', 'audit_pdf', 'audit_sent_university_at'),
-            'classes': ('collapse',)
-        }),
-        (_("HankoSign"), {
+        (_("Workflow & HankoSign"), {
             'fields': ('signatures_box',)
         }),
         (_("System"), {
@@ -198,7 +219,6 @@ class SemesterAdmin(
 
     readonly_fields = (
         'access_password',
-        'audit_generated_at',
         'signatures_box',
         'version',
         'created_at',
@@ -395,26 +415,30 @@ class InboxRequestAdmin(
     ordering = ('-created_at',)
 
     fieldsets = (
-        (_("Identification"), {
+        (_("Scope"), {
             'fields': ('reference_code', 'stage', 'semester', 'person_role')
         }),
-        (_("Student Input"), {
-            'fields': ('student_note',)
+        (_("ECTS Validation"), { 
+            'fields': ('total_ects_readonly', 'max_ects_readonly', 'validation_status'),
+            'description': "ℹ️ " + _("Verify the student's ECTS claim is within their role entitlement")
         }),
-        (_("Affidavits"), {
-            'fields': ('affidavit1_confirmed_at', 'affidavit2_confirmed_at')
+        (_("Student Content"), {
+            'fields': ('student_note', 'uploaded_form'),
+            'description': "ℹ️ " + _("Content submitted by student via public portal")
         }),
-        (_("Form Upload"), {
-            'fields': ('uploaded_form', 'uploaded_form_at', 'submission_ip')
+        (_("Public Portal Submission Metadata"), {
+            'fields': (
+                'affidavit1_confirmed_at',
+                'affidavit2_confirmed_at',
+                'uploaded_form_at',
+                'submission_ip'
+            ),
         }),
-        (_("ECTS Summary"), {
-            'fields': ('total_ects_readonly', 'max_ects_readonly', 'validation_status')
-        }),
-        (_("HankoSign"), {
+        (_("Workflow & HankoSign"), {
             'fields': ('signatures_box',)
         }),
         (_("System"), {
-            'fields': ('version', 'created_at', 'updated_at')
+            'fields': ('version', 'created_at', 'updated_at'),
         }),
     )
 
