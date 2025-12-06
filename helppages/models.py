@@ -1,3 +1,8 @@
+# File: helppages/models.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import gettext_lazy as _, get_language
@@ -80,6 +85,16 @@ class HelpPage(models.Model):
                 return self.content_en or self.content_de or '-'
         except:
             return self.content_de or self.content_en or '-'
+        
+
+    def clean(self):
+        super().clean()
+        if self.pk is None or self._state.adding:
+            if HelpPage.objects.filter(content_type=self.content_type).exists():
+                from django.core.exceptions import ValidationError
+                raise ValidationError({
+                    "content_type": _("A help page for this model already exists.")
+                })
     
     @property
     def app_label(self):

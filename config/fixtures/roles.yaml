@@ -1,0 +1,707 @@
+# config/roles.yaml
+# Bootstrap configuration for organizational roles
+
+roles:
+  # ========== HV-VORSITZ ==========
+  - name: "Vorsitzende:r HV"
+    short_name: "Vorsitz"
+    ects_cap: 8.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 300.00
+    notes: "Vorsitzende:r HV ÖH FH OÖ, Wahl idR durch HV-Konstitution"
+
+  - name: "1. Stellvertretende:r Vorsitzende:r HV"
+    short_name: "I-StvVorsitz"
+    ects_cap: 8.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 200.00
+    notes: "1. Stv. Vorsitzende:r HV ÖH FH OÖ, Wahl idR durch HV"
+
+  - name: "Stellvertretende:r Vorsitzende:r HV"
+    short_name: "II-StvVorsitz"
+    ects_cap: 8.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 200.00
+    notes: "(2.) Stv. Vorsitzende:r HV ÖH FH OÖ, Wahl idR durch HV"
+
+  - name: "Geschäftsführende:r Vorsitzende:r HV"
+    short_name: "GfVorsitz"
+    ects_cap: 8.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 300.00
+    notes: "Geschäftsführende:r Vorsitz HV ÖH FH OÖ, NOTFALLROLLE"
+
+  # ========== HV-MANDAT ==========
+  - name: "Mandatar:in HV"
+    short_name: "MandatHV"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "Mandatar:in HV ÖH FH OÖ, WAHLAMT gem. HSG 2014"
+
+  # ========== WIREF-REFERAT ==========
+  - name: "Wirtschaftsreferent:in"
+    short_name: "WiRef"
+    ects_cap: 8.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 250.00
+    notes: "WiRef, Wahl idR durch HV"
+
+  - name: "Stellvertretende:r Wirtschaftsreferent:in"
+    short_name: "StvWiRef"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 125.00
+    notes: "Stv. WiRef, Wahl idR durch HV"
+
+  - name: "Sachbearbeiter:in ohne Funktionsgebühr Wirschaftsreferat"
+    short_name: "SoF-WiRef-NOPAY"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "SoF WiRef, Bestellung durch Vorsitz"
+
+  # ========== SODIREF-REFERAT ==========
+  - name: "Sozial- und Diversitätsreferent:in"
+    short_name: "SoDiRef"
+    ects_cap: 8.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 175.00
+    notes: "SoDiRef, Wahl idR durch HV"
+
+  - name: "Sachbearbeiter:in Sozial- und Diversitätsreferat"
+    short_name: "SB-SoDiRef"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 75.00
+    notes: "SB SoDiRef, Bestellung durch Vorsitz"
+
+  - name: "Sachbearbeiter:in ohne Funktionsgebühr Sozial- und Diversitätsreferat"
+    short_name: "SoF-SoDiRef-NOPAY"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "SoF SoDiRef, Bestellung durch Vorsitz"
+
+  # ========== BIPOLREF-REFERAT ==========
+  - name: "Bildungspolitische:r Referent:in"
+    short_name: "BiPolRef"
+    ects_cap: 8.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 175.00
+    notes: "BiPolRef, Wahl idR durch HV"
+
+  - name: "Sachbearbeiter:in Bildungspolitisches Referat"
+    short_name: "SB-BiPolRef"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 75.00
+    notes: "SB BiPolRef, Bestellung durch Vorsitz"
+
+  - name: "Sachbearbeiter:in ohne Funktionsgebühr Bildungspolitisches Referat"
+    short_name: "SoF-BiPolRef-NOPAY"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "SoF BiPolRef, Bestellung durch Vorsitz"
+
+  # ========== ORGREF-REFERAT ==========
+  - name: "Organisationsreferent:in"
+    short_name: "OrgRef"
+    ects_cap: 8.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 175.00
+    notes: "OrgRef, Wahl idR durch HV"
+
+  - name: "Sachbearbeiter:in Organisationsreferat"
+    short_name: "SB-OrgRef"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 75.00
+    notes: "SB OrgRef, Bestellung durch Vorsitz"
+
+  - name: "Sachbearbeiter:in ohne Funktionsgebühr Organisationsreferat"
+    short_name: "SoF-OrgRef-NOPAY"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "SoF OrgRef, Bestellung durch Vorsitz"
+
+  # ========== ÖFFREF-REFERAT ==========
+  - name: "Öffentlichkeitsreferent:in"
+    short_name: "ÖffRef"
+    ects_cap: 8.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 175.00
+    notes: "ÖffRef, Wahl idR durch HV"
+
+  - name: "Sachbearbeiter:in Öffentlichkeitsreferat"
+    short_name: "SB-ÖffRef"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 75.00
+    notes: "SB ÖffRef, Bestellung durch Vorsitz"
+
+  - name: "Sachbearbeiter:in ohne Funktionsgebühr Öffentlichkeitsreferat"
+    short_name: "SoF-ÖffRef-NOPAY"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "SoF ÖffRef, Bestellung durch Vorsitz"
+
+  # ========== NAREF-REFERAT ==========
+  - name: "Nachhaltigkeitsreferent:in"
+    short_name: "NaRef"
+    ects_cap: 8.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 175.00
+    notes: "NaRef, Wahl idR durch HV"
+
+  - name: "Sachbearbeiter:in Nachhaltigkeitsreferat"
+    short_name: "SB-NaRef"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 75.00
+    notes: "SB NaRef, Bestellung durch Vorsitz"
+
+  - name: "Sachbearbeiter:in ohne Funktionsgebühr Nachhaltigkeitsreferat"
+    short_name: "SoF-NaRef-NOPAY"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "SoF NaRef, Bestellung durch Vorsitz"
+
+  # ========== IREF-REFERAT ==========
+  - name: "Internationalreferent:in"
+    short_name: "IRef"
+    ects_cap: 8.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 175.00
+    notes: "IRef, Wahl idR durch HV"
+
+  - name: "Sachbearbeiter:in Internationalreferat"
+    short_name: "SB-IRef"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 75.00
+    notes: "SB IRef, Bestellung durch Vorsitz"
+
+  - name: "Sachbearbeiter:in ohne Funktionsgebühr Internationalreferat"
+    short_name: "SoF-IRef-NOPAY"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "SoF IRef, Bestellung durch Vorsitz"
+
+  # ========== CREFLINZ-REFERAT ==========
+  - name: "Campusreferent:in Linz"
+    short_name: "CRefLinz"
+    ects_cap: 8.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 200.00
+    notes: "CRef Linz, Wahl idR durch HV"
+
+  - name: "Sachbearbeiter:in Campusreferat Linz"
+    short_name: "SB-CRefLinz"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 75.00
+    notes: "SB CRef Linz, Bestellung durch Vorsitz"
+
+  - name: "Sachbearbeiter:in ohne Funktionsgebühr Campusreferat Linz"
+    short_name: "SoF-CRefLinz-NOPAY"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "SoF CRef Linz, Bestellung durch Vorsitz"
+
+
+  # ========== CREFHGB-REFERAT ==========
+  - name: "Campusreferent:in Hagenberg"
+    short_name: "CRefHgb"
+    ects_cap: 8.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 200.00
+    notes: "CRef Hagenberg, Wahl idR durch HV"
+
+  - name: "Sachbearbeiter:in Campusreferat Hagenberg"
+    short_name: "SB-CRefHgb"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 75.00
+    notes: "SB CRef Hagenberg, Bestellung durch Vorsitz"
+
+  - name: "Sachbearbeiter:in ohne Funktionsgebühr Campusreferat Hagenberg"
+    short_name: "SoF-CRefHgb-NOPAY"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "SoF CRef Hagenberg, Bestellung durch Vorsitz"
+
+
+  # ========== CREFSTEYR-REFERAT ==========
+  - name: "Campusreferent:in Steyr"
+    short_name: "CRefSteyr"
+    ects_cap: 8.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 200.00
+    notes: "CRef Steyr, Wahl idR durch HV"
+
+  - name: "Sachbearbeiter:in Campusreferat Steyr"
+    short_name: "SB-CRefSteyr"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 75.00
+    notes: "SB CRef Steyr, Bestellung durch Vorsitz"
+
+  - name: "Sachbearbeiter:in ohne Funktionsgebühr Campusreferat Steyr"
+    short_name: "SoF-CRefSteyr-NOPAY"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "SoF CRef Steyr, Bestellung durch Vorsitz"
+
+
+  # ========== CREFWELS-REFERAT ==========
+  - name: "Campusreferent:in Wels"
+    short_name: "CRefWels"
+    ects_cap: 8.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 200.00
+    notes: "CRef Wels, Wahl idR durch HV"
+
+  - name: "Sachbearbeiter:in Campusreferat Wels"
+    short_name: "SB-CRefWels"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 75.00
+    notes: "SB CRef Wels, Bestellung durch Vorsitz"
+
+  - name: "Sachbearbeiter:in ohne Funktionsgebühr Campusreferat Wels"
+    short_name: "SoF-CRefWels-NOPAY"
+    ects_cap: 6.0
+    is_elected: false
+    kind: "DEPT. CLERK"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "SoF CRef Wels, Bestellung durch Vorsitz"
+
+
+  # ========== KOLLEGIUM-ENTSENDETE ==========
+  - name: "studentisches Kollegiumsmitglied FH OÖ"
+    short_name: "KollegFH"
+    ects_cap: 2.0
+    is_elected: false
+    kind: "OTHER"
+    is_stipend_reimbursed: true
+    default_monthly_amount: 75.00
+    notes: "entsendetes studentisches Kollegiumsmitglied, idR durch HV"
+
+  # ========== KURATOR-ENTSENDETE ==========
+  - name: "Kurator:in zur Wahrnehmung der STV-Aufgaben (Wels)"
+    short_name: "KuratorWels"
+    ects_cap: 2.00
+    is_elected: false
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "Kuratorin zur Wahrnehmung einer aufgelösten STV, idR durch HV, Wels"
+
+  - name: "Kurator:in zur Wahrnehmung der STV-Aufgaben (Steyr)"
+    short_name: "KuratorSteyr"
+    ects_cap: 2.00
+    is_elected: false
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "Kuratorin zur Wahrnehmung einer aufgelösten STV, idR durch HV, Wels"
+
+  - name: "Kurator:in zur Wahrnehmung der STV-Aufgaben (Linz)"
+    short_name: "KuratorLinz"
+    ects_cap: 2.00
+    is_elected: false
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "Kuratorin zur Wahrnehmung einer aufgelösten STV, idR durch HV, Linz"
+
+  - name: "Kurator:in zur Wahrnehmung der STV-Aufgaben (Hagenberg)"
+    short_name: "KuratorHgb"
+    ects_cap: 2.00
+    is_elected: false
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "Kuratorin zur Wahrnehmung einer aufgelösten STV, idR durch HV, Hagenberg"
+
+  # ========== DIENSTNEHMER-ASSISTENZ ==========
+  - name: "Assistenz Studierendenvertretung Office"
+    short_name: "DN-AssistenzOffice"
+    ects_cap: 0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "Dienstnehmer:in HV, Assistenz Office"
+
+  - name: "Assistenz Studierendenvertretung HR-Beauftragte:r"
+    short_name: "DN-AssistenzHRM"
+    ects_cap: 0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "Dienstnehmer:in HV, Assistenz HRM"
+
+  # ========== STV-GENERISCH-MANDAT ==========
+  - name: "STV Linz Temporärzuweisung"
+    short_name: "STV-Linz-TEMP"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV Linz Temporärzuweisung (Satzungsänderung), WAHLAMT HSG 2014"
+
+  - name: "STV Steyr Temporärzuweisung"
+    short_name: "STV-Steyr-TEMP"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV Steyr Temporärzuweisung (Satzungsänderung), WAHLAMT HSG 2014"
+
+  - name: "STV Hagenberg Temporärzuweisung"
+    short_name: "STV-Hgb-TEMP"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV Hagenberg Temporärzuweisung (Satzungsänderung), WAHLAMT HSG 2014"
+
+  - name: "STV Wels Temporärzuweisung"
+    short_name: "STV-Wels-TEMP"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV Wels Temporärzuweisung (Satzungsänderung), WAHLAMT HSG 2014"
+
+  # ========== STV-MANDAT (Anhang 3 Satzung) ==========
+  - name: "STV MBI & DSE & AIS (Hagenberg)"
+    short_name: "STV-MBI-DSE-AIS"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV MBI & DSE & AIS, WAHLAMT HSG 2014"
+
+  - name: "STV SI & ISM (Hagenberg)"
+    short_name: "STV-SI-ISM"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV SI & ISM, WAHLAMT HSG 2014"
+
+  - name: "STV HSD & ESD (Hagenberg)"
+    short_name: "STV-HSD-ESD"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV HSD & ESD, WAHLAMT HSG 2014"
+
+  - name: "STV KWM (Hagenberg)"
+    short_name: "STV-KWM"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV KWM, WAHLAMT HSG 2014"
+
+  - name: "STV MC & ENI & AC & DDP (Hagenberg)"
+    short_name: "STV-MC-ENI-AC-DDP"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV MC & ENI & AC & DDP, WAHLAMT HSG 2014"
+
+  - name: "STV MTD & DA & IM (Hagenberg)"
+    short_name: "STV-MTD-DA-IM"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV MTD & DA & IM, WAHLAMT HSG 2014"
+
+  - name: "STV SE & IEM & HCC (Hagenberg)"
+    short_name: "STV-SE-IEM-HCC"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV SE & IEM & HCC, WAHLAMT HSG 2014"
+
+  - name: "STV SPMT & OMT (Steyr)"
+    short_name: "STV-SPMT-OMT"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV SPMT & OMT, WAHLAMT HSG 2014"
+
+  - name: "STV CRF (Steyr)"
+    short_name: "STV-CRF"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV CRF, WAHLAMT HSG 2014"
+
+  - name: "STV MAB & DBM (Steyr)"
+    short_name: "STV-MAB-DBM"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV MAB & DBM, WAHLAMT HSG 2014"
+
+  - name: "STV GSM (Steyr)"
+    short_name: "STV-GSM"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV GSM, WAHLAMT HSG 2014"
+
+  - name: "STV ILM & SCM & LEM (Steyr)"
+    short_name: "STV-ILM-SCM-LEM"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV ILM & SCM & LEM, WAHLAMT HSG 2014"
+
+  - name: "STV PMBI & AMI & HRM (Steyr)"
+    short_name: "STV-PMBI-AMI-HRM"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV PMBI & AMI & HRM, WAHLAMT HSG 2014"
+
+  - name: "STV Campus Linz (Linz)"
+    short_name: "STV-CampusLinz"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV Campus Linz, WAHLAMT HSG 2014"
+
+  - name: "STV Lehrgänge FH OÖ (Linz)"
+    short_name: "STV-LehrgängeFHOÖ"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV Lehrgänge FH OÖ, WAHLAMT HSG 2014"
+
+  - name: "STV AET & SES (Wels)"
+    short_name: "STV-AET-SES"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV AET & SES, WAHLAMT HSG 2014"
+
+  - name: "STV IPEM & IPM & PDK & VTP & AB & SOL (Wels)"
+    short_name: "STV-IPEM-IPM-PDK-VTP-AB-SOL"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV IPEM & IPM & PDK & VTP & AB & SOL, WAHLAMT HSG 2014"
+
+  - name: "STV BI (Wels)"
+    short_name: "STV-BI"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV BI, WAHLAMT HSG 2014"
+
+  - name: "STV BUT & AGR & LTE (Wels)"
+    short_name: "STV-BUT-AGR-LTE"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV BUT & AGR & LTE, WAHLAMT HSG 2014"
+
+  - name: "STV EE (Wels)"
+    short_name: "STV-EE"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV EE, WAHLAMT HSG 2014"
+
+  - name: "STV AT & RSE & WFT & LCW & MB (Wels)"
+    short_name: "STV-AT-RSE-WFT-LCW-MB"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV EE, WAHLAMT HSG 2014"
+
+  - name: "STV MEWI & AMM (Wels)"
+    short_name: "STV-MEWI-AMM"
+    ects_cap: 6.0
+    is_elected: true
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    default_monthly_amount: 0.00
+    notes: "STV MEWI & AMM, WAHLAMT HSG 2014"
+
+  # ========== Testrolle für v1 ==========
+  - name: "TestRole-Referent"
+    short_name: "TR-Ref"
+    ects_cap: 99.0
+    is_elected: false
+    kind: "DEPT. HEAD"
+    is_stipend_reimbursed: true
+    notes: "Testing Role"
+    default_monthly_amount: 500.00
+
+  # ========== Systemrollen (unfertig) ==========
+  - name: "Systemadministrator"
+    short_name: "SYS-Admin"
+    ects_cap: 0
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    is_system: true
+    notes: "Systemadministrator"
+
+  - name: "Gastzugang"
+    short_name: "SYS-Gast"
+    ects_cap: 0
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    is_system: true
+    notes: "Gastzugriff"
+
+  - name: "HankoSign Revisor"
+    short_name: "SYS-HankoRev"
+    ects_cap: 0
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    is_system: true
+    notes: "HankoSign Administatorrolle"
+
+  - name: "Personaladministrator"
+    short_name: "SYS-EmployeeAdmin"
+    ects_cap: 0
+    kind: "OTHER"
+    is_stipend_reimbursed: false
+    is_system: true
+    notes: "HRM-Administatorrolle"

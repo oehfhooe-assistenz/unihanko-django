@@ -1,6 +1,13 @@
 {% extends "pdf/base.html" %}
 {% load static i18n tz %}
 
+<!--
+Template: protocol_base.html
+Version: 1.0.2
+Author: vas
+Modified: 2025-11-27
+-->
+
 {% block extra_styles %}
 /* Protocol-specific styling */
 @page {
@@ -345,18 +352,36 @@ main {
         </tr>
     </thead>
     <tbody>
-        {% for mandate in session.attendees.all %}
+        {% for attendance in session.attendance_records.all %}
         <tr>
-            <td>{{ mandate.party|default:"—" }}</td>
+            <td>{{ attendance.mandate.party|default:"—" }}</td>
             <td>
-                <strong>{{ mandate.person_role.person.first_name }} {{ mandate.person_role.person.last_name }}</strong>
-                {% if mandate.backup_person_role %}
-                    <span class="backup-name">{{ mandate.backup_person_role.person.first_name }} {{ mandate.backup_person_role.person.last_name }}</span>
-                {% elif mandate.backup_person_text %}
-                    <span class="backup-name">{{ mandate.backup_person_text }}</span>
+                {# Primary mandatary - strikethrough if backup attended #}
+                {% if attendance.backup_attended %}
+                    <span style="text-decoration: line-through; color: #999;">
+                        {{ attendance.mandate.person_role.person.first_name }} 
+                        {{ attendance.mandate.person_role.person.last_name }}
+                    </span>
+                {% else %}
+                    <strong>
+                        {{ attendance.mandate.person_role.person.first_name }} 
+                        {{ attendance.mandate.person_role.person.last_name }}
+                    </strong>
+                {% endif %}
+                
+                {# Backup person - bold if attended, strikethrough if didn't #}
+                {% if attendance.mandate.backup_person_role %}
+                    <span class="backup-name" {% if attendance.backup_attended %}style="font-weight: bold; color: #000;"{% else %}style="text-decoration: line-through; color: #999;"{% endif %}>
+                        {{ attendance.mandate.backup_person_role.person.first_name }} 
+                        {{ attendance.mandate.backup_person_role.person.last_name }}
+                    </span>
+                {% elif attendance.mandate.backup_person_text %}
+                    <span class="backup-name" {% if attendance.backup_attended %}style="font-weight: bold; color: #000;"{% endif %}>
+                        {{ attendance.mandate.backup_person_text }}
+                    </span>
                 {% endif %}
             </td>
-            <td>{{ mandate.get_officer_role_display }}</td>
+            <td>{{ attendance.mandate.get_officer_role_display }}</td>
             <td>—</td>
         </tr>
         {% endfor %}
@@ -376,7 +401,6 @@ main {
 <!-- Agenda items -->
 {% block protocol_content %}
 {% for item in items %}
-    {% if item.kind != 'PROC' or item.title != 'Eröffnung' %}
     <div class="agenda-item">
         <div class="agenda-item-header">
             <span class="agenda-item-code">{{ item.order }}. {{ item.item_code }}</span>
@@ -388,7 +412,7 @@ main {
         <div class="agenda-item-body">
             {% if item.kind == 'PROC' %}
                 <div class="item-field-content">
-                    {{ item.content|linebreaks }}
+                    {{ item.content|linebreaksbr }}
                 </div>
 
             {% elif item.kind == 'RES' %}
@@ -513,7 +537,6 @@ main {
 
     {% if not forloop.last %}
     <hr class="item-divider">
-    {% endif %}
     {% endif %}
 {% endfor %}
 {% endblock %}

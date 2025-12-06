@@ -1,12 +1,17 @@
 """
 Fixed Portal Views - Academia follows payment plan pattern
 """
+# File: portal/views.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-27
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, Http404
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.contrib import messages
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.db.models import Q
 from django_ratelimit.decorators import ratelimit
 from django.views.decorators.http import require_http_methods
@@ -50,7 +55,7 @@ def portal_home(request):
 
 
 # ============================================================================
-# ECTS Filing Portal Views (Following Payment Plan Pattern)
+# ECTS Reimbursement Center Views (Following Payment Plan Pattern)
 # ============================================================================
 
 @ratelimit(key='ip', rate='30/m', method='GET')
@@ -73,7 +78,7 @@ def semester_list(request):
 
     context = {
         'open_semesters': open_semesters,
-        'page_title': _("ECTS Filing Portal")
+        'page_title': _("ECTS Reimbursement Center")
     }
     return render(request, 'portal/semester_list.html', context)
 
@@ -178,21 +183,50 @@ def file_request(request, semester_id):
                 return render(request, 'portal/file_request.html', context)
 
             # Create InboxRequest
-            inbox_request = InboxRequest.objects.create(
-                semester=semester,
-                person_role=person_role,
-                student_note=student_note,
-                filing_source='PUBLIC',
-                affidavit1_confirmed_at=timezone.now(),
-                submission_ip=get_client_ip(request)
-            )
-
-            # Create courses
-            for course_data in courses_data:
-                InboxCourse.objects.create(
-                    inbox_request=inbox_request,
-                    **course_data
+            try:
+                inbox_request = InboxRequest.objects.create(
+                    semester=semester,
+                    person_role=person_role,
+                    student_note=student_note,
+                    filing_source='PUBLIC',
+                    affidavit1_confirmed_at=timezone.now(),
+                    submission_ip=get_client_ip(request)
                 )
+
+                # Create courses
+                for course_data in courses_data:
+                    InboxCourse.objects.create(
+                        inbox_request=inbox_request,
+                        **course_data
+                    )
+            
+            except IntegrityError:
+                existing = InboxRequest.objects.filter(
+                    semester=semester,
+                    person_role__person=person_role.person
+                ).first()
+
+                if existing:
+                    messages.info(
+                        request,
+                        _("A request was already submitted for this semester (%(ref)s). "
+                        "Showing your existing request.") % {'ref': existing.reference_code}
+                    )
+                    return redirect('portal:academia:status', reference_code=existing.reference_code)
+                
+                else:
+                    messages.error(
+                        request, _("An error occurred while submitting your request. Please try again.")
+                    )
+                    context = {
+                        'form': form,
+                        'course_formset': course_formset,
+                        'semester': semester,
+                        'org': org,
+                        'affidavit_1': org.ects_affidavit_1,
+                        'page_title': _("File Request"),
+                    }
+                    return render(request, 'portal/file_request.html', context)
 
             # Validate ECTS total
             is_valid, max_ects, total_ects, message = validate_ects_total(inbox_request)
@@ -274,7 +308,7 @@ def status(request, reference_code):
         'max_ects': max_ects,
         'total_ects': total_ects,
         'validation_message': message,
-        'page_title': _("Request Status")
+        'page_title': _("Reimbursement Request Status")
     }
     return render(request, 'portal/status.html', context)
 
@@ -304,7 +338,7 @@ def request_pdf(request, reference_code):
         "academia/inboxrequest_form_pdf.html",
         context,
         request,
-        f"ECTS-REQUEST_{inbox_request.reference_code}_{lname}_{date_str}.pdf"
+        f"ECTS_{inbox_request.reference_code}_{lname}_{date_str}.pdf"
     )
 
 
@@ -483,7 +517,7 @@ def plan_pdf(request, plan_code):
     date_str = timezone.localtime().strftime("%Y-%m-%d_%H-%M")
     lname = slugify(payment_plan.person_role.person.last_name)[:20]
     rsname = slugify(payment_plan.person_role.role.short_name)[:10]
-    filename = f"PaymentPlan_{payment_plan.plan_code}_{rsname}_{lname}_{date_str}.pdf"
+    filename = f"FUGEB_{payment_plan.plan_code}_{rsname}_{lname}_{date_str}.pdf"
     
     return render_pdf_response(
         "finances/paymentplan_pdf.html",

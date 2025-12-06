@@ -1,0 +1,20 @@
+# config/orginfo.yaml
+# Bootstrap configuration for basic organization information
+# 
+# Note: Bank details, signatories, and legal disclaimers must be
+# configured manually via admin interface.
+
+org_name_long_de: "Hochschülerinnen- und Hochschülerschaft der Fachhochschule Oberösterreich"
+org_name_short_de: "ÖH FH OÖ"
+org_name_long_en: "Students' Union of the University of Applied Sciences Upper Austria"
+org_name_short_en: "ÖH FH OÖ"
+
+uni_name_long_de: "Fachhochschule Oberösterreich"
+uni_name_short_de: "FH OÖ"
+uni_name_long_en: "University of Applied Sciences Upper Austria"
+uni_name_short_en: "FH OÖ"
+
+org_address: |
+  Garnisonstraße 21
+  A-4020 Linz
+  Österreich

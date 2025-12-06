@@ -1,45 +1,53 @@
 {% load i18n %}
 
-<div class="container-fluid px-0 mb-3">
+<!--
+Template: help_widget.html
+Version: 1.0.0
+Author: vas
+Modified: 2025-11-27
+-->
+
+<div class="unihanko-help-widget mb-3">
     {# Legend (always visible) #}
     {% if help.show_legend and legend_html %}
-    <div class="alert alert-info mb-2" role="alert">
-        <h6 class="alert-heading mb-2">
-            <i class="fas fa-map-signs mr-2"></i>
+    <div class="help-legend" role="alert">
+        <h6 class="help-legend-heading">
+            <i class="fas fa-map-signs"></i>
             <strong>{% trans "Legend" %}</strong>
         </h6>
-        <div class="small">
+        <div class="help-legend-content">
             {{ legend_html|safe }}
         </div>
     </div>
     {% endif %}
 
     {# Accordion (expandable help) #}
-    <div class="card">
-        <div class="card-header bg-info text-white p-0" id="help-heading-{{ help.id }}">
-            <button class="btn btn-block text-left text-white pl-3 py-2" type="button" 
+    <div class="help-accordion">
+        <div class="help-header" id="help-heading-{{ help.id }}">
+            <button class="help-toggle" type="button" 
                     data-toggle="collapse" data-target="#help-collapse-{{ help.id }}" 
-                    aria-expanded="false" aria-controls="help-collapse-{{ help.id }}"
-                    style="text-decoration: none;">
-                <i class="fas fa-question-circle mr-2"></i>
-                <strong>{{ title }}</strong>  {# ← Language-aware title #}
-                {% if help.author %}
-                    <small class="ml-3" style="opacity: 0.8;">{% trans "by" %} {{ help.author }}</small>
-                {% endif %}
-                <i class="fa-solid fa-chevron-down mr-2 float-right"></i>
+                    aria-expanded="false" aria-controls="help-collapse-{{ help.id }}">
+                <span class="help-toggle-content">
+                    <i class="fas fa-question-circle"></i>
+                    <strong>{{ title }}</strong>
+                    {% if help.author %}
+                        <small class="help-author">{% trans "by" %} {{ help.author }}</small>
+                    {% endif %}
+                </span>
+                <i class="fa-solid fa-chevron-down help-toggle-icon"></i>
             </button>
         </div>
         
         <div id="help-collapse-{{ help.id }}" class="collapse" 
              aria-labelledby="help-heading-{{ help.id }}">
-            <div class="card-body">
+            <div class="help-body">
                 <div class="help-content">
                     {{ content_html|safe }}
                 </div>
                 
                 {% if help.help_contact %}
-                <div class="alert alert-light border mt-3 mb-0">
-                    <i class="fas fa-envelope mr-2"></i>
+                <div class="help-contact">
+                    <i class="fas fa-envelope"></i>
                     <strong>{% trans "Questions?" %}</strong> {{ help.help_contact }}
                 </div>
                 {% endif %}
@@ -49,34 +57,210 @@
 </div>
 
 <style>
-/* Ensure markdown content renders nicely */
-.help-content h1, .help-content h2, .help-content h3 {
-    margin-top: 1rem;
-    margin-bottom: 0.5rem;
+/* Help Widget - Neobrutalist Theme */
+.unihanko-help-widget {
+    margin-bottom: var(--spacing-sm);
 }
+
+.unihanko-help-widget {
+    margin-bottom: var(--spacing-sm);
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.help-legend,
+.help-accordion {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Legend Box */
+.help-legend {
+    background: rgba(23, 162, 184, 0.1);
+    border: 4px solid #17a2b8;
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.help-legend-heading {
+    color: #17a2b8;
+    font-weight: 900;
+    margin-bottom: var(--spacing-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.help-legend-heading i {
+    margin-right: var(--spacing-sm);
+}
+
+.help-legend-content {
+    color: var(--unihanko-text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Accordion */
+.help-accordion {
+    background: var(--unihanko-bg-card);
+    border: 4px solid var(--unihanko-accent-primary);
+    box-shadow: var(--brutal-shadow);
+}
+
+.help-header {
+    background: var(--unihanko-bg-darker);
+    border-bottom: 4px solid var(--unihanko-accent-primary);
+}
+
+.help-toggle {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--unihanko-text-primary);
+    padding: var(--spacing-md) var(--spacing-lg);
+    text-align: left;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.help-toggle:hover {
+    background: rgba(255, 107, 53, 0.1);
+}
+
+.help-toggle-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.help-toggle-content i {
+    color: var(--unihanko-accent-primary);
+}
+
+.help-author {
+    opacity: 0.6;
+    font-weight: 500;
+    margin-left: var(--spacing-md);
+}
+
+.help-toggle-icon {
+    color: var(--unihanko-accent-primary);
+    transition: transform 0.2s ease;
+}
+
+.help-toggle[aria-expanded="true"] .help-toggle-icon {
+    transform: rotate(180deg);
+}
+
+.help-body {
+    padding: var(--spacing-lg);
+}
+
+/* Help Content - Markdown Styles */
+.help-content {
+    color: var(--unihanko-text-secondary);
+    line-height: 1.6;
+}
+
+.help-content h1, 
+.help-content h2, 
+.help-content h3 {
+    color: var(--unihanko-text-primary);
+    font-weight: 900;
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    border-bottom: 4px solid var(--unihanko-accent-primary);
+    padding-bottom: var(--spacing-sm);
+}
+
 .help-content h1 { font-size: 1.5rem; }
 .help-content h2 { font-size: 1.3rem; }
 .help-content h3 { font-size: 1.1rem; }
+
 .help-content p {
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--spacing-md);
 }
-.help-content ul, .help-content ol {
-    margin-bottom: 0.75rem;
-    padding-left: 1.5rem;
+
+.help-content ul, 
+.help-content ol {
+    margin-bottom: var(--spacing-md);
+    padding-left: var(--spacing-xl);
 }
+
 .help-content li {
-    margin-bottom: 0.25rem;
+    margin-bottom: var(--spacing-sm);
 }
+
 .help-content code {
-    background: #f4f4f4;
+    background: var(--unihanko-bg-darker);
+    color: var(--unihanko-accent-primary);
     padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 90%;
+    border: 2px solid var(--unihanko-border);
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
 }
+
 .help-content pre {
-    background: #f4f4f4;
-    padding: 1rem;
-    border-radius: 4px;
+    background: var(--unihanko-bg-darker);
+    border: var(--brutal-border);
+    padding: var(--spacing-md);
     overflow-x: auto;
+    margin: var(--spacing-md) 0;
+}
+
+.help-content pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--unihanko-text-primary);
+}
+
+.help-content a {
+    color: var(--unihanko-accent-primary);
+    font-weight: 700;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.help-content a:hover {
+    border-bottom-color: var(--unihanko-accent-primary);
+}
+
+/* Contact Box */
+.help-contact {
+    background: var(--unihanko-bg-darker);
+    border: var(--brutal-border);
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    color: var(--unihanko-text-secondary);
+}
+
+.help-contact i {
+    color: var(--unihanko-accent-primary);
+    margin-right: var(--spacing-sm);
+}
+
+.help-contact strong {
+    color: var(--unihanko-text-primary);
+}
+
+@media (max-width: 768px) {
+    .help-toggle {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 0.9rem;
+    }
+    
+    .help-body {
+        padding: var(--spacing-md);
+    }
+    
+    .help-content h1 { font-size: 1.2rem; }
+    .help-content h2 { font-size: 1.1rem; }
+    .help-content h3 { font-size: 1rem; }
 }
 </style>

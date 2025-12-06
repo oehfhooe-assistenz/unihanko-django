@@ -1,0 +1,24 @@
+{% extends "portal/base.html" %}
+{% load i18n md %}
+
+<!--
+Template: default.html
+Version: 1.0.0
+Author: vas
+Modified: 2025-11-27
+-->
+
+{% block title %}{{ flatpage.title }} - UniHanko Portal{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 class="page-title">{{ flatpage.title }}</h1>
+    <div style="line-height: 1.6; color: var(--color-text-secondary);">
+        {{ flatpage.content|markdown }}  {# CHANGED from linebreaks to markdown #}
+    </div>
+</div>
+
+<div style="margin-top: 2rem;">
+    <a href="{% url 'portal:home' %}" class="btn btn-secondary">{% trans "Back to Portal" %}</a>
+</div>
+{% endblock %}

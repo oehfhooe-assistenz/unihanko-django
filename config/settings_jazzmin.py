@@ -1,117 +1,222 @@
+# File: config/settings_jazzmin.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
+from .settings import UNIHANKO_CODENAME, UNIHANKO_VERSION
+
 JAZZMIN_SETTINGS = {
     # Branding
     "site_title": "UniHanko Back Office",
-    "site_header": "UniHanko Administration",
+    "site_header": "UniHanko Back Office",
     "site_brand": "UniHanko",
-    "welcome_sign": "Welcome to UniHanko Back Office",
-    "site_logo": "img/unihanko-logo.svg",            # put these under STATIC
-    "login_logo": "img/unihanko-mark.svg",           # optional second logo for login
+    "welcome_sign": f'Welcome to UniHanko Back Office v{UNIHANKO_VERSION} "{UNIHANKO_CODENAME}"',
+    "copyright": f'Sven Várszegi & ÖH FH OÖ • UniHanko {UNIHANKO_VERSION} ',
+    "site_logo": "img/unihanko-logo.svg",            
+    "login_logo": "img/unihanko-mark.svg",           
     "site_logo_classes": "img-fluid",
 
     # Quick nav
     "topmenu_links": [
-        {"name": "Cockpit (Beta)", "url": "/admin/cockpit/", "permissions": ["is_staff"]},
-        {"name": "Onboarding",  "url": "/admin/people/personrole/add/", "permissions": ["people.add_personrole"]},
-        {"name": "Offboarding", "url": "/admin/people/personrole/?active=1", "permissions": ["people.change_personrole"]},
-        {"name": "Fiscal Years", "url": "/admin/finances/fiscalyear/", "permissions": ["finances.view_fiscalyear"]},
-        {"name": "Add Fiscal Year", "url": "/admin/finances/fiscalyear/add/", "permissions": ["finances.add_fiscalyear"]},
         # examples you can add later:
         # {"app": "people"},                               # jump to the Personnel section
         # {"name": "Public site", "url": "/", "new_window": True},
     ],
     "usermenu_links": [
-        # {"model": "auth.user"},                         # profile
-        # {"name": "Help", "url": "https://…", "new_window": True},
+        {"model": "auth.user"},                         
     ],
-
-    # Icons (Font Awesome 5/6)
+    "search_model": ["people.PersonRole", "people.Person",],
     "icons": {
-        "organisation.orginfo": "fa-solid fa-building-ngo",
-        "people": "fa-solid fa-users-gear",
-        "people.person": "fa-solid fa-user",
-        "people.personrole": "fa-solid fa-user-check",
-        "people.role": "fa-solid fa-id-badge",
-        "people.roletransitionreason": "fa-solid fa-flag",
-        "finances": "fa-solid fa-calculator",
+        # Academia - ECTS/Course management
+        "academia": "fa-solid fa-graduation-cap",
+        "academia.semester": "fa-solid fa-calendar-days",
+        "academia.inboxrequest": "fa-solid fa-inbox",
+        "academia.inboxcourse": "fa-solid fa-book-bookmark",
+
+        # Academia Audit - Tracking/verification
+        "academia_audit": "fa-solid fa-magnifying-glass-chart",
+        "academia_audit.auditsemester": "fa-solid fa-table-list",
+        "academia_audit.auditentry": "fa-solid fa-list-check",
+        
+        # Annotations
+        "annotations": "fa-solid fa-comments",
+        "annotations.annotation": "fa-solid fa-comment-dots",
+        
+        # Assembly - Parliamentary/governance
+        "assembly": "fa-solid fa-landmark-dome",
+        "assembly.term": "fa-solid fa-timeline",
+        "assembly.composition": "fa-solid fa-diagram-project",
+        "assembly.mandate": "fa-solid fa-certificate",
+        "assembly.session": "fa-solid fa-gavel",
+        "assembly.sessionattendance": "fa-solid fa-clipboard-user",
+        "assembly.sessionitem": "fa-solid fa-list-ol",
+        "assembly.vote": "fa-solid fa-square-poll-vertical",
+        
+        # Employees - HR/employment
+        "employees": "fa-solid fa-address-book",
+        "employees.holidaycalendar": "fa-solid fa-umbrella-beach",
+        "employees.employee": "fa-solid fa-id-card",
+        "employees.employeeleaveyear": "fa-solid fa-plane-departure",
+        "employees.employmentdocument": "fa-solid fa-file-contract",
+        "employees.timesheet": "fa-solid fa-clock",
+        "employees.timeentry": "fa-solid fa-stopwatch",
+        
+        # Finances
+        "finances": "fa-solid fa-coins",
         "finances.fiscalyear": "fa-solid fa-calendar-check",
         "finances.paymentplan": "fa-solid fa-money-check-dollar",
-        "employees": "fa-solid fa-address-book",
-        "employees.employee": "fa-solid fa-address-book",
-        "employees.employmentdocument": "fa-solid fa-passport",
-        "employees.timesheet": "fa-solid fa-business-time",
-        "employees.timeentry": "fa-solid fa-calendar-xmark",
-        "employees.holidaycalendar": "fa-solid fa-gift",
-        "hankosign":"fa-solid fa-key",
-        "hankosign.action":"fa-solid fa-layer-group",
-        "hankosign.policy":"fa-solid fa-pen-nib",
-        "hankosign.signatory":"fa-solid fa-fingerprint",
-        "hankosign.signature":"fa-solid fa-receipt",
-        "helppages": "fa-solid fa-circle-info",
-        "helppages.helppage": "fa-solid fa-note-sticky",
+        
+        # HankoSign - Digital signatures
+        "hankosign": "fa-solid fa-stamp",
+        "hankosign.action": "fa-solid fa-bolt",
+        "hankosign.policy": "fa-solid fa-file-shield",
+        "hankosign.signatory": "fa-solid fa-user-pen",
+        "hankosign.signature": "fa-solid fa-signature",
+        
+        # Help Pages
+        "helppages": "fa-solid fa-circle-question",
+        "helppages.helppage": "fa-solid fa-book-open",
+        
+        # Organisation
+        "organisation": "fa-solid fa-building",
+        "organisation.orginfo": "fa-solid fa-building-columns",
+        
+        # People - Core personnel
+        "people": "fa-solid fa-users",
+        "people.person": "fa-solid fa-user",
+        "people.role": "fa-solid fa-user-tag",
+        "people.roletransitionreason": "fa-solid fa-arrow-right-arrow-left",
+        "people.personrole": "fa-solid fa-user-check",   
+
+        # Django built-ins
+        "auth": "fa-solid fa-shield-halved",
+        "auth.user": "fa-solid fa-user-lock",
+        "auth.group": "fa-solid fa-users-rectangle",
+
+        "sites": "fa-solid fa-network-wired",
+        "sites.site": "fa-solid fa-server",
+
+        "flatpages": "fa-solid fa-file-lines",
+        "flatpages.flatpage": "fa-solid fa-file-alt",      
     },
 
     # Sidebar ordering within the app
-    "order_with_respect_to": ["organisation", "organisation.orginfo", "people", "people.personrole", "people.person", "people.roletransitionreason", "people.role", "finances", "finances.paymentplan", "finances.fiscalyear", "employees", "employees.timesheet", "employees.employmentdocument", "employees.employee", "employees.holidaycalendar", "hankosign", "hankosign.signatory", "hankosign.policy", "hankosign.action", "helppages", "helppages.helppage", "assembly", "assembly.session", "assembly.composition", "assembly.term",],
+    "order_with_respect_to": [
+        # [potentially invisible]
+        # Workables
+        # Academia: Inbox > Semester
+        "academia",
+        "academia.inboxrequest",
+        "academia.semester",
+        # Academia Audit: [Entries] > Semester
+        "academia_audit",
+        "academia_audit.auditentry",
+        "academia_audit.auditsemester",
+        # Assembly: Session > [SessionItem] > Composition > Term
+        "assembly", 
+        "assembly.session", 
+        "assembly.sessionitem",
+        "assembly.composition", 
+        "assembly.term",
+        # Employees: TimeSheet > [TimeEntry] > EmploymentDocument > Employee > HolidayCalendar
+        "employees", 
+        "employees.timesheet",
+        "employees.timeentry",
+        "employees.employmentdocument", 
+        "employees.employee", 
+        "employees.holidaycalendar", 
+        # Finances: PaymentPlan > FiscalYear
+        "finances", 
+        "finances.paymentplan", 
+        "finances.fiscalyear", 
+        # People: PersonRole > Person > RTR > Role
+        "people", 
+        "people.personrole", 
+        "people.person", 
+        "people.roletransitionreason", 
+        "people.role", 
+        # HankoSign: Signatory > [Signature] > Policy > Action
+        "hankosign", 
+        "hankosign.signatory", 
+        "hankosign.policy", 
+        "hankosign.action",
+
+        # Configurables
+        # Helppages: Helppage
+        "helppages", 
+        "helppages.helppage", 
+        # Organisation
+        "organisation", 
+        "organisation.orginfo",
+
+        # Django built-ins (always at the end)
+        "flatpages",
+        "flatpages.flatpage",
+        "sites",
+        "sites.site",
+        "auth",
+        "auth.user",
+        "auth.group",
+    ],
 
 
     # Hide historical models from menu
     "hide_models": [
-        "organisation.HistoricalOrgInfo",
-        "people.HistoricalPerson",
-        "people.HistoricalRole",
-        "people.HistoricalPersonRole",
-        "people.HistoricalRoleTransitionReason",
-        "finances.HistoricalFiscalYear",
-        "finances.HistoricalPaymentPlan",
-        "hankosign.Signature",
-        "employees.HistoricalEmployee",
-        "employees.HistoricalEmploymentDocument",
-        "employees.HistoricalHolidayCalendar",
-        "employees.HistoricalTimeSheet",
-        "employees.HistoricalTimeEntry",
-        "hankosign.HistoricalAction",
-        "hankosign.HistoricalPolicy",
-        "hankosign.HistoricalSignatory",
-        "hankosign.HistoricalSignature",
-        "helppages.HistoricalHelpPage",
-        "assembly.HistoricalMandate",
-        "assembly.HistoricalTerm",
-        "assembly.HistoricalSessionItem",
-        "assembly.HistoricalSession",
-        "assembly.HistoricalComposition",
+        "academia.historicalsemester",
+        "academia.historicalinboxrequest",
+        "academia_audit.historicalauditsemester",
+        "academia_audit.historicalauditentry",
+        "assembly.historicalterm",
+        "assembly.historicalcomposition",
+        "assembly.historicalmandate",
+        "assembly.historicalsession",
+        "assembly.historicalsessionitem",
+        "employees.historicalholidaycalendar",
+        "employees.historicalemployee",
+        "employees.historicalemployeeleaveyear",
+        "employees.historicalemploymentdocument",
+        "employees.historicaltimesheet",
+        "employees.historicaltimeentry",
+        "finances.historicalfiscalyear",
+        "finances.historicalpaymentplan",
+        "hankosign.historicalaction",
+        "hankosign.historicalpolicy",
+        "hankosign.historicalsignatory",
+        "hankosign.historicalsignature",
+        "helppages.historicalhelppage",
+        "organisation.historicalorginfo",
+        "people.historicalperson",
+        "people.historicalrole",
+        "people.historicalpersonrole",
+        "people.historicalroletransitionreason",
     ],
 
     # Quality of life
-    "related_modal_active": True,                    # add related objects in a modal
-    "changeform_format": "collapsible",            # or "horizontal_tabs" / "collapsible"
-    "changeform_format_overrides": {
-        "finances.paymentplan": "single",
-        "organisation.orginfo": "single",
-        "people.personrole": "single",
-    },
-    "language_chooser": True,                       # header language switcher
+    "related_modal_active": True,
+    "changeform_format": "collapsible",
+    #"changeform_format_overrides": {},
+    "language_chooser": True,
 
     # Custom assets
-    # "custom_css": "admin/unihanko.css",
     "custom_css": "admin/unihanko_neobrutalist_theme.css",
     "custom_js": "admin/custom.js",
 
-    # Optional: show Jazzmin UI builder (handy for experimenting)
-    "show_ui_builder": True,
+    # UI builder
+    "show_ui_builder": False,
 }
 
 JAZZMIN_UI_TWEAKS = {
-    # Theme - set to None since we have custom CSS
+    # Theme
     "theme": "darkly",
     "dark_mode_theme": "darkly",
 
     # Navbar styling
-    "navbar": "navbar-dark",  # Changed from navbar-light (dark theme!)
+    "navbar": "navbar-dark",
     "no_navbar_border": True,
     "navbar_fixed": False,
     
     # Brand/Logo
-    "brand_small_text": False,  # Removed duplicate
+    "brand_small_text": False,
     "brand_colour": False,
     
     # Text sizes
@@ -123,10 +228,11 @@ JAZZMIN_UI_TWEAKS = {
     "layout_boxed": False,
     "footer_fixed": True,
     "sidebar_fixed": True,
+    "navigation_expanded": False,
     
     # Sidebar
     "accent": "accent-orange",
-    "sidebar": "sidebar-dark-orange",  # This is fine!
+    "sidebar": "sidebar-dark-orange",
     "sidebar_nav_small_text": True,
     "sidebar_disable_expand": False,
     "sidebar_nav_child_indent": True,

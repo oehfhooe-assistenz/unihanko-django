@@ -1,4 +1,8 @@
-# portal/templatetags/portal_extras.py
+# File: portal/templatetags/portal_extras.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-27
+
 from django import template
 
 register = template.Library()

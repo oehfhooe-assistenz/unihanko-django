@@ -1,4 +1,8 @@
-#finances/admin.py
+# File: finances/admin.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.contrib import admin, messages
 from django import forms
 from django.utils.translation import gettext_lazy as _, pgettext
@@ -14,7 +18,7 @@ from django.utils.safestring import mark_safe
 from organisation.models import OrgInfo
 from .models import FiscalYear, PaymentPlan, default_start, auto_end_from_start, stored_code_from_dates
 from core.pdf import render_pdf_response
-from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action, ManagerOnlyHistoryMixin
+from core.admin_mixins import ImportExportGuardMixin, safe_admin_action, HistoryGuardMixin, with_help_widget
 from core.utils.authz import is_finances_manager
 from hankosign.utils import render_signatures_box, state_snapshot, get_action, record_signature, has_sig, sign_once, RID_JS, object_status_span, seal_signatures_context
 from finances.models import paymentplan_status
@@ -23,6 +27,7 @@ from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for
 from concurrency.admin import ConcurrentModelAdmin
 from annotations.admin import AnnotationInline
 from annotations.views import create_system_annotation
+from core.admin_mixins import log_deletions
 
 # =============== Import–Export ===============
 class FiscalYearResource(resources.ModelResource):
@@ -183,15 +188,16 @@ class FYChipsFilter(admin.SimpleListFilter):
 
 
 # =============== PaymentPlan Admin ===============
+@log_deletions
+@with_help_widget
 @admin.register(PaymentPlan)
 class PaymentPlanAdmin(
     SimpleHistoryAdmin,
     DjangoObjectActions,
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
     ):
     resource_classes = [PaymentPlanResource]
     form = PaymentPlanForm
@@ -232,7 +238,7 @@ class PaymentPlanAdmin(
         "plan_code_or_hint",
         "created_at", "updated_at",
         "window_preview", "breakdown_preview", "recommended_total_display", "role_monthly_hint",
-        "bank_reference_preview_full", "pdf_file", "submission_ip", "signatures_box", "status", "version"
+        "bank_reference_preview_full", "pdf_file", "submission_ip", "signatures_box", "status"
     )
 
     list_per_page = 50
@@ -452,10 +458,14 @@ class PaymentPlanAdmin(
             ro.extend([
                 "person_role", "fiscal_year", "cost_center",
                 "payee_name", "iban", "bic", "reference", "address",
-                "pay_start", "pay_end",
+                "pay_start",
                 "monthly_amount", "total_override",
                 "signed_person_at",
             ])
+            # For CANCELLED: allow pay_end adjustment (manager might need to fine-tune cancellation date)
+             # For FINISHED: lock pay_end (money already paid, can't change history)
+            if status == "FINISHED":
+                ro.append("pay_end")
         
         return list(dict.fromkeys(ro))  # dedupe
 
@@ -673,19 +683,37 @@ class PaymentPlanAdmin(
 
     @transaction.atomic
     @safe_admin_action
-    def cancel_plan(self, request, obj):       
+    def cancel_plan(self, request, obj):
+        status = paymentplan_status(obj)
+        
+        # For ACTIVE plans, set end date to today before cancelling
+        if status == "ACTIVE":
+            today = timezone.now().date()
+            
+            # Only update if pay_end is in the future
+            if obj.pay_end and obj.pay_end > today:
+                obj.pay_end = today
+                obj.save(update_fields=['pay_end'])
+                messages.info(
+                    request, 
+                    _("Payment end date automatically set to %(date)s. You can adjust if needed.") % {'date': today}
+                )
+        
+        # Record cancellation signature
         action = get_action("REJECT:-@finances.paymentplan")
         if not action:
             messages.error(request, _("Cancel action not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Payment plan %(code)s cancelled (WiRef or Chair)") % {"code": f"{obj.plan_code}"})
+        
+        record_signature(request.user, action, obj, note=_("Payment plan %(code)s cancelled") % {"code": obj.plan_code})
         create_system_annotation(obj, "REJECT", user=request.user)
-        messages.success(request, _("Cancelled."))
+        messages.success(request, _("Plan cancelled."))
     cancel_plan.label = _("Cancel plan")
     cancel_plan.attrs = {
         "class": "btn btn-block btn-danger",
         "style": "margin-bottom: 1rem;",
     }
+
 
     @safe_admin_action
     def print_paymentplan(self, request, obj):
@@ -749,17 +777,31 @@ class PaymentPlanAdmin(
         )
 
 
-    # (3) Draft-stage banner
+    # (3) Status-specific banners
     def change_view(self, request, object_id, form_url="", extra_context=None):
         obj = self.get_object(request, object_id)
-        if obj and obj.status == obj.Status.DRAFT:
-            messages.info(
-                request,
-                mark_safe(
-                    _("Draft: please wait for payment plan filing by person, then review if all fields are present and correct.")
-                ),
-            )
+        
+        if obj:
+            status = paymentplan_status(obj)
+            
+            if status == "DRAFT":
+                messages.info(
+                    request,
+                    mark_safe(
+                        _("Draft: please wait for payment plan filing by person, then review if all fields are present and correct.")
+                    ),
+                )
+            
+            elif status == "CANCELLED":
+                messages.warning(
+                    request,
+                    mark_safe(
+                        _("⚠️ <strong>Cancelled:</strong> Verify the payment end date is correct, and ensure all standing orders (Daueraufträge) are cancelled with the bank.")
+                    ),
+                )
+        
         return super().change_view(request, object_id, form_url, extra_context)
+
 
     # --- policy -------------------------------------------------------------
     def has_delete_permission(self, request, obj=None):
@@ -912,14 +954,15 @@ class PaymentPlanAdmin(
         )
 
 # =============== FiscalYear Admin ===============
+@log_deletions
+@with_help_widget
 @admin.register(FiscalYear)
 class FiscalYearAdmin(
     SimpleHistoryAdmin,
     DjangoObjectActions,
     ImportExportModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
     ):
     resource_classes = [FiscalYearResource]
     form = FiscalYearForm
@@ -994,7 +1037,6 @@ class FiscalYearAdmin(
                 ro += ["start", "end", "code", "label", "is_active"]
         
         return ro
-
 
     # Hide actions the user isn't allowed to use
     def get_actions(self, request):

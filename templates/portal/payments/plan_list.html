@@ -1,13 +1,20 @@
 {% extends "portal/base.html" %}
 {% load i18n portal_extras %}
 
+<!--
+Template: plan_list.html
+Version: 1.0.0
+Author: vas
+Modified: 2025-11-27
+-->
+
 {% block content %}
 <h1 class="page-title">{% trans "Your Payment Plans" %}</h1>
 
 <div class="card">
     <h2 class="card-title">{{ fiscal_year.label }}</h2>
     <p class="text-muted">
-        {% trans "Welcome" %}, {{ person.first_name }} {{ person.last_name }}
+        {% trans "Hi" %}, {{ person.first_name }} {{ person.last_name }}
     </p>
 </div>
 
@@ -23,11 +30,11 @@
                     <p class="info-value">{{ plan.person_role.role.name }}</p>
                 </div>
                 <div class="info-item">
-                    <p class="info-label">{% trans "Monthly" %}</p>
+                    <p class="info-label">{% trans "Monthly Allowance" %}</p>
                     <p class="info-value highlight">€ {{ plan.monthly_amount }}</p>
                 </div>
                 <div class="info-item">
-                    <p class="info-label">{% trans "Status" %}</p>
+                    <p class="info-label full-width">{% trans "Internal Process Stage" %}</p>
                         {% include "portal/includes/stage_progress.html" with current_stage=status stage_type="payment" %}
                 </div>
             </div>
@@ -37,15 +44,15 @@
                 <!-- Only show Complete button for DRAFT plans -->
                 <button class="btn btn-small toggle-btn" 
                         data-target="form-{{ plan.id }}" 
-                        data-text-complete="⚙️ {% trans 'Complete' %}"
-                        data-text-cancel="❌ {% trans 'Cancel' %}">
-                    ⚙️ {% trans "Complete" %}
+                        data-text-complete="⚙️ {% trans 'Complete your plan' %}"
+                        data-text-cancel="❌ {% trans 'Cancel completion' %}">
+                    ⚙️ {% trans "Complete your plan" %}
                 </button>
             {% else %}
                 <!-- Show Status button and RECEIPT download for non-DRAFT plans -->
                 <a href="{% url 'portal:payments:plan_pdf' plan_code=plan.plan_code %}" 
                    class="btn btn-small" target="_blank" title="{% trans 'Download Receipt' %}">
-                    📄 {% trans "RECEIPT" %}
+                    📄 {% trans "Receipt" %}
                 </a>
                 <button class="btn btn-secondary btn-small toggle-btn" 
                         data-target="details-{{ plan.id }}"
@@ -66,17 +73,17 @@
             <div class="progress-steps">
                 <div class="step-indicator step-banking {{ plan.payee_name|yesno:'completed,active' }}">
                     <span class="step-number">1</span>
-                    <span class="step-text">{% trans "Banking Details" %}</span>
+                    <span class="step-text">{% trans "Banking Information Provided" %}</span>
                 </div>
                 <div class="step-connector"></div>
                 <div class="step-indicator step-terms {{ plan.payee_name|yesno:'active,pending' }}">
                     <span class="step-number">2</span>
-                    <span class="step-text">{% trans "Terms" %}</span>
+                    <span class="step-text">{% trans "Terms Reviewed & Form Downloaded" %}</span>
                 </div>
                 <div class="step-connector"></div>
                 <div class="step-indicator step-upload">
                     <span class="step-number">3</span>
-                    <span class="step-text">{% trans "Upload" %}</span>
+                    <span class="step-text">{% trans "Form Uploaded" %}</span>
                 </div>
             </div>
 
@@ -139,7 +146,7 @@
                     
                     <div class="form-actions-compact">
                         <button type="submit" class="btn btn-small">
-                            📝 {% trans "Save & Continue" %} →
+                            📝 {% trans "Save & Continue" %}
                         </button>
                     </div>
                     
@@ -159,7 +166,7 @@
             {% if plan.payee_name and plan.iban and plan.bic and plan.address %}
             <div class="form-section-compact">
                 <h4 class="form-section-title">
-                    📋 {% trans "Terms & Conditions" %}
+                    📋 {% trans "Payment Plan Terms & Conditions" %}
                 </h4>
                 
                 {% if org.payment_plan_disclaimer %}
@@ -186,19 +193,20 @@
             {% if not plan.signed_person_at %}
             <div class="form-section-compact">
                 <h4 class="form-section-title">
-                    📤 {% trans "Upload Signed Form" %}
+                    🗂️ {% trans "Download & Upload Area" %}
                 </h4>
                 <p class="help-text mb-2">
-                    {% trans "1. Download the PDF below" %}<br>
-                    {% trans "2. Sign it by hand" %}<br>
-                    {% trans "3. Upload the signed version here" %}
+                    1. {% trans "Click the 'Download My Blank Form' button to download your pre-filled PDF" %}<br>
+                    2. {% trans "Make you sign the same form (handwritten or electronically)" %}<br>
+                    3. {% trans "Upload your signed form via the 'Choose file' dialogue" %}<br>
+                    4. {% trans "Don't forget to press the 'Submit My Signed Form' button!" %}
                 </p>
                 
                 <!-- Download link for the blank PDF -->
                 <div class="mb-2">
                     <a href="{% url 'portal:payments:plan_pdf' plan_code=plan.plan_code %}" 
                        class="btn btn-secondary btn-small" target="_blank">
-                        📥 {% trans "Download Form (Blank)" %}
+                        📥 {% trans "Download My Blank Form" %}
                     </a>
                 </div>
 
@@ -235,7 +243,7 @@
                     
                     <div class="form-actions-compact">
                         <button type="submit" class="btn btn-small" id="upload-btn-{{ plan.id }}" disabled>
-                            📤 {% trans "Complete Process" %}
+                            📤 {% trans "Submit My Signed Form" %}
                         </button>
                     </div>
                 </form>
@@ -274,7 +282,7 @@
                         <p class="info-value">{{ plan.person_role.role.name }}</p>
                     </div>
                     <div class="info-item">
-                        <p class="info-label">{% trans "Monthly Amount" %}</p>
+                        <p class="info-label">{% trans "Monthly Allowance" %}</p>
                         <p class="info-value highlight">€ {{ plan.monthly_amount }}</p>
                     </div>
                     <div class="info-item">
@@ -314,7 +322,7 @@
 
 <div class="mt-3">
     <a href="{% url 'portal:payments:fy_list' %}" class="btn btn-secondary">
-        ← {% trans "Back to Fiscal Years" %}
+        {% trans "Back to the Payment Plans Center" %}
     </a>
 </div>
 

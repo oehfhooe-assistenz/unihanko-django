@@ -1,3 +1,8 @@
+# File: core/utils/bool_admin_status.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.utils.html import format_html
 
 def boolean_status_span(value: bool, *, true_label: str, false_label: str,

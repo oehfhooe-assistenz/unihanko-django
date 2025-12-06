@@ -9,8 +9,14 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
+# File: config/settings.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 import environ
 from pathlib import Path
+import os
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,6 +26,11 @@ env = environ.Env(
     DEBUG=(bool, False) # default to false for safety
 )
 environ.Env.read_env(BASE_DIR / '.env')
+
+# UniHanko version
+UNIHANKO_VERSION = "1.0.0"
+UNIHANKO_CODENAME = "Sakura"
+UNIHANKO_VERSION_FULL = f"v{UNIHANKO_VERSION} \"{UNIHANKO_CODENAME}\""
 
 
 # Quick-start development settings - unsuitable for production
@@ -33,56 +44,149 @@ DEBUG = env.bool('DEBUG', default=True)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 LOGIN_URL = "/admin/login/"
 LOGIN_REDIRECT_URL = "/admin/"
-LOGS_DIR = BASE_DIR / 'logs'
-LOGS_DIR.mkdir(exist_ok=True)
+
+if DEBUG:
+    # Development: logs in project directory
+    LOGS_DIR = BASE_DIR / 'logs'
+else:
+    # Production/Staging ('Suupu'): Docker mount
+    LOGS_DIR = Path('/var/log/unihanko')
+
+# Ensure directory exists
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
             'format': '{levelname} {asctime} {module} {message}',
             'style': '{',
         },
     },
     'handlers': {
-        'admin_file': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOGS_DIR / 'admin_actions.log',
-            'maxBytes': 1024 * 1024 * 10,  # 10 MB
-            'backupCount': 5,
-            'formatter': 'verbose',
-        },
-        'hankosign_file': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOGS_DIR / 'hankosign.log',
-            'maxBytes': 1024 * 1024 *10, # 10 MB
-            'backupCount': 5,
-            'formatter': 'verbose',
-        },
+        # Console output (always on)
         'console': {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        
+        # General Django logs
+        'file_django': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'django.log',
+            'maxBytes': 10 * 1024 * 1024,  # 10MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        
+        # Authentication events
+        'file_auth': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'auth.log',
+            'maxBytes': 5 * 1024 * 1024,  # 5MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        
+        # HankoSign workflow state changes
+        'file_hankosign': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'hankosign.log',
+            'maxBytes': 10 * 1024 * 1024,  # 10MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        
+        # Payment plan modifications
+        'file_payments': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'payments.log',
+            'maxBytes': 5 * 1024 * 1024,  # 5MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        
+        # Admin actions (deletions, bulk actions, sensitive ops)
+        'file_admin': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'admin.log',
+            'maxBytes': 10 * 1024 * 1024,  # 10MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        
+        # Errors and exceptions
+        'file_errors': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'errors.log',
+            'maxBytes': 10 * 1024 * 1024,  # 10MB
+            'backupCount': 10,  # Keep more error logs
             'formatter': 'verbose',
         },
     },
     'loggers': {
-        'unihanko.admin': {
-            'handlers': ['admin_file', 'console'],
+        # Root Django logger - catches all Django internals
+        'django': {
+            'handlers': ['console', 'file_django'],
             'level': 'INFO',
             'propagate': False,
         },
-        'hankosign': {
-            'handlers': ['hankosign_file', 'console'],
+        
+        # Django request/response logs
+        'django.request': {
+            'handlers': ['console', 'file_errors'],
+            'level': 'ERROR',  # Only log request errors (4xx, 5xx)
+            'propagate': False,
+        },
+        
+        # Database queries (useful for debugging, disable in prod)
+        'django.db.backends': {
+            'handlers': ['console'] if DEBUG else [],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        
+        # Authentication events
+        'unihanko.auth': {
+            'handlers': ['console', 'file_auth'],
             'level': 'INFO',
             'propagate': False,
-        }
+        },
+        
+        # HankoSign workflow
+        'unihanko.hankosign': {
+            'handlers': ['console', 'file_hankosign'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        
+        # Payment plans
+        'unihanko.payments': {
+            'handlers': ['console', 'file_payments'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        
+        # Admin actions
+        'unihanko.admin': {
+            'handlers': ['console', 'file_admin'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
-if not DEBUG:  # Production
-    LOGGING['loggers']['hankosign']['handlers'] = ['console']
-    LOGGING['loggers']['unihanko.admin']['handlers'] = ['console']
 
 
 # Application definition
@@ -135,6 +239,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'simple_history.middleware.HistoryRequestMiddleware',
+    'core.middleware.ConstraintErrorMiddleware',
+    'core.middleware.MaintenanceModeMiddleware',
 ]
 SITE_ID = 1
 ROOT_URLCONF = 'config.urls'
@@ -149,6 +255,7 @@ TEMPLATES = [
                 'django.template.context_processors.i18n',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'core.context_processors.version_info',
             ],
         },
     },
@@ -229,8 +336,28 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# Media files configuration
+MEDIA_URL = '/media/'
 
+if DEBUG:
+    # Development: Use local filesystem
+    MEDIA_ROOT = BASE_DIR / 'media'
+else:
+    # Production/Staging: Use MinIO
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    
+    AWS_ACCESS_KEY_ID = env('MINIO_ACCESS_KEY')
+    AWS_SECRET_ACCESS_KEY = env('MINIO_SECRET_KEY')
+    AWS_STORAGE_BUCKET_NAME = env('MINIO_BUCKET_NAME')
+    AWS_S3_ENDPOINT_URL = env('MINIO_ENDPOINT_URL')
+    AWS_S3_REGION_NAME = 'us-east-1'  # MinIO default, always this
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = True
+    AWS_QUERYSTRING_EXPIRE = 3600  # 1 hour signed URLs
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # django-simple-captcha configuration
 CAPTCHA_IMAGE_SIZE = (120, 50)

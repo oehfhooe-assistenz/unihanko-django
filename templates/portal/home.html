@@ -1,33 +1,40 @@
 {% extends "portal/base.html" %}
 {% load i18n %}
 
+<!--
+Template: home.html
+Version: 1.0.0
+Author: vas
+Modified: 2025-11-27
+-->
+
 {% block content %}
-<h1 class="page-title">{% trans "Self Service Portal" %}</h1>
+<h1 class="page-title">{% trans "Main Menu" %}</h1>
 
 <div class="portal-home-grid">
     <!-- ECTS Filing Card -->
     <div class="card portal-card" onclick="window.location.href='{% url 'portal:academia:semester_list' %}'">
         <div class="portal-card-header ects">
-            <h2>📚 {% trans "ECTS Reimbursement" %}</h2>
+            <span>🏛️</span><h2>{% trans "ECTS Reimbursement Center" %}</h2>
         </div>
         <p class="portal-card-text">
-            {% trans "File ECTS reimbursement requests for courses you've completed. Submit your course list, download the form, and upload it after professor signatures." %}
+            {% trans "File ECTS reimbursement requests for courses you're planning on substituting. Submit your information, download the form, and re-upload it after collecting the necessary signatures." %}
         </p>
         <a href="{% url 'portal:academia:semester_list' %}" class="btn portal-card-btn">
-            {% trans "Start Filing" %}
+            {% trans "File your Reimbursement" %}
         </a>
     </div>
 
     <!-- Payment Plans Card -->
     <div class="card portal-card" onclick="window.location.href='{% url 'portal:payments:fy_list' %}'">
         <div class="portal-card-header ects">
-            <h2>💰 {% trans "Payment Plans ('FuGeb')" %}</h2>
+            <span>🪙</span><h2>{% trans "Payment Plans Center" %}</h2>
         </div>
         <p class="portal-card-text">
-            {% trans "Complete your payment plan banking details. Enter your personal access code, fill in your account information, and upload the signed form." %}
+            {% trans "Complete your payment plan banking details to receive your representation allowance. Enter your personal access code, submit your information, download, sign and re-upload the form." %}
         </p>
-        <a href="{% url 'portal:payments:fy_list' %}" class="btn btn-secondary portal-card-btn">
-            {% trans "Manage Plans" %}
+        <a href="{% url 'portal:payments:fy_list' %}" class="btn btn portal-card-btn">
+            {% trans "Manage your Plans" %}
         </a>
     </div>
 </div>

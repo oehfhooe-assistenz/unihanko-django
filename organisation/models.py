@@ -1,3 +1,8 @@
+# File: organisation/models.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from __future__ import annotations
 from django.db import models
 from django.utils.translation import gettext_lazy as _

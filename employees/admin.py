@@ -1,4 +1,8 @@
-#employees/admin.py
+# File: employees/admin.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.contrib import admin, messages
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -7,13 +11,12 @@ from django_object_actions import DjangoObjectActions
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
-from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action, ManagerOnlyHistoryMixin
+from core.admin_mixins import ImportExportGuardMixin, safe_admin_action, HistoryGuardMixin, with_help_widget
 from core.pdf import render_pdf_response
 from organisation.models import OrgInfo
 from decimal import Decimal, ROUND_HALF_UP
 from django.urls import reverse
 from django.http import HttpResponse
-# NEW: helpers for the server-rendered calendar
 from datetime import date as _date, timedelta
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
@@ -38,6 +41,9 @@ from django.db.models import Exists, OuterRef, Subquery, F, Q, BooleanField, Exp
 from hankosign.models import Signature
 from annotations.admin import AnnotationInline
 from annotations.views import create_system_annotation
+from core.admin_mixins import log_deletions
+from django_admin_inline_paginator_plus.admin import StackedInlinePaginated
+
 # =========================
 # Import–Export resources
 # =========================
@@ -162,10 +168,11 @@ class TimeEntryAdminForm(forms.ModelForm):
         t = self.cleaned_data.get("end_time")
         return t.replace(second=0, microsecond=0) if t else t
 
-class TimeEntryInline(admin.StackedInline):
-
+class TimeEntryInline(StackedInlinePaginated):
     model = TimeEntry
     form = TimeEntryAdminForm
+    per_page = 10
+    pagination_key = "time-entry"
     extra = 0
     fields = ("version","date", "kind", "start_time", "end_time", "minutes", "comment",)
     readonly_fields = ()
@@ -195,8 +202,10 @@ class TimeEntryInline(admin.StackedInline):
         return super().has_delete_permission(request, obj)
     
 
-class EmploymentDocumentInline(admin.StackedInline):
+class EmploymentDocumentInline(StackedInlinePaginated):
     model = EmploymentDocument
+    per_page = 3
+    pagination_key = "employment-document"
     extra = 0
     fields = ("kind", "title", "start_date", "end_date", "is_active", "pdf_file", "code")
     readonly_fields = ("code",)
@@ -208,9 +217,11 @@ class EmploymentDocumentInline(admin.StackedInline):
 # Employee Admin
 # =========================
 
-class EmployeeLeaveYearInline(admin.StackedInline):
+class EmployeeLeaveYearInline(StackedInlinePaginated):
     model = EmployeeLeaveYear
     extra = 0
+    per_page = 1
+    pagination_key = "employee-leave-year"
     can_delete = False
     verbose_name = _("PTO Year Breakdown")
     verbose_name_plural = _("PTO Years Breakdown")
@@ -242,16 +253,15 @@ class EmployeeLeaveYearInline(admin.StackedInline):
         return qs.order_by("-label_year")
 
 
+@with_help_widget
 @admin.register(Employee)
 class EmployeeAdmin(
     SimpleHistoryAdmin,
     DjangoObjectActions,
     ImportExportModelAdmin,
-    #no concurrency,
-    HelpPageMixin,
     ManagerEditableGateMixin, 
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
     ):
     resource_classes = [EmployeeResource]
     list_display = (
@@ -372,8 +382,6 @@ class EmployeeAdmin(
 # EmploymentDocument Admin
 # =========================
 
-# admin.py
-
 class EmploymentDocumentAdminForm(forms.ModelForm):
     class Meta:
         model = EmploymentDocument
@@ -405,16 +413,16 @@ class EmploymentDocumentAdminForm(forms.ModelForm):
             self.add_error("end_date", _("End date cannot be before start date."))
         return cleaned
 
-
+@log_deletions
+@with_help_widget
 @admin.register(EmploymentDocument)
 class EmploymentDocumentAdmin(
     SimpleHistoryAdmin,
     DjangoObjectActions,
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
     ):
     form = EmploymentDocumentAdminForm
     resource_classes = [EmploymentDocumentResource]
@@ -430,7 +438,7 @@ class EmploymentDocumentAdmin(
         "employee__person_role__role__name",
     )
     autocomplete_fields = ("employee",)
-    readonly_fields = ("code", "created_at", "updated_at", "signatures_box", "version",)
+    readonly_fields = ("code", "created_at", "updated_at", "signatures_box")
 
     fieldsets = (
         (_("Scope"), {"fields": ("employee", "code",)}),
@@ -891,17 +899,17 @@ class TimeSheetStateFilter(admin.SimpleListFilter):
 
         return qs
 
-
+@log_deletions
+@with_help_widget
 @admin.register(TimeSheet)
 class TimeSheetAdmin(
     SimpleHistoryAdmin,
     DjangoObjectActions,
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
-    HelpPageMixin,
     ManagerEditableGateMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
     ):
     resource_classes = [TimeSheetResource]
     list_display = (
@@ -1464,13 +1472,15 @@ class TimeSheetAdmin(
 # HolidayCalendar Admin
 # =========================
 
+@log_deletions
+@with_help_widget
 @admin.register(HolidayCalendar)
 class HolidayCalendarAdmin(
     SimpleHistoryAdmin,
     ImportExportModelAdmin,
     ImportExportGuardMixin,
     ManagerEditableGateMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
     ):
     resource_classes = [HolidayCalendarResource]
     list_display = ("name", "is_active", "updated_at")
@@ -1495,14 +1505,14 @@ class HolidayCalendarAdmin(
 # Keep TimeEntry out of the side menu
 # =========================
 
+@with_help_widget
 @admin.register(TimeEntry)
 class TimeEntryAdmin(
     SimpleHistoryAdmin,
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
     ):
     resource_classes = [TimeEntryResource]
     form = TimeEntryAdminForm

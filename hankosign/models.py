@@ -1,4 +1,8 @@
-#hankosign/models.py
+# File: hankosign/models.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from __future__ import annotations
 from django.db import models
 
@@ -15,8 +19,7 @@ from django.utils.translation import gettext_lazy as _
 
 from simple_history.models import HistoricalRecords
 
-# Your existing app types
-from people.models import Role, PersonRole  # Role: your role taxonomy; PersonRole: assignment
+from people.models import Role, PersonRole
 
 
 class Action(models.Model):
@@ -72,6 +75,19 @@ class Action(models.Model):
     @property
     def action_code(self) -> str:
         return f"{self.verb}:{self.stage or '-'}@{self.scope.app_label}.{self.scope.model}"
+    
+    def clean(self):
+        super().clean()
+        if self.pk is None or self._state.adding:
+            exists = Action.objects.filter(
+                verb=self.verb,
+                stage=self.stage or "",
+                scope=self.scope
+            ).exists()
+            if exists:
+                raise ValidationError({
+                    "__all__": _("An action with this verb/stage/scope combination already exists.")
+                })
 
 
 class Policy(models.Model):
@@ -132,6 +148,16 @@ class Policy(models.Model):
             raise ValidationError({"actions": _("Use either the legacy FK *or* the list, not both.")})
         if not has_fk and not has_m2m:
             raise ValidationError({"actions": _("Pick at least one Action (legacy FK or the list).")})
+        
+        if self.action_id and self.role_id:
+            exists = Policy.objects.filter(
+                role=self.role,
+                action=self.action
+            ).exclude(pk=self.pk).exists()
+            if exists:
+                raise ValidationError({
+                    "__all__": _("A policy for this role and action already exists.")
+                })
 
 
 

@@ -1,18 +1,23 @@
-# helppages/admin.py
+# File: helppages/admin.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
 
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from markdownx.admin import MarkdownxModelAdmin
-from core.admin_mixins import HelpPageMixin, ManagerOnlyHistoryMixin
+from core.admin_mixins import HistoryGuardMixin, with_help_widget
 from .models import HelpPage
 from simple_history.admin import SimpleHistoryAdmin
+from core.admin_mixins import log_deletions
 
+@log_deletions
+@with_help_widget
 @admin.register(HelpPage)
 class HelpPageAdmin(
     SimpleHistoryAdmin,
     MarkdownxModelAdmin,
-    HelpPageMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
     ):
     list_display = ('content_type', 'get_title', 'author', 'is_active', 'updated_at')
     list_filter = ('is_active', 'content_type__app_label', 'show_legend')

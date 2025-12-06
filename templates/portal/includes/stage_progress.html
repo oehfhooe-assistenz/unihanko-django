@@ -1,6 +1,13 @@
 {% load i18n %}
 {# Reusable stage progress indicator - pass current_stage and stage_type #}
 
+<!--
+Template: stage_progress.html
+Version: 1.0.0
+Author: vas
+Modified: 2025-11-27
+-->
+
 {% if stage_type == "ects" %}
     <div class="stage-progress-inline">
         <span class="stage-pill {% if current_stage == 'DRAFT' %}current{% endif %}">{% trans "Draft" %}</span>

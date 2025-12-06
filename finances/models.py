@@ -1,4 +1,8 @@
-#finances/models.py
+# File: finances/models.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from __future__ import annotations
 from datetime import date, timedelta
 from django.db import models, transaction
@@ -14,6 +18,11 @@ import calendar
 from django.core.validators import RegexValidator
 from people.models import PersonRole
 from django.utils.translation import get_language, gettext_lazy as _
+import logging
+
+
+payments_logger = logging.getLogger('unihanko.payments')
+
 # --- helpers ---------------------------------------------------------------
 
 
@@ -687,7 +696,9 @@ class PaymentPlan(models.Model):
         
     # ---------- Save hook ----------
     def save(self, *args, **kwargs):
-        if not self.pk:  # First save only
+        creating = not self.pk  # Track if this is creation
+        
+        if creating:  # First save only
             # 1. Validate fiscal_year exists
             if not self.fiscal_year_id:
                 raise ValidationError({"fiscal_year": _("Fiscal year is required.")})
@@ -716,6 +727,13 @@ class PaymentPlan(models.Model):
             self.status = paymentplan_status(self)
         
         super().save(*args, **kwargs)
+        
+        # Log after successful save
+        if creating:
+            payments_logger.info(
+                f"Payment plan {self.plan_code} created for {self.person_role} "
+                f"in {self.fiscal_year.code}"
+            )
 
 
 def _iban_checksum_ok(iban: str) -> bool:

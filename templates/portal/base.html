@@ -1,4 +1,11 @@
 {% load static i18n %}
+<!--
+Template: base.html
+Version: 1.0.0
+Author: vas
+Modified: 2025-11-27
+-->
+
 <!DOCTYPE html>
 <html lang="{{ request.LANGUAGE_CODE }}">
 <head>
@@ -14,12 +21,18 @@
 <body>
     <header class="portal-header">
         <div class="header-content">
-            <a href="{% url 'portal:home' %}" class="logo-small">UNIHANKO</a>
+            <span class="hanko-stamp"><img src="{% static 'img/unihanko-logo.svg' %}" alt="UniHanko Logo"></span>
+            <a href="{% url 'portal:home' %}" title="{% trans "Self Service Portal" %}" class="logo-animated">
+                <span class="logo-static">UNIHANKO</span>
+                <span class="logo-expand">
+                    <span class="logo-full">.SELF.SERVICE.PORTAL</span>
+                    <span class="logo-short">.SSP</span>
+                </span>
+            </a>
             <nav class="nav-links">
-                <a href="/">{% trans "Home" %}</a>
-                <a href="{% url 'portal:home' %}">{% trans "Portal" %}</a>
+                <a href="/" title="{% trans "Home" %}">{% trans "Home" %}</a>
             </nav>
-        
+            
             <!-- Language Switcher -->
             <div class="lang-switcher">
                 {% with code=request.LANGUAGE_CODE|slice:":2" %}
@@ -54,6 +67,7 @@
                 </form>
                 {% endwith %}
             </div>
+
         </div>
     </header>
 
@@ -72,9 +86,21 @@
     </main>
 
     <footer class="portal-footer">
-        <p>© 2024 UniHanko - {% trans "Students' Union Management System" %}</p>
+        <div class="credits">
+        {% trans "Built with" %} <span class="heart">♥</span> {% trans "by" %} 
+        <a href="https://github.com/yourusername" target="_blank">Sven Várszegi</a>
+        {% trans "for" %} <a href="https://www.oeh.fh-ooe.at" target="_blank" rel="noopener" style="text-decoration: none; border-bottom: none !important; align-items: center;"><img src="{% static 'img/unihanko-mark.svg' %}" alt="UniHanko Logo" width="40px" height="40px" style="vertical-align:middle; margin: 0 4px;"></a></span>
+        <span><small style="margin-top: 0.1rem; display: block;">© 2025 {% trans "All rights reserved" %} UH:SSP {{ UNIHANKO_VERSION_FULL }}</small></span>
+        </div>
     </footer>
 
-    {% block extra_js %}{% endblock %}
+    {% block extra_js %}
+    <script>
+    setTimeout(() => {
+        const logo = document.querySelector('.logo-animated');
+        if (logo) logo.classList.add('should-collapse');
+    }, 3000);
+    </script>
+    {% endblock %}
 </body>
 </html>

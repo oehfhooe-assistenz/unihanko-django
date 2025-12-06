@@ -1,14 +1,18 @@
-# portal/forms.py
 """
-Forms for the public ECTS filing portal.
+Forms for the public ECTS Reimbursement Center.
 """
+# File: portal/forms.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-27
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.forms import formset_factory
 from captcha.fields import CaptchaField
 from decimal import Decimal
-import pikepdf
+from .utils import validate_pdf_upload
 
 from academia.models import InboxRequest, InboxCourse, Semester
 from people.models import PersonRole, Person
@@ -234,57 +238,7 @@ class UploadFormForm(forms.Form):
     )
 
     def clean_uploaded_form(self):
-        uploaded_file = self.cleaned_data.get('uploaded_form')
-
-        if not uploaded_file:
-            return uploaded_file
-
-        # Check file size (20MB)
-        max_size = 20 * 1024 * 1024  # 20MB in bytes
-        if uploaded_file.size > max_size:
-            raise ValidationError(
-                _("File size exceeds 20MB. Please upload a smaller file.")
-            )
-
-        # Check if it's a PDF
-        if not uploaded_file.name.lower().endswith('.pdf'):
-            raise ValidationError(
-                _("Only PDF files are allowed.")
-            )
-
-        # Validate PDF with pikepdf (basic security checks)
-        try:
-            uploaded_file.seek(0)  # Reset file pointer
-            pdf = pikepdf.open(uploaded_file)
-
-            # Check for embedded files (potential malware vector)
-            if '/EmbeddedFiles' in pdf.Root.get('/Names', {}):
-                raise ValidationError(
-                    _("PDF contains embedded files, which are not allowed for security reasons.")
-                )
-
-            # Check for JavaScript (potential XSS vector)
-            # Note: eIDAS signatures are fine, they use /AcroForm which is different
-            if '/JavaScript' in pdf.Root.get('/Names', {}):
-                raise ValidationError(
-                    _("PDF contains JavaScript, which is not allowed for security reasons.")
-                )
-
-            pdf.close()
-
-        except pikepdf.PdfError as e:
-            raise ValidationError(
-                _("Invalid or corrupted PDF file. Please try another file.")
-            )
-        except Exception as e:
-            # Catch any other errors during validation
-            raise ValidationError(
-                _("Unable to validate PDF file. Please ensure it's a valid PDF.")
-            )
-
-        # Reset file pointer for saving
-        uploaded_file.seek(0)
-        return uploaded_file
+        return validate_pdf_upload(self.cleaned_data.get('uploaded_form'))
 
 
 # ============================================================================
@@ -324,9 +278,6 @@ class PaymentAccessForm(forms.Form):
                 _("Invalid personal access code. Please check and try again.")
             )
 
-
-# In portal/forms.py - Update your BankingDetailsForm
-
 class BankingDetailsForm(forms.ModelForm):
     """Form for users to complete banking details (without reference field)"""
     
@@ -335,30 +286,38 @@ class BankingDetailsForm(forms.ModelForm):
         fields = ['payee_name', 'iban', 'bic', 'address']  # Removed 'reference'
         
         widgets = {
-            'payee_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Full name on bank account'}),
-            'iban': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'AT12 3456 7890 1234 5678'}),
-            'bic': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'RZOOAT2L'}),
-            'address': forms.Textarea(attrs={'class': 'form-input', 'rows': 3, 'placeholder': 'Street, Number\nPostal Code, City\nCountry'}),
+            'payee_name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': _('Full name on bank account')}),
+            'iban': forms.TextInput(attrs={'class': 'form-input', 'placeholder': _('AT12 3456 7890 1234 5678')}),
+            'bic': forms.TextInput(attrs={'class': 'form-input', 'placeholder': _('RZOOAT2L')}),
+            'address': forms.Textarea(attrs={'class': 'form-input', 'rows': 3, 'placeholder': _('Street, Number\nPostal Code, City\nCountry')}),
         }
         
         help_texts = {
-            'payee_name': 'Name of the account holder',
-            'iban': 'International Bank Account Number',
-            'bic': 'Bank Identifier Code (SWIFT)',
-            'address': 'Full postal address of account holder',
+            'payee_name': _('Name of the account holder'),
+            'iban': _('International Bank Account Number'),
+            'bic': _('Bank Identifier Code (SWIFT)'),
+            'address': _('Full postal address of account holder'),
         }
 
     def clean_iban(self):
         iban = self.cleaned_data.get('iban', '').replace(' ', '').upper()
         if not iban.startswith('AT') or len(iban) != 20:
-            raise forms.ValidationError('Please enter a valid Austrian IBAN (AT followed by 18 digits)')
+            raise forms.ValidationError(_('Please enter a valid Austrian IBAN (AT followed by 18 digits)'))
         return iban
 
     def clean_bic(self):
         bic = self.cleaned_data.get('bic', '').upper()
         if len(bic) not in [8, 11]:
-            raise forms.ValidationError('BIC must be 8 or 11 characters long')
+            raise forms.ValidationError(_('BIC must be 8 or 11 characters long'))
         return bic
+    
+    def clean_address(self):
+        address = self.cleaned_data.get('address', '').strip()
+        if not address:
+            raise forms.ValidationError(_('An address is required'))
+        if len(address) < 5:
+            raise forms.ValidationError(_('Please provide a complete address'))
+        return address
 
 
 class PaymentUploadForm(forms.Form):
@@ -384,53 +343,4 @@ class PaymentUploadForm(forms.Form):
     )
 
     def clean_pdf_file(self):
-        uploaded_file = self.cleaned_data.get('pdf_file')
-
-        if not uploaded_file:
-            return uploaded_file
-
-        # Check file size (20MB)
-        max_size = 20 * 1024 * 1024  # 20MB in bytes
-        if uploaded_file.size > max_size:
-            raise ValidationError(
-                _("File size exceeds 20MB. Please upload a smaller file.")
-            )
-
-        # Check if it's a PDF
-        if not uploaded_file.name.lower().endswith('.pdf'):
-            raise ValidationError(
-                _("Only PDF files are allowed.")
-            )
-
-        # Validate PDF with pikepdf (basic security checks)
-        try:
-            uploaded_file.seek(0)  # Reset file pointer
-            pdf = pikepdf.open(uploaded_file)
-
-            # Check for embedded files (potential malware vector)
-            if '/EmbeddedFiles' in pdf.Root.get('/Names', {}):
-                raise ValidationError(
-                    _("PDF contains embedded files, which are not allowed for security reasons.")
-                )
-
-            # Check for JavaScript (potential XSS vector)
-            if '/JavaScript' in pdf.Root.get('/Names', {}):
-                raise ValidationError(
-                    _("PDF contains JavaScript, which is not allowed for security reasons.")
-                )
-
-            pdf.close()
-
-        except pikepdf.PdfError as e:
-            raise ValidationError(
-                _("Invalid or corrupted PDF file. Please try another file.")
-            )
-        except Exception as e:
-            # Catch any other errors during validation
-            raise ValidationError(
-                _("Unable to validate PDF file. Please ensure it's a valid PDF.")
-            )
-
-        # Reset file pointer for saving
-        uploaded_file.seek(0)
-        return uploaded_file
+        return validate_pdf_upload(self.cleaned_data.get('pdf_file'))

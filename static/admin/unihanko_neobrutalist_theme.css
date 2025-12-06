@@ -48,10 +48,13 @@ body {
 
 /* Remove default AdminLTE gradients */
 .wrapper,
-.content-wrapper,
 .main-header,
 .main-sidebar {
-    background: var(--unihanko-bg-dark) !important;
+    background: transparent !important;
+}
+
+.content-wrapper>.content {
+    margin-bottom: 3rem;
 }
 
 /* ============================================
@@ -65,8 +68,9 @@ body {
 /* Brand/Logo area */
 .brand-link {
     background: var(--unihanko-bg-darker) !important;
-    border-bottom: var(--brutal-border) !important;
-    padding: var(--spacing-lg) !important;
+    border-bottom: none !important;
+    padding: var(--spacing-sm) !important;
+    margin-bottom: 0.5rem;
     transition: all 0.2s ease;
 }
 
@@ -80,6 +84,9 @@ body {
     font-weight: 900 !important;
     font-size: 1.2rem !important;
     letter-spacing: 1px;
+    text-shadow: 
+        2px 2px 0 #000,
+        3px 3px 0 var(--unihanko-accent-primary);
 }
 
 /* Sidebar navigation */
@@ -87,7 +94,7 @@ body {
     background: transparent !important;
     color: var(--unihanko-text-secondary) !important;
     border-left: 4px solid transparent !important;
-    padding: var(--spacing-md) var(--spacing-md) !important;
+    padding: var(--spacing-sm) var(--spacing-sm) !important;
     margin: var(--spacing-xs) 0 !important;
     font-weight: 500 !important;
     transition: all 0.2s ease;
@@ -115,7 +122,7 @@ body {
 
 /* Sidebar sub-menus */
 .nav-treeview .nav-link {
-    padding-left: var(--spacing-xl) !important;
+    padding-left: var(--spacing-md) !important;
     font-size: 0.9rem !important;
 }
 
@@ -164,11 +171,13 @@ body {
     background: transparent !important;
     padding: var(--spacing-md) 0 !important;
     margin: 0 !important;
+    text-transform: uppercase;
 }
 
 .breadcrumb-item {
     color: var(--unihanko-text-secondary) !important;
     font-weight: 500 !important;
+    text-shadow: 1px 1px var(--unihanko-bg-dark);
 }
 
 .breadcrumb-item.active {
@@ -186,7 +195,12 @@ body {
    CONTENT WRAPPER
    ============================================ */
 .content-wrapper {
-    background: var(--unihanko-bg-dark) !important;
+    background-color: var(--unihanko-bg-dark) !important;
+    background-image: 
+        radial-gradient(circle, rgba(255, 107, 53, 0.15) 1.5px, transparent 1.5px),
+        radial-gradient(circle, rgba(242, 165, 53, 0.15) 1.5px, transparent 1.5px) !important;
+    background-size: 30px 30px !important;
+    background-position: 0 0, 15px 15px !important;
     padding: var(--spacing-md) !important;
 }
 
@@ -224,12 +238,16 @@ body {
     padding: var(--spacing-md) !important;
     font-weight: 700 !important;
     color: var(--unihanko-text-primary) !important;
+    text-shadow: 1px 1px var(--unihanko-text-secondary);
+    text-transform: uppercase;
 }
 
 .card-title {
     color: var(--unihanko-text-primary) !important;
     font-weight: 700 !important;
     font-size: 1rem !important;
+    text-shadow: 1px 1px var(--unihanko-text-secondary);
+    text-transform: uppercase;
 }
 
 .card-body {
@@ -268,6 +286,8 @@ body {
     letter-spacing: 0.5px;
     transition: all 0.2s ease !important;
     box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3) !important;
+    overflow: hidden !important;
+    text-shadow: 1px 1px var(--unihanko-bg-darker);
 }
 
 .btn:hover {
@@ -292,6 +312,10 @@ body {
     border-color: #ff8555 !important;
 }
 
+.btn-outline-info:hover {
+    background: var(--unihanko-bg-darker) !important;
+}
+
 /* Secondary button */
 .btn-secondary {
     background: #6c757d !important;
@@ -306,14 +330,14 @@ body {
 
 /* Success button */
 .btn-success {
-    background: #28a745 !important;
-    border-color: #28a745 !important;
-    color: #ffffff !important;
+    background: transparent !important;
+    border-color: #10b981 !important;
+    color: #10b981 !important;
 }
 
 .btn-success:hover {
-    background: #218838 !important;
-    border-color: #218838 !important;
+    background: #031811 !important;
+    border-color: #10b981 !important;
 }
 
 /* Danger button */
@@ -352,6 +376,35 @@ body {
     font-size: 0.875rem !important;
 }
 
+#jazzy-collapsible .card-header.collapsible-header::after {
+    content: "+";
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--unihanko-accent-primary);
+    transition: transform 0.2s ease;
+    pointer-events: none;
+}
+
+/* When section is expanded */
+#jazzy-collapsible .card-header.collapsible-header[aria-expanded="true"]::after {
+    content: "−"; /* Minus sign */
+    transform: translateY(-50%) rotate(0deg);
+}
+
+/* Optional: rotate the + to × when opening */
+#jazzy-collapsible .card-header.collapsible-header[aria-expanded="false"]::after {
+    transform: translateY(-50%) rotate(0deg);
+}
+
+/* Hover effect */
+#jazzy-collapsible .card-header.collapsible-header:hover::after {
+    color: var(--unihanko-accent-secondary);
+}
+
 /* ============================================
    FORMS & INPUTS
    ============================================ */
@@ -376,6 +429,10 @@ select {
     font-weight: 500 !important;
     transition: all 0.2s ease;
     font-size: 0.9rem !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--unihanko-accent-primary) !important;
 }
 
 .form-control:focus,
@@ -561,6 +618,46 @@ fieldset legend {
     border-color: var(--unihanko-accent-primary) !important;
     color: #ffffff !important;
     box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.paginator .btn-page {
+    border-radius: 0 !important;
+    border: 4px solid !important;
+    padding: 0.6rem 1.2rem !important;
+    font-weight: 700 !important;
+    font-size: .9rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease !important;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3) !important;
+    overflow: hidden !important;
+    text-shadow: 1px 1px var(--unihanko-bg-darker);
+    background-color: #3a4047;
+    color: #fff;
+    vertical-align: top;
+}
+
+.paginator .btn-page:active {
+    transform: translate(-2px, -2px) !important;
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.4) !important;
+}
+
+.paginator a {
+    display: inline-block;
+    vertical-align: top;
+    border-radius: 0 !important;
+    border: 4px solid !important;
+    padding: 0.6rem 1.2rem !important;
+    font-weight: 700 !important;
+    font-size: .8rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease !important;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3) !important;
+    overflow: hidden !important;
+    text-shadow: 1px 1px var(--unihanko-bg-darker);
+    background-color: #3a4047;
+    color: #fff !important;
 }
 
 /* ============================================
@@ -752,6 +849,7 @@ fieldset legend {
     color: var(--unihanko-text-secondary) !important;
     padding: var(--spacing-lg) !important;
     font-weight: 500;
+    font-size: 0.85rem !important;
 }
 
 .main-footer a {
@@ -907,7 +1005,7 @@ button.form-control[type="submit"],
     letter-spacing: 0.5px !important;
     box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.4) !important;
     transition: all 0.2s ease !important;
-    overflow: scroll !important;
+    overflow: visible !important;
 }
 
 .submit-row input.form-control[type="submit"]:hover,
@@ -943,6 +1041,54 @@ button.form-control[type="_delete"],
     padding: 0.75rem 1.5rem !important;
 }
 
+
+/* ============================================
+   SELECT2 DROPDOWN STYLING FIX (Admin Autocomplete)
+   ============================================ */
+
+/* Target admin-autocomplete variant */
+.select2-container--admin-autocomplete .select2-results__option,
+.select2-container--default .select2-results__option {
+    background: var(--unihanko-bg-card) !important;
+    color: var(--unihanko-text-primary) !important;
+    padding: var(--spacing-md) !important;
+    border-bottom: 2px solid var(--unihanko-border) !important;
+}
+
+/* Hover/highlighted state - both variants */
+.select2-container--admin-autocomplete .select2-results__option--highlighted,
+.select2-container--admin-autocomplete .select2-results__option.select2-results__option--highlighted,
+.select2-container--default .select2-results__option--highlighted {
+    background: rgba(255, 107, 53, 0.3) !important;
+    color: #fff !important;
+    border-left: 4px solid var(--unihanko-accent-primary) !important;
+}
+
+/* Selected state */
+.select2-container--admin-autocomplete .select2-results__option[aria-selected="true"],
+.select2-container--default .select2-results__option[aria-selected="true"] {
+    background: rgba(255, 107, 53, 0.2) !important;
+    color: var(--unihanko-accent-primary) !important;
+    font-weight: 700 !important;
+}
+
+/* Dropdown box - both variants */
+.select2-container--admin-autocomplete .select2-dropdown,
+.select2-container--default .select2-dropdown {
+    background: var(--unihanko-bg-card) !important;
+    border: var(--brutal-border) !important;
+    border-radius: 0 !important;
+    box-shadow: var(--brutal-shadow) !important;
+}
+
+/* Search input - both variants */
+.select2-container--admin-autocomplete .select2-search--dropdown .select2-search__field,
+.select2-container--default .select2-search--dropdown .select2-search__field {
+    background: var(--unihanko-bg-darker) !important;
+    border: var(--brutal-border) !important;
+    color: var(--unihanko-text-primary) !important;
+    border-radius: 0 !important;
+}
 
 
 
@@ -1026,8 +1172,4 @@ tbody tr:has(td.field-active_text .js-state[data-state="off"]) {
 
 div.inline-related {
     padding: 0 !important;
-}
-
-.card[id="annotations"] .card-header {
-    background: red !important;
 }

@@ -1,17 +1,27 @@
 {% extends "portal/base.html" %}
 {% load i18n %}
 
-{% block content %}
-<h1 class="page-title">{% trans "Payment Plan Portal" %}</h1>
+<!--
+Template: fy_list.html
+Version: 1.0.0
+Author: vas
+Modified: 2025-11-27
+-->
 
-<p style="color: #94a3b8; margin-bottom: 2rem;">
-    {% trans "Select a fiscal year to access your payment plans." %}
-</p>
+{% block content %}
+<h1 class="page-title">{% trans "Payment Plans Center" %}</h1>
+
+<div class="card">
+    <h2 class="card-title">{% trans "Manage Your Payment Plans" %}</h2>
+    <p class="text-muted">
+        {% trans "Select a fiscal year to access your payment plans" %}
+    </p>
+</div>
 
 {% if fiscal_years %}
     <div style="display: grid; gap: 1.5rem;">
         {% for fy in fiscal_years %}
-        <div class="card" style="cursor: pointer;"
+        <div class="card card-info" style="cursor: pointer;"
              onclick="window.location.href='{% url 'portal:payments:payment_access' fy_code=fy.code %}'">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                 <div>
@@ -19,12 +29,12 @@
                         {{ fy.label }}
                     </h3>
                     <p style="color: #94a3b8; font-size: 0.9rem;">
-                        {{ fy.start|date:"d.m.Y" }} - {{ fy.end|date:"d.m.Y" }}
+                        <strong>{% trans "From" %}</strong> {{ fy.start|date:"d.m.Y" }} <strong>{% trans "To" %}</strong> {{ fy.end|date:"d.m.Y" }}
                     </p>
                 </div>
                 <div>
                     <a href="{% url 'portal:payments:payment_access' fy_code=fy.code %}" class="btn">
-                        {% trans "Access Plans" %} →
+                        {% trans "Login with PAC" %}
                     </a>
                 </div>
             </div>
@@ -40,7 +50,7 @@
 {% endif %}
 
 <div style="margin-top: 2rem;">
-    <a href="{% url 'portal:home' %}" class="btn btn-secondary">{% trans "Back to Portal" %}</a>
+    <a href="{% url 'portal:home' %}" class="btn btn-secondary">{% trans "Back to the SSP" %}</a>
 </div>
 
 {% endblock %}

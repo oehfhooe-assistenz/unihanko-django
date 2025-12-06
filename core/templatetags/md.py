@@ -1,3 +1,8 @@
+# File: core/templatetags/md.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django import template
 from django.utils.safestring import mark_safe
 import markdown as md

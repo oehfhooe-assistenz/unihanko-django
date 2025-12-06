@@ -1,3 +1,8 @@
+# File: core/utils/weekday_helper.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 # utils.py
 from __future__ import annotations
 from datetime import date, timedelta

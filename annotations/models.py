@@ -1,3 +1,8 @@
+# File: annotations/models.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType

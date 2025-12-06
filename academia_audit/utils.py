@@ -1,9 +1,13 @@
-# academia_audit/utils.py
 """
 Utility functions for Academia Audit module.
 
 Includes audit synchronization and ECTS calculation helpers.
 """
+# File: academia_audit/utils.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from __future__ import annotations
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP

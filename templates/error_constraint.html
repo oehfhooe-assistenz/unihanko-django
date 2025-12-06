@@ -1,0 +1,274 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "DB Error" %} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Django administration') }}</a></h1>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumb">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    <span class="breadcrumb-separator">›</span>
+    <span>⚠️ {% trans 'DB Error' %}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+.constraint-error-wrap {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: var(--spacing-lg);
+}
+
+.error-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    background: var(--unihanko-bg-card);
+    border: var(--brutal-border);
+    box-shadow: var(--brutal-shadow);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+}
+
+.error-icon {
+    font-size: 3.5rem;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
+.error-header-text h1 {
+    color: var(--unihanko-text-primary);
+    font-weight: 900;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0 0 var(--spacing-sm) 0;
+    text-shadow: 
+    2px 2px 0 #000,
+    3px 3px 0 var(--unihanko-accent-secondary);
+}
+
+.error-badge {
+    display: inline-block;
+    background: rgba(220, 38, 38, 0.2);
+    border: 3px solid var(--unihanko-accent-secondary);
+    color: var(--unihanko-accent-secondary);
+    padding: 0.4rem 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+.error-main {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.error-message {
+    background: var(--unihanko-bg-card);
+    border: var(--brutal-border);
+    box-shadow: var(--brutal-shadow);
+    padding: var(--spacing-lg);
+    border-left: 6px solid #ffc107;
+}
+
+.error-message p {
+    color: var(--unihanko-text-primary);
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 0;
+    font-weight: 500;
+}
+
+.error-suggestions {
+    background: var(--unihanko-bg-darker);
+    border: var(--brutal-border);
+    border-left: 6px solid var(--unihanko-accent-primary);
+    padding: var(--spacing-md);
+}
+
+.error-suggestions h3 {
+    color: var(--unihanko-accent-primary);
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    margin: 0 0 var(--spacing-sm) 0;
+}
+
+.error-suggestions ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.error-suggestions li {
+    color: var(--unihanko-text-secondary);
+    padding: 0.3rem 0 0.3rem var(--spacing-md);
+    position: relative;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.error-suggestions li:before {
+    content: "▸";
+    position: absolute;
+    left: 0;
+    color: var(--unihanko-accent-primary);
+    font-weight: 900;
+}
+
+.error-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: center;
+}
+
+.error-actions a {
+    border-radius: 0 !important;
+    border: 4px solid !important;
+    padding: 0.75rem 1.5rem !important;
+    font-weight: 700 !important;
+    font-size: 0.9rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease !important;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3) !important;
+    text-decoration: none !important;
+    display: inline-block;
+}
+
+.error-actions a.btn-primary {
+    background: var(--unihanko-accent-primary) !important;
+    border-color: var(--unihanko-accent-primary) !important;
+    color: #ffffff !important;
+}
+
+.error-actions a.btn-primary:hover {
+    background: #ff8555 !important;
+    transform: translate(-2px, -2px) !important;
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.4) !important;
+}
+
+.error-actions a.btn-secondary {
+    background: transparent !important;
+    border-color: var(--unihanko-border) !important;
+    color: var(--unihanko-text-secondary) !important;
+}
+
+.error-actions a.btn-secondary:hover {
+    background: rgba(255, 107, 53, 0.1) !important;
+    border-color: var(--unihanko-accent-primary) !important;
+    color: var(--unihanko-text-primary) !important;
+    transform: translate(-2px, -2px) !important;
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.4) !important;
+}
+
+.error-technical {
+    background: var(--unihanko-bg-darker);
+    border: var(--brutal-border);
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-md);
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+}
+
+.error-technical summary {
+    color: var(--unihanko-text-primary);
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.error-technical summary:hover {
+    color: var(--unihanko-accent-primary);
+}
+
+.error-technical pre {
+    color: var(--unihanko-text-secondary);
+    margin: 0;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+@media (max-width: 768px) {
+    .error-main {
+        grid-template-columns: 1fr;
+    }
+    
+    .error-header {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+</style>
+
+<div class="constraint-error-wrap">
+    <div class="error-header">
+        <span class="error-icon">⚠️</span>
+        <div class="error-header-text">
+            <h1>{% trans "Database Constraint Error" %}</h1>
+            <span class="error-badge">
+                {% if error_type == 'unique' %}{% trans "DUPLICATE" %}
+                {% elif error_type == 'foreign_key' %}{% trans "DEPENDENCY" %}
+                {% elif error_type == 'check' %}{% trans "VALIDATION" %}
+                {% elif error_type == 'not_null' %}{% trans "REQUIRED FIELD" %}
+                {% else %}{% trans "DATABASE" %}{% endif %}
+            </span>
+        </div>
+    </div>
+    
+    <div class="error-main">
+        <div class="error-message">
+            <p>{{ user_message }}</p>
+        </div>
+        
+        <div class="error-suggestions">
+            <h3>{% trans "What to do" %}</h3>
+            <ul>
+                {% if error_type == 'unique' %}
+                    <li>{% trans "Check if record exists" %}</li>
+                    <li>{% trans "Modify unique fields" %}</li>
+                {% elif error_type == 'foreign_key' %}
+                    <li>{% trans "Verify related record exists" %}</li>
+                    <li>{% trans "Remove dependencies first" %}</li>
+                {% elif error_type == 'check' %}
+                    <li>{% trans "Check date order" %}</li>
+                    <li>{% trans "Verify all values" %}</li>
+                {% elif error_type == 'not_null' %}
+                    <li>{% trans "Fill required fields (*)" %}</li>
+                    <li>{% trans "Check selections" %}</li>
+                {% else %}
+                    <li>{% trans "Review your input" %}</li>
+                    <li>{% trans "Contact support" %}</li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+    
+    <div class="error-actions">
+        <a href="javascript:history.back()" class="btn-primary">
+            {% trans "Go Back" %}
+        </a>
+        <a href="{% url 'admin:index' %}" class="btn-secondary">
+            {% trans "Go Home" %}
+        </a>
+    </div>
+    
+    {% if technical_details %}
+    <details class="error-technical">
+        <summary> {% trans "Technical Details (Administrators)" %}</summary>
+        <pre>{{ technical_details }}</pre>
+    </details>
+    {% endif %}
+</div>
+{% endblock %}

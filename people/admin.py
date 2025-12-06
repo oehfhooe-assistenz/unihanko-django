@@ -1,4 +1,8 @@
-# people/admin.py
+# File: people/admin.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.contrib import admin, messages
 from django.utils import timezone
 from django.utils.html import escapejs
@@ -14,7 +18,7 @@ from django.urls import reverse
 from organisation.models import OrgInfo
 from .models import Person, Role, PersonRole, RoleTransitionReason
 from core.pdf import render_pdf_response
-from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action, ManagerOnlyHistoryMixin
+from core.admin_mixins import ImportExportGuardMixin, safe_admin_action, HistoryGuardMixin, with_help_widget
 from concurrency.admin import ConcurrentModelAdmin
 from hankosign.utils import render_signatures_box, state_snapshot, get_action, record_signature, RID_JS, sign_once, seal_signatures_context
 from django.core.exceptions import PermissionDenied
@@ -28,6 +32,8 @@ from django.db import transaction
 from django.db.models import Prefetch
 from annotations.admin import AnnotationInline
 from annotations.views import create_system_annotation
+from core.admin_mixins import log_deletions
+from django_admin_inline_paginator_plus.admin import StackedInlinePaginated
 
 # =========================
 # Import–Export resources
@@ -176,10 +182,12 @@ class ActiveFilter(admin.SimpleListFilter):
 # =========================
 # Inlines
 # =========================
-class PersonRoleInline(admin.StackedInline):
+class PersonRoleInline(StackedInlinePaginated):
     model = PersonRole
     extra = 0
-    readonly_fields = ("signatures_box", "election_reference", "created_at", "updated_at", "version")
+    per_page = 1
+    pagination_key = "person-role"
+    readonly_fields = ("signatures_box", "election_reference", "created_at", "updated_at")
     fieldsets = (
         (_("Scope"), {
             "fields": ("person", "role"),
@@ -200,7 +208,7 @@ class PersonRoleInline(admin.StackedInline):
             "fields": ("signatures_box",),
         }),
         (_("System"), {
-            "fields": ("version", "created_at", "updated_at"),
+            "fields": ("created_at", "updated_at"),
         }),
     )
     autocomplete_fields = ("role", "start_reason", "end_reason", "elected_via")
@@ -270,15 +278,16 @@ class PersonRoleInline(admin.StackedInline):
 # =========================
 # Person Admin
 # =========================
+@log_deletions
+@with_help_widget
 @admin.register(Person)
 class PersonAdmin(
     SimpleHistoryAdmin,
     DjangoObjectActions,
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
     ):
     resource_classes = [PersonResource]
 
@@ -300,7 +309,7 @@ class PersonAdmin(
     list_filter = (ActiveAssignmentFilter, "gender", "is_active",)
     search_fields = ("first_name", "last_name", "email", "student_email", "matric_no")
     autocomplete_fields = ("user",)
-    readonly_fields = ("uuid", "personal_access_code", "created_at", "updated_at", "signatures_box", "mail_merged", "version")
+    readonly_fields = ("uuid", "personal_access_code", "created_at", "updated_at", "signatures_box", "mail_merged")
     inlines = [PersonRoleInline, AnnotationInline]
     actions = ("lock_selected", "unlock_selected", "export_selected_pdf")
 
@@ -611,7 +620,7 @@ class PersonAdmin(
     lazy_escapejs = lazy(escapejs, str)
     regenerate_access_code.label = "🔐 " + _("Regenerate access code")
     regenerate_access_code.attrs = {
-        "class": "btn btn-block btn-info",
+        "class": "btn btn-block btn-danger",
         # Simple JS confirm; keeps UX tight without extra templates
         "onclick": format_lazy("return confirm('{0}');", lazy_escapejs(_REGEN_MESSAGE)),
         "style": "margin-bottom: 1rem;",
@@ -659,14 +668,15 @@ class PersonAdmin(
 # =========================
 # Role Admin
 # =========================
+@log_deletions
+@with_help_widget
 @admin.register(Role)
 class RoleAdmin(
     SimpleHistoryAdmin,
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
     ):
     resource_classes = [RoleResource]
     list_display = ("name", "short_name", "ects_cap", "is_elected", "is_stipend_reimbursed", "kind_text", "is_system")
@@ -689,7 +699,6 @@ class RoleAdmin(
             "fields": ("version",),
         }),
     )
-    readonly_fields = ("version",)
 
     @admin.display(description=_("Role type"), ordering="kind")
     def kind_text(self, obj):
@@ -712,10 +721,11 @@ class RoleAdmin(
 # =========================
 # Reason Admin (dictionary)
 # =========================
+@log_deletions
+@with_help_widget
 @admin.register(RoleTransitionReason)
 class ReasonAdmin(
     ImportExportModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin
     ):
     resource_classes = [RoleTransitionReasonResource]
@@ -749,15 +759,16 @@ from finances.models import FiscalYear
 # =========================
 # PersonRole Admin
 # =========================
+@log_deletions
+@with_help_widget
 @admin.register(PersonRole)
 class PersonRoleAdmin(
     SimpleHistoryAdmin,
     DjangoObjectActions,
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
     ):
     resource_classes = [PersonRoleResource]
     list_display = (
@@ -773,7 +784,7 @@ class PersonRoleAdmin(
     list_filter = (ActiveFilter, "role", "start_reason", "end_reason", "start_date", "end_date", "confirm_date")
     search_fields = ("person__last_name", "person__first_name", "role__name", "notes")
     autocomplete_fields = ("person", "role", "start_reason", "end_reason", "elected_via")
-    readonly_fields = ("signatures_box", "election_reference", "created_at", "updated_at", "version")
+    readonly_fields = ("signatures_box", "election_reference", "created_at", "updated_at")
     actions = ["offboard_today"]
     inlines = [AnnotationInline]
     fieldsets = (

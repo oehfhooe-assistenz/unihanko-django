@@ -1,6 +1,13 @@
 {% extends "portal/base.html" %}
 {% load i18n %}
 
+<!--
+Template: file_request.html
+Version: 1.0.0
+Author: vas
+Modified: 2025-11-27
+-->
+
 {% block content %}
 <h1 class="page-title">{% trans "File ECTS Request" %}</h1>
 
@@ -135,7 +142,7 @@
 
 <div class="mt-3">
     <a href="{% url 'portal:academia:semester_list' %}" class="btn btn-secondary">
-        ← {% trans "Back to Semesters" %}
+        {% trans "Back to the ECTS Reimbursement Center" %}
     </a>
 </div>
 

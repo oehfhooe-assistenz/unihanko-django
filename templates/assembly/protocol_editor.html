@@ -1,4 +1,11 @@
 {% load static i18n annotation_tags %}
+<!--
+Template: protocol_editor.html
+Version: 1.0.0
+Author: vas
+Modified: 2025-11-27
+-->
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -656,7 +663,19 @@
                         <div class="named-votes-grid">
                             {% for mandate in session.attendees.all %}
                             <div class="named-vote-row">
-                                <span>{{ mandate.person_role.person.get_full_name }} ({{ mandate.get_officer_role_display }})</span>
+                                <span>
+                                    {{ mandate.person_role.person.get_full_name }} ({{ mandate.get_officer_role_display }})
+                                    
+                                    {% if mandate.backup_person_role %}
+                                        <span style="color: var(--accent-yellow); font-size: 0.85em;">
+                                            → Ersatz: {{ mandate.backup_person_role.person.get_full_name }}
+                                        </span>
+                                    {% elif mandate.backup_person_text %}
+                                        <span style="color: var(--accent-yellow); font-size: 0.85em;">
+                                            → Ersatz: {{ mandate.backup_person_text }}
+                                        </span>
+                                    {% endif %}
+                                </span>
                                 <select name="vote_{{ mandate.pk }}" id="id_vote_{{ mandate.pk }}" class="protokol-select">
                                     <option value="">{% trans "Not voted" %}</option>
                                     <option value="FOR">{% trans "For" %}</option>
@@ -977,7 +996,18 @@
                                 
                                 // Scroll to form
                                 this.$nextTick(() => {
-                                    document.querySelector('.new-item-section').scrollIntoView({ behavior: 'smooth' });
+                                    const form = document.querySelector('.new-item-section');
+                                    const itemCard = event.target.closest('.item-card'); // Get the item being edited
+                                    
+                                    // First scroll item into view
+                                    if (itemCard) {
+                                        itemCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }
+                                    
+                                    // Then after a moment, scroll form into view (but keep item partially visible)
+                                    setTimeout(() => {
+                                        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }, 300);
                                 });
                             } else {
                                 alert(t.errorLoading);

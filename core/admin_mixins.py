@@ -1,4 +1,8 @@
-# core/admin_mixins.py
+# File: core/admin_mixins.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.contrib.auth.models import Group
 from django.contrib import messages
 from django.http import HttpResponseRedirect
@@ -6,7 +10,8 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 FEATURE_IMPORT_GROUP = "feature:import"
-FEATURE_EXPORT_GROUP = "feature:export"     # or use one combined group
+FEATURE_EXPORT_GROUP = "feature:export"
+FEATURE_HISTORY_GROUP = "feature:history"
 
 class ImportExportGuardMixin:
     """
@@ -51,7 +56,7 @@ from django.http import HttpResponseRedirect
 from django.core.exceptions import PermissionDenied
 import logging
 
-logger = logging.getLogger('unihanko.admin')  # We'll configure this logger in settings
+admin_logger = logging.getLogger('unihanko.admin')
 
 def safe_admin_action(func):
     """
@@ -59,57 +64,119 @@ def safe_admin_action(func):
     
     - Catches PermissionDenied and shows user-friendly error
     - Catches all other exceptions, logs them, and shows generic error
-    - Returns user to the change page on error
+    - Auto-redirects to change page if action returns None (prevents loops)
     """
     @wraps(func)
     def wrapper(self, request, obj):
         try:
-            return func(self, request, obj)
+            result = func(self, request, obj)
+            # Auto-redirect if action doesn't explicitly return a response
+            if result is None:
+                opts = self.model._meta
+                change_url = reverse(
+                    f'admin:{opts.app_label}_{opts.model_name}_change',
+                    args=[obj.pk]
+                )
+                return HttpResponseRedirect(change_url)
+            return result
         except PermissionDenied as e:
-            # Expected authorization errors
             self.message_user(request, str(e), level=messages.ERROR)
-            return HttpResponseRedirect(request.path)
+            opts = self.model._meta
+            change_url = reverse(
+                f'admin:{opts.app_label}_{opts.model_name}_change',
+                args=[obj.pk]
+            )
+            return HttpResponseRedirect(change_url)
         except Exception as e:
-            # Unexpected errors - log for debugging
             self.message_user(
                 request,
                 f"An error occurred: {e}",
                 level=messages.ERROR
             )
-            logger.exception(
+            admin_logger.exception(
                 f"Error in {self.__class__.__name__}.{func.__name__} "
                 f"for object {obj.pk}: {e}"
             )
-            return HttpResponseRedirect(request.path)
+            opts = self.model._meta
+            change_url = reverse(
+                f'admin:{opts.app_label}_{opts.model_name}_change',
+                args=[obj.pk]
+            )
+            return HttpResponseRedirect(change_url)
     return wrapper
-
-
-class HelpPageMixin:
-    """Mixin to add help widget to admin changelist."""
     
+
+def with_help_widget(admin_class):
+    """Decorator to add help widget context to admin views."""
+    original_changelist = admin_class.changelist_view
+    original_changeform = admin_class.changeform_view
+    
+    @wraps(original_changelist)
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context['show_help_widget'] = True
-        return super().changelist_view(request, extra_context=extra_context)
+        return original_changelist(self, request, extra_context=extra_context)
     
+    @wraps(original_changeform)
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
         extra_context = extra_context or {}
         extra_context['show_help_widget'] = True
-        return super().changeform_view(request, object_id, form_url, extra_context=extra_context)
+        return original_changeform(self, request, object_id, form_url, extra_context=extra_context)
+    
+    admin_class.changelist_view = changelist_view
+    admin_class.changeform_view = changeform_view
+    
+    return admin_class
+
+
+def log_deletions(admin_class):
+    """Decorator to add deletion logging to any ModelAdmin"""
+    
+    original_delete_model = admin_class.delete_model
+    original_delete_queryset = admin_class.delete_queryset
+    
+    @wraps(original_delete_model)
+    def delete_model_with_logging(self, request, obj):
+        admin_logger.warning(
+            f"User '{request.user.username}' deleted {obj._meta.verbose_name} "
+            f"#{obj.pk}: {str(obj)[:100]}"
+        )
+        return original_delete_model(self, request, obj)
+    
+    @wraps(original_delete_queryset)
+    def delete_queryset_with_logging(self, request, queryset):
+        model_name = queryset.model._meta.verbose_name_plural
+        count = queryset.count()
+        admin_logger.warning(
+            f"User '{request.user.username}' bulk deleted {count} {model_name}"
+        )
+        return original_delete_queryset(self, request, queryset)
+    
+    admin_class.delete_model = delete_model_with_logging
+    admin_class.delete_queryset = delete_queryset_with_logging
+    
+    return admin_class
     
 
-class ManagerOnlyHistoryMixin:
-    """Show history link only to managers/superusers"""
+class HistoryGuardMixin:
+    """
+    Mixin to hide history button unless user is in feature:history group.
+    Superusers always allowed.
+    """
     
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        
-        # Check if user can see history
-        show_history = (
-            request.user.is_superuser or 
-            request.user.groups.filter(name__icontains='manager').exists()
-        )
-        
-        extra_context['show_history_link'] = show_history
-        
-        return super().change_view(request, object_id, form_url, extra_context)
+    history_feature_group = FEATURE_HISTORY_GROUP
+    
+    def _user_in_group(self, request, group_name: str) -> bool:
+        if not group_name:
+            return False
+        return request.user.groups.filter(name=group_name).exists()
+    
+    def has_view_history_permission(self, request, obj=None):
+        parent = super().has_view_history_permission(request, obj)
+        if not parent:
+            return False
+        if not request.user.is_authenticated:
+            return False
+        if request.user.is_superuser:
+            return True
+        return self._user_in_group(request, self.history_feature_group)

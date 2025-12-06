@@ -1,4 +1,8 @@
-# academia/admin.py
+# File: academia/admin.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+from core.admin_mixins import log_deletions
 from django.contrib import admin, messages
 from django import forms
 from django.utils.translation import gettext_lazy as _
@@ -16,14 +20,15 @@ from academia.models import inboxrequest_stage
 from annotations.views import create_system_annotation
 from annotations.admin import AnnotationInline
 from .models import Semester, InboxRequest, InboxCourse, generate_semester_password
+from django_admin_inline_paginator_plus.admin import StackedInlinePaginated
 from people.models import PersonRole, Person
 from organisation.models import OrgInfo
 from core.pdf import render_pdf_response
 from core.admin_mixins import (
     ImportExportGuardMixin,
-    HelpPageMixin,
     safe_admin_action,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin,
+    with_help_widget
 )
 from core.utils.bool_admin_status import boolean_status_span
 from hankosign.utils import (
@@ -126,10 +131,12 @@ class InboxRequestForm(forms.ModelForm):
 
 # =============== Inline Admins ===============
 
-class InboxCourseInline(admin.StackedInline):
+class InboxCourseInline(StackedInlinePaginated):
     model = InboxCourse
     form = InboxCourseInlineForm
     extra = 1
+    per_page = 5
+    pagination_key = "inbox-course"
     fields = ('course_code', 'course_name', 'ects_amount')
 
     def _parent_locked(self, request, parent_obj):
@@ -168,15 +175,16 @@ class InboxCourseInline(admin.StackedInline):
 
 # =============== Admin Classes ===============
 
+@log_deletions
+@with_help_widget
 @admin.register(Semester)
 class SemesterAdmin(
     SimpleHistoryAdmin,
     DjangoObjectActions,
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
 ):
     resource_classes = [SemesterResource]
     form = SemesterForm
@@ -200,7 +208,7 @@ class SemesterAdmin(
     ordering = ('-start_date',)
     inlines = [AnnotationInline]
     fieldsets = (
-        (_("Scope"), {  # Also fix naming
+        (_("Scope"), {
             'fields': ('code', 'display_name', 'start_date', 'end_date')
         }),
         (_("Public Filing"), {
@@ -220,7 +228,6 @@ class SemesterAdmin(
     readonly_fields = (
         'access_password',
         'signatures_box',
-        'version',
         'created_at',
         'updated_at'
     )
@@ -377,15 +384,16 @@ class SemesterAdmin(
         return False
 
 
+@log_deletions
+@with_help_widget
 @admin.register(InboxRequest)
 class InboxRequestAdmin(
     SimpleHistoryAdmin,
     DjangoObjectActions,
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
 ):
     resource_classes = [InboxRequestResource]
     form = InboxRequestForm
@@ -453,7 +461,6 @@ class InboxRequestAdmin(
         'max_ects_readonly',
         'validation_status',
         'signatures_box',
-        'version',
         'created_at',
         'updated_at'
     )

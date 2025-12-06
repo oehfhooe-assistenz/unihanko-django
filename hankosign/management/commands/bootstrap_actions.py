@@ -6,6 +6,11 @@ Usage:
   python manage.py bootstrap_actions
   python manage.py bootstrap_actions --file config/hankosign_actions.yaml
 """
+# File: hankosign/management/commands/bootstrap_actions.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from pathlib import Path
 from typing import Dict, List
 
@@ -39,8 +44,8 @@ class Command(BaseCommand):
         parser.add_argument(
             "--file",
             "-f",
-            default="config/hankosign_actions.yaml",
-            help="Path to YAML config (default: config/hankosign_actions.yaml)",
+            default="config/fixtures/hankosign_actions.yaml",
+            help="Path to YAML config (default: config/fixtures/hankosign_actions.yaml)",
         )
         parser.add_argument(
             "--dry-run",

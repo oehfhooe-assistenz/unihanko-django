@@ -1,4 +1,8 @@
-# people/models.py
+# File: people/models.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 import uuid
 import secrets
 from django.conf import settings
@@ -101,6 +105,11 @@ class Person(models.Model):
                 name="uq_person_matric_no",
                 condition=models.Q(matric_no__isnull=False),
             ),
+            models.UniqueConstraint(
+                fields=["email"],
+                name="uq_person_email",
+                condition=models.Q(email__isnull=False) & ~models.Q(email=""),
+            ),
         ]
 
     def clean(self):
@@ -178,11 +187,11 @@ class Role(models.Model):
     name = models.CharField(_("Name"), max_length=100, unique=True)
     short_name = models.CharField(
         _("Short form"),
-        max_length=20,
+        max_length=30,
         blank=True,
         validators=[RegexValidator(
-            regex=r"^\D{1,20}$",
-            message=_("Format: no digits, max. 20 characters, e.g. WiRef"),
+            regex=r"^\D{1,30}$",
+            message=_("Format: no digits, max. 30 characters, e.g. WiRef"),
         )],
         help_text=_("Role short-form"),
     )

@@ -1,12 +1,18 @@
+# File: annotations/admin.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.contrib import admin
-from django.contrib.contenttypes.admin import GenericStackedInline
+#from django.contrib.contenttypes.admin import GenericStackedInline
 from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
-
+from core.admin_mixins import with_help_widget
 from .models import Annotation
+from core.admin_mixins import log_deletions
+from django_admin_inline_paginator_plus.admin import GenericTabularInlinePaginated
 
-
-class AnnotationInline(GenericStackedInline):
+class AnnotationInline(GenericTabularInlinePaginated):
     """
     Generic inline for annotations that works with ANY model.
     Add this to ANY model admin to enable annotations:
@@ -18,14 +24,13 @@ class AnnotationInline(GenericStackedInline):
         class YourModelAdmin(admin.ModelAdmin):
             inlines = [AnnotationInline]
     
-    NOTE: This uses GenericTabularInline which doesn't support pagination
-    out of the box. For pagination, you'd need custom implementation.
     """
     model = Annotation
     ct_field = "content_type"
     ct_fk_field = "object_id"
     extra = 1
-    
+    per_page = 3
+    pagination_key = "annotations-x"
     fields = ('annotation_type', 'text', 'created_by_display', 'created_at_display')
     readonly_fields = ('created_by_display', 'created_at_display')
     
@@ -41,6 +46,9 @@ class AnnotationInline(GenericStackedInline):
         # Store original form class
         OriginalForm = formset.form
         
+        # Store request in closure for access in form __init__
+        request_user = request.user
+        
         # Create wrapper that makes saved annotations readonly
         class ConditionalReadonlyForm(OriginalForm):
             def __init__(self, *args, **kwargs):
@@ -52,15 +60,49 @@ class AnnotationInline(GenericStackedInline):
                         'rows': 3,
                         'style': 'resize: none; width: 100%;'
                     })
+                
+                # Hide SYSTEM type from non-superusers
+                if 'annotation_type' in self.fields and not request_user.is_superuser:
+                    # Filter out SYSTEM from choices
+                    choices = [
+                        (value, label) 
+                        for value, label in self.fields['annotation_type'].choices 
+                        if value != 'SYSTEM'
+                    ]
+                    self.fields['annotation_type'].choices = choices
 
-                # If this annotation is already saved
+                # If this annotation is already saved, make it readonly
                 if self.instance and self.instance.pk:
                     if 'annotation_type' in self.fields:
+                        display_value = self.instance.get_annotation_type_display()
+                        self.fields['annotation_type'].prepare_value = lambda value: display_value
+                        self.fields['annotation_type'].widget = forms.TextInput(attrs={
+                            'readonly': 'readonly',
+                            'style': 'background: transparent !important; border: none !important; cursor: default;'
+                        })
                         self.fields['annotation_type'].disabled = True
                         self.fields['annotation_type'].required = False
+
                     if 'text' in self.fields:
                         self.fields['text'].disabled = True
                         self.fields['text'].required = False
+                        self.fields['text'].widget = forms.Textarea(attrs={
+                            'rows': 5,
+                            'style': 'background: transparent !important; border: none !important; resize: none; width: 100%; cursor: default;'
+                    })
+                
+            def save(self, commit=True):
+                """Ensure created_by is set before saving"""
+                instance = super().save(commit=False)
+                
+                # Set created_by if this is a new annotation
+                if not instance.pk and not instance.created_by:
+                    instance.created_by = request_user
+                
+                if commit:
+                    instance.save()
+                
+                return instance
         
         formset.form = ConditionalReadonlyForm
         return formset
@@ -89,6 +131,8 @@ class AnnotationInline(GenericStackedInline):
         return request.user.is_superuser
 
 
+@log_deletions
+@with_help_widget
 @admin.register(Annotation)
 class AnnotationAdmin(admin.ModelAdmin):
     """

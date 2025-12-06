@@ -1,3 +1,8 @@
+# File: academia/management/commands/recompute_stages.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.core.management.base import BaseCommand
 from academia.models import InboxRequest, inboxrequest_stage
 

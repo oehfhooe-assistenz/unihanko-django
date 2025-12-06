@@ -1,3 +1,8 @@
+# File: helppages/apps.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.apps import AppConfig
 
 

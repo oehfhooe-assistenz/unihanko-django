@@ -1,13 +1,20 @@
 {% extends "portal/base.html" %}
 {% load i18n %}
 
+<!--
+Template: status.html
+Version: 1.0.0
+Author: vas
+Modified: 2025-11-27
+-->
+
 {% block content %}
-<h1 class="page-title">{% trans "ECTS Request Status" %}</h1>
+<h1 class="page-title">{% trans "ECTS Reimbursement Request Status" %}</h1>
 
 <div class="card">
     <h2 class="card-title">{{ inbox_request.semester.display_name }}</h2>
     <p class="text-muted">
-        {% trans "Welcome" %}, {{ inbox_request.person_role.person.first_name }} {{ inbox_request.person_role.person.last_name }}
+        {% trans "Hi" %}, {{ inbox_request.person_role.person.first_name }} {{ inbox_request.person_role.person.last_name }}
     </p>
 </div>
 
@@ -18,15 +25,15 @@
             <h3 class="card-title mb-1">{{ inbox_request.reference_code }}</h3>
             <div class="plan-info-grid">
                 <div class="info-item">
-                    <p class="info-label">{% trans "Role" %}</p>
+                    <p class="info-label">{% trans "Your Role with the ÖH" %} <sup>*)</sup></p>
                     <p class="info-value">{{ inbox_request.person_role.role.name }}</p>
                 </div>
                 <div class="info-item">
-                    <p class="info-label">{% trans "Total ECTS" %}</p>
+                    <p class="info-label">{% trans "ECTS to be reimbursed" %} <sup>**)</sup></p>
                     <p class="info-value highlight">{{ total_ects }} ECTS</p>
                 </div>
                 <div class="info-item">
-                    <p class="info-label">{% trans "Stage" %}</p>
+                    <p class="info-label full-width">{% trans "Internal Process Stage" %}</p>
                     {% include "portal/includes/stage_progress.html" with current_stage=stage stage_type="ects" %}
                 </div>
             </div>
@@ -35,16 +42,16 @@
             {% if stage in 'VERIFIED,APPROVED,REJECTED,TRANSFERRED' %}
                 <a href="{% url 'portal:academia:request_pdf' reference_code=inbox_request.reference_code %}" 
                    class="btn btn-small" target="_blank">
-                    📄 {% trans "RECEIPT" %}
+                    📄 {% trans "Receipt" %}
                 </a>
             {% endif %}
             
             {% if stage in 'DRAFT,SUBMITTED' %}
                 <button class="btn btn-small toggle-btn" 
                         data-target="form-{{ inbox_request.id }}" 
-                        data-text-complete="⚙️ {% trans 'Complete' %}"
-                        data-text-cancel="❌ {% trans 'Cancel' %}">
-                    ⚙️ {% trans "Complete" %}
+                        data-text-complete="⚙️ {% trans 'Complete your request' %}"
+                        data-text-cancel="❌ {% trans 'Cancel completion' %}">
+                    ⚙️ {% trans "Complete your request" %}
                 </button>
             {% else %}
                 <button class="btn btn-secondary btn-small toggle-btn" 
@@ -55,6 +62,8 @@
                 </button>
             {% endif %}
         </div>
+        <small>*) {% trans "The role you selected to be reimbursed for; usually the one with the highest ECTS. Note: The final audit will correctly calculate all roles." %}</small>
+        <small>**) {% trans "The sum of the ECTS of all courses you selected for reimbursement." %}</small>
     </div>
 
     <!-- Collapsible Content for DRAFT/SUBMITTED -->
@@ -66,24 +75,24 @@
             <div class="progress-steps">
                 <div class="step-indicator step-filed completed">
                     <span class="step-number">✓</span>
-                    <span class="step-text">{% trans "Filed" %}</span>
+                    <span class="step-text">{% trans "Courses Filed" %}</span>
                 </div>
                 <div class="step-connector"></div>
                 <div class="step-indicator step-upload {{ inbox_request.uploaded_form|yesno:'completed,active' }}">
                     <span class="step-number">2</span>
-                    <span class="step-text">{% trans "Upload Form" %}</span>
+                    <span class="step-text">{% trans "Form Signed & Uploaded" %}</span>
                 </div>
                 <div class="step-connector"></div>
                 <div class="step-indicator step-processing {{ inbox_request.uploaded_form|yesno:'active,pending' }}">
                     <span class="step-number">3</span>
-                    <span class="step-text">{% trans "Processing" %}</span>
+                    <span class="step-text">{% trans "Processed by ÖH Staff" %}</span>
                 </div>
             </div>
 
             <!-- Request Summary -->
             <div class="form-section-compact">
                 <h4 class="form-section-title">
-                    ✅ {% trans "Request Summary" %}
+                    ✅ {% trans "ECTS Reimbursement Request Summary" %}
                 </h4>
                 
                 <div class="info-summary">
@@ -92,7 +101,7 @@
                     <p>{% trans "Filed" %}: {{ inbox_request.created_at|date:"d.m.Y H:i" }}</p>
                 </div>
 
-                <h5 class="mt-2 mb-1">{% trans "Courses" %}</h5>
+                <h5 class="mt-2 mb-1">{% trans "Courses to be reimbursed" %}</h5>
                 <div class="courses-summary">
                     {% for course in inbox_request.courses.all %}
                     <div class="course-list-item">
@@ -109,26 +118,26 @@
                 <!-- ECTS Breakdown -->
                 <div class="ects-breakdown">
                     <div class="ects-row">
-                        <span>{% trans "Your Total ECTS" %}:</span>
+                        <span>{% trans "Your Total ECTS of Reimburseable Courses" %}:</span>
                         <strong>{{ total_ects }}</strong>
                     </div>
                     <div class="ects-row">
-                        <span>{% trans "Role Entitlement" %}:</span>
+                        <span>{% trans "Your ECTS Role Entitlement" %}:</span>
                         <strong>{{ inbox_request.person_role.role.ects_cap }}</strong>
                     </div>
                     <div class="ects-row">
-                        <span>{% trans "Semester Adjustment" %}:</span>
+                        <span>{% trans "Election Semester Adjustment" %}:</span>
                         <strong>{{ inbox_request.semester.ects_adjustment|stringformat:"+.1f" }}</strong>
                     </div>
                     <div class="ects-row total-row">
-                        <span>{% trans "Max Entitled" %}:</span>
+                        <span>{% trans "Your Max ECTS Entitlement" %}:</span>
                         <strong>{{ max_ects }}</strong>
                     </div>
                 </div>
 
                 {% if inbox_request.student_note %}
                 <div class="mt-2">
-                    <p class="info-label">{% trans "Your Note" %}</p>
+                    <p class="info-label">{% trans "Your Request Note" %}</p>
                     <p>{{ inbox_request.student_note }}</p>
                 </div>
                 {% endif %}
@@ -137,18 +146,18 @@
             <!-- Download PDF Section -->
             <div class="form-section-compact">
                 <h4 class="form-section-title">
-                    📄 {% trans "Download Form for Signatures" %}
+                    📑 {% trans "Download Area" %}
                 </h4>
                 <p class="help-text mb-2">
-                    1. {% trans "Download your PDF form below" %}<br>
-                    2. {% trans "Get it signed by both your lecturer and yourself (handwritten or electronic)" %}<br>
-                    3. {% trans "Upload the twice-signed version below" %}
+                    1. {% trans "Click the 'Download My Blank Form' button to download your pre-filled PDF" %}<br>
+                    2. {% trans "Make sure both you and your lecturer sign the same form (handwritten or electronically)" %}<br>
+                    3. {% trans "Return later with your reference code to upload the twice-signed form in the Upload Area" %}
                 </p>
                 
                 <div class="mb-2">
                     <a href="{% url 'portal:academia:request_pdf' reference_code=inbox_request.reference_code %}" 
                        class="btn btn-secondary btn-small" target="_blank">
-                        📥 {% trans "Download Form (Blank)" %}
+                        💾 {% trans "Download My Blank Form" %}
                     </a>
                 </div>
             </div>
@@ -157,8 +166,15 @@
             {% if not inbox_request.uploaded_form %}
             <div class="form-section-compact">
                 <h4 class="form-section-title">
-                    📤 {% trans "Upload Signed Form" %}
+                    📩 {% trans "Upload Area" %}
                 </h4>
+                <p class="help-text mb-2">
+                    1. {% trans "Make sure your form is signed by both you and your lecturer (handwritten or electronically)" %}<br>
+                    2. {% trans "Make sure your file is a PDF file, we don't accept image files" %}<br>
+                    3. {% trans "Read and confirm the upload declaration by checking the 'I confirm...' checkbox" %}<br>
+                    4. {% trans "Upload your twice signed form via the 'Choose file' dialogue" %}<br>
+                    5. {% trans "Don't forget to press the 'Submit My Signed Form' button!" %}
+                </p>
 
                 {% if affidavit_2 %}
                 <div class="disclaimer-text">
@@ -181,20 +197,20 @@
                     
                     <div class="form-grid-compact">
                         <div class="form-group-compact">
-                            <label class="form-label-compact">{% trans "Signed PDF File" %}</label>
+                            <label class="form-label-compact">{% trans "Signed Reimbursement Request PDF" %}</label>
                             {{ upload_form.uploaded_form }}
                             {% if upload_form.uploaded_form.errors %}
                                 <ul class="errorlist">
                                     {% for error in upload_form.uploaded_form.errors %}<li>{{ error }}</li>{% endfor %}
                                 </ul>
                             {% endif %}
-                            <span class="form-help">{% trans "Make sure all signatures are present (max 20MB)" %}</span>
+                            <span class="form-help">{% trans "PDF only; make sure all signatures are present (max 20MB)" %}</span>
                         </div>
                     </div>
                     
                     <div class="form-actions-compact">
                         <button type="submit" class="btn btn-small" id="upload-btn-{{ inbox_request.id }}" disabled>
-                            📤 {% trans "Submit Signed Form" %}
+                            📤 {% trans "Submit My Signed Form" %}
                         </button>
                     </div>
                 </form>
@@ -202,7 +218,7 @@
             {% else %}
             <div class="form-section-compact">
                 <h4 class="form-section-title">
-                    ✅ {% trans "Form Uploaded Successfully" %}
+                    ✅ {% trans "Signed Form Uploaded Successfully" %}
                 </h4>
                 <div class="info-summary">
                     <p>{% trans "Your signed form has been uploaded and is being processed by our team." %}</p>
@@ -222,7 +238,7 @@
             
             <!-- Status Info -->
             <div class="form-section-compact">
-                <h4 class="form-section-title">{% trans "Request Information" %}</h4>
+                <h4 class="form-section-title">{% trans "ECTS Reimbursement Request Information" %}</h4>
                 <div class="info-grid">
                     <div class="info-item">
                         <p class="info-label">{% trans "Person" %}</p>
@@ -247,7 +263,7 @@
 
             <!-- Course Details -->
             <div class="form-section-compact">
-                <h4 class="form-section-title">{% trans "Course Details" %}</h4>
+                <h4 class="form-section-title">{% trans "Your Course Details" %}</h4>
                 <div class="courses-summary">
                     {% for course in inbox_request.courses.all %}
                     <div class="course-list-item">
@@ -266,11 +282,11 @@
                 <!-- ECTS Breakdown -->
                 <div class="ects-breakdown mt-2">
                     <div class="ects-row">
-                        <span>{% trans "Your Total ECTS" %}:</span>
+                        <span>{% trans "Your Total ECTS of Reimburseable Courses" %}:</span>
                         <strong>{{ total_ects }}</strong>
                     </div>
                     <div class="ects-row">
-                        <span>{% trans "Role Entitlement" %}:</span>
+                        <span>{% trans "Your ECTS Role Entitlement" %}:</span>
                         <strong>{{ inbox_request.person_role.role.ects_cap }}</strong>
                     </div>
                     <div class="ects-row">
@@ -278,7 +294,7 @@
                         <strong>{{ inbox_request.semester.ects_adjustment|stringformat:"+.1f" }}</strong>
                     </div>
                     <div class="ects-row total-row">
-                        <span>{% trans "Max Entitled" %}:</span>
+                        <span>{% trans "Your Max ECTS Entitlement" %}:</span>
                         <strong>{{ max_ects }}</strong>
                     </div>
                 </div>
@@ -290,12 +306,12 @@
                 <div class="form-actions-compact">
                     <a href="{% url 'portal:academia:request_pdf' reference_code=inbox_request.reference_code %}" 
                        class="btn btn-small" target="_blank">
-                        📄 {% trans "Download Request Form" %}
+                        📄 {% trans "Download My Request Form" %}
                     </a>
                     {% if inbox_request.uploaded_form %}
                     <a href="{{ inbox_request.uploaded_form.url }}" 
                        class="btn btn-secondary btn-small" target="_blank">
-                        📎 {% trans "View Signed Form" %}
+                        📎 {% trans "View My Signed Form" %}
                     </a>
                     {% endif %}
                 </div>
@@ -328,7 +344,7 @@
 
 <div class="mt-3">
     <a href="{% url 'portal:academia:semester_list' %}" class="btn btn-secondary">
-        ← {% trans "Back to Semesters" %}
+        {% trans "Back to the ECTS Reimbursement Center" %}
     </a>
 </div>
 

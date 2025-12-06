@@ -1,3 +1,8 @@
+# File: assembly/admin.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
 from django.utils.safestring import mark_safe
@@ -16,7 +21,7 @@ from simple_history.admin import SimpleHistoryAdmin
 from concurrency.admin import ConcurrentModelAdmin
 from adminsortable2.admin import SortableAdminBase
 from annotations.admin import AnnotationInline
-from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action, ManagerOnlyHistoryMixin
+from core.admin_mixins import ImportExportGuardMixin, safe_admin_action, HistoryGuardMixin, with_help_widget
 from core.pdf import render_pdf_response
 from core.utils.authz import is_assembly_manager  # You'll need to create this
 from core.utils.bool_admin_status import boolean_status_span, row_state_attr_for_boolean
@@ -26,9 +31,9 @@ from hankosign.utils import (
     object_status_span
 )
 from organisation.models import OrgInfo
-
-from .models import Term, Composition, Mandate, Session, SessionItem, Vote
-
+from core.admin_mixins import log_deletions
+from .models import Term, Composition, Mandate, Session, SessionItem, Vote, SessionAttendance
+from django_admin_inline_paginator_plus.admin import StackedInlinePaginated
 
 # ============================================================================
 # RESOURCES (Import/Export)
@@ -69,11 +74,13 @@ class SessionItemResource(resources.ModelResource):
 # MANDATE ADMIN (Hidden from sidebar, needed for autocomplete)
 # ============================================================================
 
+@log_deletions
+@with_help_widget
 @admin.register(Mandate)
 class MandateAdmin(
     SimpleHistoryAdmin, 
     ConcurrentModelAdmin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
     ):
     list_display = ('position', 'person_role', 'officer_role', 'start_date', 'end_date', 'composition')
     list_filter = ('officer_role', 'composition__term')
@@ -90,34 +97,40 @@ class MandateAdmin(
 # INLINES
 # ============================================================================
 
-class MandateInline(admin.StackedInline):
+class MandateInline(StackedInlinePaginated):
     model = Mandate
     extra = 1
     max_num = 9
+    per_page = 1
+    pagination_key = "mandate"
     fields = ('position', 'person_role', 'officer_role', 'party', 'start_date', 'end_date', 
               'backup_person_role', 'backup_person_text')
     autocomplete_fields = ('person_role', 'backup_person_role')
     ordering = ('position',)
 
 
-class VoteInline(admin.StackedInline):
+class VoteInline(StackedInlinePaginated):
     model = Vote
     extra = 0
+    per_page = 10
+    pagination_key = "vote"
     fields = ('mandate', 'vote')
     autocomplete_fields = ('mandate',)
     
 
-class ElectionItemHRLinksInline(admin.StackedInline):
+class ElectionItemHRLinksInline(StackedInlinePaginated):
     """Inline for editing ELEC items' PersonRole links - stays editable after submission"""
     model = SessionItem
     extra = 0
+    per_page = 1
+    pagination_key = "session-item"
     fields = ('item_code', 'title', 'print_dispatch_btn', 'elected_person_role', 
               'elected_person_text_reference', 'elected_role_text_reference')
     readonly_fields = ('item_code', 'title', 'print_dispatch_btn')
     autocomplete_fields = ('elected_person_role',)
     can_delete = False
     show_change_link = True
-    verbose_name = _("HR Link (Personnel Election)")
+    verbose_name = _("HR Links (Personnel Elections)")
     verbose_name_plural = _("HR Links (Personnel Elections)")
     
     def get_queryset(self, request):
@@ -146,6 +159,10 @@ class ElectionItemHRLinksInline(admin.StackedInline):
         
         return ro
     
+    def has_delete_permission(self, request, obj=None):
+        """Don't allow deleting HR links via inline"""
+        return False  # HR links managed via standalone admin
+
     @admin.display(description="📜")
     def print_dispatch_btn(self, obj):
         """Render inline print button for dispatch document"""
@@ -178,19 +195,39 @@ class ElectionItemHRLinksInline(admin.StackedInline):
         )
 
 
+class SessionAttendanceInline(StackedInlinePaginated):
+    model = SessionAttendance
+    extra = 0
+    per_page = 9
+    pagination_key = "session-attendance"
+    fields = ('mandate', 'backup_attended')
+    autocomplete_fields = ('mandate',)
+    verbose_name = _("Attendee")
+    verbose_name_plural = _("Attendees (with backup tracking)")
+    
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        # Lock if session is locked
+        if obj:
+            session_admin = self.admin_site._registry.get(Session)
+            if session_admin and session_admin._is_locked(request, obj):
+                ro.append('mandate')
+        return ro
+
 # ============================================================================
 # TERM ADMIN
 # ============================================================================
 
+@log_deletions
+@with_help_widget
 @admin.register(Term)
 class TermAdmin(
     SimpleHistoryAdmin,
     DjangoObjectActions,
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin,
+    HistoryGuardMixin
     ):
     resource_classes = [TermResource]
     
@@ -329,15 +366,16 @@ class TermAdmin(
 # COMPOSITION ADMIN
 # ============================================================================
 
+@log_deletions
+@with_help_widget
 @admin.register(Composition)
 class CompositionAdmin(
     SimpleHistoryAdmin,
     DjangoObjectActions,
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
     ):
     list_display = ('term', 'active_mandates_display', 'updated_at')
     list_display_links = ('term',)
@@ -398,6 +436,8 @@ class CompositionAdmin(
 # SESSION ADMIN
 # ============================================================================
 
+@log_deletions
+@with_help_widget
 @admin.register(Session)
 class SessionAdmin(
     SimpleHistoryAdmin,
@@ -405,9 +445,8 @@ class SessionAdmin(
     SortableAdminBase,
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
     ):
     resource_classes = [SessionResource]
     list_display = ('status_text', 'code', 'session_date', 'session_type',
@@ -417,8 +456,7 @@ class SessionAdmin(
     search_fields = ('code', 'location', 'protocol_number')
     autocomplete_fields = ('term', 'attendees', 'absent')
     readonly_fields = ('code', 'status', 'created_at', 'updated_at', 'signatures_box')
-    inlines = [ElectionItemHRLinksInline, AnnotationInline]
-    filter_horizontal = ('attendees', 'absent')
+    inlines = [SessionAttendanceInline, ElectionItemHRLinksInline, AnnotationInline]
     
     fieldsets = (
         (_("Scope"), {
@@ -428,7 +466,7 @@ class SessionAdmin(
             'fields': ('session_date', 'session_time', 'location', 'protocol_number')
         }),
         (_("Attendance"), {
-            'fields': ('attendees', 'absent', 'other_attendees')
+            'fields': ('absent', 'other_attendees')
         }),
         (_("Workflow & HankoSign"), {
             'fields': ('status', 'invitations_sent_at', 'minutes_finalized_at', 
@@ -686,15 +724,16 @@ class SessionItemAdminForm(forms.ModelForm):
                 self.fields['content'].widget = forms.HiddenInput()
 
 
+@log_deletions
+@with_help_widget
 @admin.register(SessionItem)
 class SessionItemAdmin(
     SimpleHistoryAdmin,
     DjangoObjectActions,
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin
+    HistoryGuardMixin
     ):
     resource_classes = [SessionItemResource]
     form = SessionItemAdminForm
@@ -736,7 +775,7 @@ class SessionItemAdmin(
         }),
     )
     
-    change_actions = ('print_item', 'print_dispatch_document')
+    change_actions = ('print_dispatch_document',)
     
     @admin.display(description=_("Signatures"))
     def signatures_box(self, obj):
@@ -795,27 +834,6 @@ class SessionItemAdmin(
     print_dispatch_document.label = "📜 " + _("Print Dispatch Document")
     print_dispatch_document.attrs = {
         "class": "btn btn-block btn-success",
-        "style": "margin-bottom: 1rem;",
-        "data-action": "post-object",
-        "onclick": RID_JS
-    }
-
-    @safe_admin_action
-    def print_item(self, request, obj):
-        action = get_action("RELEASE:-@assembly.sessionitem")
-        if not action:
-            messages.error(request, _("Release action not configured."))
-            return
-        sign_once(request, action, obj, note=_("Printed session item"), window_seconds=10)
-        signatures = seal_signatures_context(obj)
-        ctx = {"item": obj, "org": OrgInfo.get_solo(), "signatures": signatures}
-        return render_pdf_response(
-            "assembly/sessionitem_pdf.html", ctx, request,
-            f"HV-ITEM_{obj.full_identifier}.pdf"
-        )
-    print_item.label = "🖨️ " + _("Print Item PDF")
-    print_item.attrs = {
-        "class": "btn btn-block btn-info",
         "style": "margin-bottom: 1rem;",
         "data-action": "post-object",
         "onclick": RID_JS

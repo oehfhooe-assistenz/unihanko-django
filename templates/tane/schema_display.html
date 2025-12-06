@@ -1,0 +1,9 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'admin/inserts_standard.css' %}">
+
+<div class="insert">
+    <div class="insert__title">CSV Schema</div>
+    <div class="insert__body">
+        <pre>{{ schema_json }}</pre>
+    </div>
+</div>

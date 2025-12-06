@@ -1,4 +1,8 @@
-# core/templatetags/privacy.py
+# File: core/templatetags/privacy.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django import template
 from core.utils.privacy import mask_iban as _mask_iban
 

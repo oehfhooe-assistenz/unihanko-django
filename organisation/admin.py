@@ -1,10 +1,16 @@
+# File: organisation/admin.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.contrib import admin
 from django import forms
 from django.utils.translation import gettext_lazy as _
 from solo.admin import SingletonModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
 from .models import OrgInfo
-from core.admin_mixins import HelpPageMixin, ManagerOnlyHistoryMixin
+from core.admin_mixins import HistoryGuardMixin, with_help_widget
+from core.admin_mixins import log_deletions
 
 class OrgInfoForm(forms.ModelForm):
     class Meta:
@@ -15,9 +21,13 @@ class OrgInfoForm(forms.ModelForm):
             "bank_address": forms.Textarea(attrs={"rows": 3}),
         }
 
+@log_deletions
+@with_help_widget
+@admin.register(OrgInfo)
 class OrgInfoAdmin(
     SingletonModelAdmin,
-    HelpPageMixin
+    SimpleHistoryAdmin,
+    HistoryGuardMixin
     ):
     form = OrgInfoForm
     autocomplete_fields = (
@@ -108,5 +118,3 @@ class OrgInfoAdmin(
             ro += [f.name for f in self.model._meta.fields]
         # de-dup while preserving order
         return list(dict.fromkeys(ro))
-
-admin.site.register(OrgInfo, OrgInfoAdmin)

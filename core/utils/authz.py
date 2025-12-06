@@ -1,4 +1,9 @@
 # core/authz.py
+# File: core/authz.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from __future__ import annotations
 import os
 from functools import lru_cache

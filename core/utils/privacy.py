@@ -1,4 +1,9 @@
 # core/utils/privacy.py
+# File: core/utils/privacy.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 import re
 import textwrap
 

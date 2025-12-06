@@ -1,3 +1,8 @@
+# File: academia/tests.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.test import TestCase
 from django.utils import timezone
 from django.core.exceptions import ValidationError

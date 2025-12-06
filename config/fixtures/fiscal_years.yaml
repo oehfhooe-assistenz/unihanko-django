@@ -1,0 +1,15 @@
+# config/fiscal_years.yaml
+# Bootstrap configuration for fiscal years
+
+fiscal_years:
+  - label: "Wirtschaftsjahr 24/25"
+    start: "2024-07-01"
+    is_active: false
+
+  - label: "Wirtschaftsjahr 25/26"
+    start: "2025-07-01"
+    is_active: true
+
+  - label: "Wirtschaftsjahr 26/27"
+    start: "2026-07-01"
+    is_active: false

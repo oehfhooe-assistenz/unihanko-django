@@ -1,7 +1,11 @@
-# portal/payments_urls.py
 """
 URL configuration for payment plan portal.
 """
+# File: portal/payments_urls.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-27
+
 from django.urls import path
 from . import views
 

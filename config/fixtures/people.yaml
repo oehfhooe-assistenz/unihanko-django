@@ -1,0 +1,16 @@
+# Bootstrap data for people
+# File: people/fixtures/people.yaml
+
+# Header - configuration
+model: Person
+dedup: [first_name+last_name+email]  # Try matric_no first, then email
+# For strict dedup use: [first_name+last_name+email]
+
+# Payload - records to import
+records:
+  - first_name: Person
+    last_name: ErrorTest
+    email: test@mail.com
+    matric_no: 99999999
+    gender: F
+    notes: ErrorTest & ImportTest

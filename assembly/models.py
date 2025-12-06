@@ -1,3 +1,8 @@
+# File: assembly/models.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
@@ -122,15 +127,38 @@ class Term(models.Model):
         super().save(*args, **kwargs)
     
     def generate_code(self):
-        """Generate HV25_27 from start_date"""
+        """Generate HV25_27 from start_date and end_date"""
         y1 = self.start_date.year % 100
-        y2 = (self.start_date.year + 2) % 100
+        
+        # Use actual end_date if provided, otherwise assume +2 years
+        if self.end_date:
+            y2 = self.end_date.year % 100
+        else:
+            y2 = (self.start_date.year + 2) % 100
+        
         return f"HV{y1:02d}_{y2:02d}"
     
     def display_code(self):
         """For admin display"""
         return self.code
     display_code.short_description = _("Code")
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        
+        # Validate date ordering
+        if self.start_date and self.end_date and self.end_date < self.start_date:
+            errors['end_date'] = _("End date cannot be before start date.")
+        
+        # Defensive check for duplicate code (even though auto-generated)
+        if self.code:
+            existing = Term.objects.filter(code=self.code).exclude(pk=self.pk).exists()
+            if existing:
+                errors['code'] = _("A term with this code already exists.")
+        
+        if errors:
+            raise ValidationError(errors)
 
 
 # ============================================================================
@@ -167,9 +195,23 @@ class Composition(models.Model):
     
     def clean(self):
         super().clean()
-        # Ensure max 9 active mandates
+        errors = {}
+        
+        # Check for duplicate term (OneToOne)
+        if self.term_id:
+            existing = Composition.objects.filter(
+                term_id=self.term_id
+            ).exclude(pk=self.pk).exists()
+            
+            if existing:
+                errors['term'] = _("A composition already exists for this term.")
+        
+        # Ensure max 9 active mandates (existing logic - keep as-is)
         if self.pk and self.active_mandates_count() > 9:
-            raise ValidationError(_("Cannot have more than 9 active mandates."))
+            errors['__all__'] = _("Cannot have more than 9 active mandates.")
+        
+        if errors:
+            raise ValidationError(errors)
 
 
 class Mandate(models.Model):
@@ -312,7 +354,8 @@ class Session(models.Model):
     
     # Attendance
     attendees = models.ManyToManyField(
-        Mandate, blank=True,
+        Mandate,
+        through='SessionAttendance',
         related_name="attended_sessions",
         verbose_name=_("Attendees")
     )
@@ -370,6 +413,92 @@ class Session(models.Model):
     def full_display_code(self):
         """For admin display"""
         return self.code
+    
+    def clean(self):
+        super().clean()
+        errors = {}
+        
+        # Validate date makes sense
+        if self.session_date and self.term_id:
+            term = Term.objects.get(pk=self.term_id)
+            if not (term.start_date <= self.session_date <= term.end_date):
+                errors['session_date'] = _(
+                    "Session date must fall within term period (%(start)s - %(end)s)."
+                ) % {'start': term.start_date, 'end': term.end_date}
+        
+        # Defensive check for duplicate code
+        if self.code:
+            existing = Session.objects.filter(code=self.code).exclude(pk=self.pk).exists()
+            if existing:
+                errors['code'] = _("A session with this code already exists.")
+        
+        if errors:
+            raise ValidationError(errors)
+
+
+# ============================================================================
+# SESSION ATTENDANCE TRACKING
+# ============================================================================
+
+
+class SessionAttendance(models.Model):
+    """Track who actually attended - primary mandatary or backup"""
+    
+    session = models.ForeignKey(
+        Session, 
+        on_delete=models.CASCADE,
+        related_name='attendance_records',
+        verbose_name=_("Session")
+    )
+    
+    mandate = models.ForeignKey(
+        Mandate,
+        on_delete=models.PROTECT,
+        verbose_name=_("Mandate")
+    )
+    
+    backup_attended = models.BooleanField(
+        _("Backup Attended"),
+        default=False,
+        help_text=_("Check if backup person attended instead of primary mandatary")
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = _("Session Attendance")
+        verbose_name_plural = _("Session Attendances")
+        ordering = ['mandate__position']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['session', 'mandate'],
+                name='uq_attendance_session_mandate'
+            )
+        ]
+    
+    def __str__(self):
+        who = "Backup" if self.backup_attended else "Primary"
+        return f"{self.mandate} ({who}) @ {self.session.code}"
+    
+    def clean(self):
+        super().clean()
+        errors = {}
+        
+        # Check for duplicate (session, mandate) before DB does
+        if self.session_id and self.mandate_id:
+            existing = SessionAttendance.objects.filter(
+                session_id=self.session_id,
+                mandate_id=self.mandate_id
+            ).exclude(pk=self.pk).exists()
+            
+            if existing:
+                errors['__all__'] = _(
+                    "This mandate is already recorded as attending this session."
+                )
+        
+        if errors:
+            raise ValidationError(errors)
+
 
 
 # ============================================================================
@@ -516,13 +645,29 @@ class SessionItem(models.Model):
     
     def clean(self):
         super().clean()
+        errors = {}
         
-        # Validate voting data completeness
+        # Check for duplicate (session, order)
+        if self.session_id and self.order:
+            existing = SessionItem.objects.filter(
+                session_id=self.session_id,
+                order=self.order
+            ).exclude(pk=self.pk).exists()
+            
+            if existing:
+                errors['order'] = _(
+                    "An item with order %(order)d already exists in this session."
+                ) % {'order': self.order}
+        
+        # Validate voting data completeness (existing logic - keep as-is)
         if self.voting_mode == self.VotingMode.COUNTED:
             if any(v is None for v in [self.votes_for, self.votes_against, self.votes_abstain]):
-                raise ValidationError(
-                    _("For counted voting, all vote counts must be filled in.")
+                errors['__all__'] = _(
+                    "For counted voting, all vote counts must be filled in."
                 )
+        
+        if errors:
+            raise ValidationError(errors)
 
 
 # ============================================================================
@@ -562,3 +707,22 @@ class Vote(models.Model):
     
     def __str__(self):
         return f"{self.mandate} — {self.get_vote_display()}"
+    
+    def clean(self):
+        super().clean()
+        errors = {}
+        
+        # Check for duplicate (item, mandate)
+        if self.item_id and self.mandate_id:
+            existing = Vote.objects.filter(
+                item_id=self.item_id,
+                mandate_id=self.mandate_id
+            ).exclude(pk=self.pk).exists()
+            
+            if existing:
+                errors['__all__'] = _(
+                    "This mandate has already voted on this item."
+                )
+        
+        if errors:
+            raise ValidationError(errors)

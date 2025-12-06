@@ -7,6 +7,11 @@ Covers:
 - FiscalYear lock cascade
 - Action repeatability/idempotency
 """
+# File: finances/tests/test_paymentplan_workflow.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from datetime import date, timedelta
 from decimal import Decimal
 from django.test import TestCase

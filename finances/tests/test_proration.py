@@ -1,3 +1,8 @@
+# File: finances/tests/test_proration.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from datetime import date
 from decimal import Decimal
 from django.test import TestCase

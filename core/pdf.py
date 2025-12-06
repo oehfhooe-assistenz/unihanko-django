@@ -1,4 +1,8 @@
-# core/pdf.py
+# File: core/pdf.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone

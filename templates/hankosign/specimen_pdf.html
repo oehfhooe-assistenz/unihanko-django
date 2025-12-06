@@ -1,0 +1,86 @@
+{# hankosign/templates/hankosign/specimen_pdf.html #}
+{% extends "pdf/base.html" %}
+{% load i18n %}
+
+<!--
+Template: specimen_pdf.html
+Version: 1.0.0
+Author: vas
+Modified: 2025-11-27
+-->
+
+{% block header_title %}{% trans "Signature Specimen" %} — {{ person.last_name }}{% endblock %}
+
+{% block content %}
+{% if org %}{% include '_includes/_org_header.html' with org=org %}{% endif %}
+
+<h1 class="document-title">{% trans "Signature Specimen Form" %}</h1>
+
+<div class="section">
+    <h2 class="section-title">{% trans "Signatory Information" %}</h2>
+    <div class="section-content">
+        <table class="info-table">
+            <tr>
+                <th>{% trans "Name" %}:</th>
+                <td>{{ signatory.display_name }}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Role" %}:</th>
+                <td>{{ role.name }}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Assignment Period" %}:</th>
+                <td>{% include '_includes/_date_period.html' with start_date=person_role.start_date end_date=person_role.end_date %}</td>
+            </tr>
+            <tr>
+                <th>{% trans "Date" %}:</th>
+                <td>{{ date }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="section">
+    <h2 class="section-title">{% trans "Attestation" %}</h2>
+    <div class="section-content">
+        <p>
+            {% blocktrans %}
+            I hereby provide a clear and legible specimen of my handwritten signature.
+            I attest that any and all digital HankoSign actions within UniHanko bearing my signatory
+            credentials are made by me, with my explicit consent, and may be traced back to me as the
+            authorized signatory for the above role.
+            {% endblocktrans %}
+        </p>
+        <p>
+            {% blocktrans %}
+            I understand that this signature specimen will be retained for verification purposes
+            and may be used to validate the authenticity of digital signatures associated with my account.
+            {% endblocktrans %}
+        </p>
+    </div>
+</div>
+
+<div class="section">
+    <h2 class="section-title">{% trans "Signature" %}</h2>
+    <div class="section-content">
+        <div style="border: 2px solid #333; min-height: 120px; padding: 20px; margin: 20px 0; background: #fafafa;">
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 60px;">
+                {% trans "Please sign clearly within this box:" %}
+            </p>
+        </div>
+        <table class="info-table" style="margin-top: 40px;">
+            <tr>
+                <th style="width: 40%;">{% trans "Place, Date" %}:</th>
+                <td style="border-bottom: 1px solid #333;">&nbsp;</td>
+            </tr>
+            <tr>
+                <th>{% trans "Printed Name" %}:</th>
+                <td>{{ signatory.display_name }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+{% include '_includes/_disclaimer.html' %}
+
+{% endblock %}

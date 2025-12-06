@@ -1,3 +1,8 @@
+# File: annotations/templatetags/annotation_tags.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django import template
 from django.contrib.contenttypes.models import ContentType
 from annotations.models import Annotation

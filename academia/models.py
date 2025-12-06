@@ -1,4 +1,8 @@
-# academia/models.py
+# File: academia/models.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from __future__ import annotations
 from datetime import date
 from django.db import models

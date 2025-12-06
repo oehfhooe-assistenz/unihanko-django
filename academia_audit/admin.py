@@ -1,4 +1,8 @@
-# academia_audit/admin.py
+# File: academia_audit/admin.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
 from django.utils.text import slugify
@@ -12,8 +16,8 @@ from django import forms
 from django.core.exceptions import PermissionDenied, ValidationError
 from annotations.admin import AnnotationInline
 from annotations.views import create_system_annotation
-
-from core.admin_mixins import ImportExportGuardMixin, HelpPageMixin, safe_admin_action, ManagerOnlyHistoryMixin
+from core.admin_mixins import log_deletions
+from core.admin_mixins import ImportExportGuardMixin, safe_admin_action, HistoryGuardMixin, with_help_widget
 from core.pdf import render_pdf_response
 from core.utils.authz import is_academia_audit_manager
 from core.utils.bool_admin_status import boolean_status_span
@@ -24,7 +28,7 @@ from hankosign.utils import (
 )
 from organisation.models import OrgInfo
 from concurrency.admin import ConcurrentModelAdmin
-
+from django_admin_inline_paginator_plus.admin import StackedInlinePaginated
 from .models import AuditSemester, AuditEntry
 from .utils import synchronize_audit_entries
 
@@ -55,7 +59,7 @@ class AuditEntryResource(resources.ModelResource):
 # INLINES (add before AuditSemesterAdmin class)
 # ============================================================================
 
-class AuditEntryInline(admin.StackedInline):
+class AuditEntryInline(StackedInlinePaginated):
     model = AuditEntry
     extra = 0
     fields = (
@@ -67,6 +71,8 @@ class AuditEntryInline(admin.StackedInline):
         'checked_at',
         'notes',
     )
+    per_page = 5
+    pagination_key = "audit-entry"
     readonly_fields = ('person',)  # Scope field always readonly
     autocomplete_fields = ('person',)
     show_change_link = True
@@ -104,15 +110,16 @@ class AuditEntryInline(admin.StackedInline):
 # AUDIT SEMESTER ADMIN
 # ============================================================================
 
+@log_deletions
+@with_help_widget
 @admin.register(AuditSemester)
 class AuditSemesterAdmin(
     SimpleHistoryAdmin,
     DjangoObjectActions,
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin,
+    HistoryGuardMixin
 ):
     resource_classes = [AuditSemesterResource]
     inlines = [AuditEntryInline, AnnotationInline]
@@ -136,8 +143,7 @@ class AuditSemesterAdmin(
         'updated_at',
         'signatures_box',
         'audit_generated_at',
-        'audit_sent_university_at',
-        'version'
+        'audit_sent_university_at'
     )
 
     fieldsets = (
@@ -482,14 +488,15 @@ class AuditSemesterAdmin(
 # AUDIT ENTRY ADMIN
 # ============================================================================
 
+@log_deletions
+@with_help_widget
 @admin.register(AuditEntry)
 class AuditEntryAdmin(
     SimpleHistoryAdmin,
     ImportExportModelAdmin,
     ConcurrentModelAdmin,
-    HelpPageMixin,
     ImportExportGuardMixin,
-    ManagerOnlyHistoryMixin,
+    HistoryGuardMixin
 ):
     resource_classes = [AuditEntryResource]
 
@@ -507,7 +514,7 @@ class AuditEntryAdmin(
     list_filter = ('audit_semester', 'checked_at')
     search_fields = ('person__last_name', 'person__first_name')
     autocomplete_fields = ('audit_semester', 'person')
-    readonly_fields = ('created_at', 'updated_at', 'calculation_details_display', 'version')
+    readonly_fields = ('created_at', 'updated_at', 'calculation_details_display')
     inlines = [AnnotationInline]
     fieldsets = (
         (_("Scope"), {

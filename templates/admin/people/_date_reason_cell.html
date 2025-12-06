@@ -1,15 +1,22 @@
 {% load i18n static %}
+<!--
+Template: _date_reason_cell.html
+Version: 1.0.0
+Author: vas
+Modified: 2025-11-27
+-->
+
 <link rel="stylesheet" href="{% static 'admin/inserts_standard.css' %}">
 {% if date %}
 <div class="insert insert--info" style="display: inline-block;">
   <span title="{% if is_effective %}{% trans 'Effective' %}{% else %}{% trans 'Recorded' %}{% endif %} {{ label }}">
     {{ date|date:"Y-m-d" }}
     {% if is_effective %}
-      <small class="insert__meta">({% trans 'eff' %})</small>
+      <small class="insert__meta">({% trans 'eff.' %})</small>
     {% endif %}
   </span>
   {% if reason %}
-    <br><small class="insert__meta">{{ reason.code }} – {{ reason.display_name|truncatechars:20 }}</small>
+    <br><small class="insert__meta">{{ reason.code }} – {{ reason.display_name }}</small>
   {% endif %}
 </div>
 {% else %}

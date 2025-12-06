@@ -1,6 +1,13 @@
 {% extends "pdf/base.html" %}
 {% load i18n %}
 
+<!--
+Template: term_pdf.html
+Version: 1.0.0
+Author: vas
+Modified: 2025-11-27
+-->
+
 {% block header_title %}{% trans "Assembly Term" %} — {{ term.code }}{% endblock %}
 
 {% block content %}
@@ -31,15 +38,6 @@
         </table>
     </div>
 </div>
-
-{% if term.notes %}
-<div class="section">
-    <h2 class="section-title">{% trans "Notes" %}</h2>
-    <div class="section-content">
-        <p>{{ term.notes|linebreaksbr }}</p>
-    </div>
-</div>
-{% endif %}
 
 {% include '_includes/_signature_seal.html' with signatures=signatures %}
 

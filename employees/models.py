@@ -1,4 +1,8 @@
-# employee/models.py
+# File: employees/models.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from __future__ import annotations
 
 import calendar

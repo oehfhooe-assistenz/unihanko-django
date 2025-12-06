@@ -27,6 +27,31 @@
     box-shadow: none !important;
 }
 
+.js-inline-admin-formset[id*="annotations"] fieldset {
+    background: transparent !important;
+    border: none !important;
+}
+
+.js-inline-admin-formset[id*="annotations"] fieldset .table {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: var(--brutal-border) !important;
+}
+
+.js-inline-admin-formset[id*="annotations"] fieldset .table tbody td {
+    border: none !important;
+}
+
+.js-inline-admin-formset[id*="annotations"] fieldset .table td a {
+    color: #fff !important;
+}
+
+.js-inline-admin-formset[id*="annotations"] fieldset .table td a:hover {
+    background-color: #3f474e !important;
+    color: #dee2e6 !important;
+    text-decoration: none !important;
+}
+
 .js-inline-admin-formset[id*="annotations"] .card{
     background: #2a1a14 !important;
 }

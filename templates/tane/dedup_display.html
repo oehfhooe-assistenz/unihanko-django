@@ -1,0 +1,25 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'admin/inserts_standard.css' %}">
+
+<div class="insert insert--info">
+    <div class="insert__title">Deduplication Logic</div>
+    <div class="insert__body">
+        <p>Before creating a new record, the system checks for existing records in this order:</p>
+        <ol style="margin: 0.5rem 0;">
+            {% for field in dedup_fields %}
+            <li>
+                {% if "+" in field %}
+                    {% with parts=field|split:"+" %}
+                        Check if record exists with <strong>{{ parts|join:" AND " }}</strong>
+                    {% endwith %}
+                {% else %}
+                    Check if record exists with <strong>{{ field }}</strong>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ol>
+        <p style="color: var(--ins-muted); margin-top: 0.5rem;">
+            If a match is found at any step → skip creation (record already exists)
+        </p>
+    </div>
+</div>

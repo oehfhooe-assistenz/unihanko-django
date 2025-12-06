@@ -1,0 +1,33 @@
+# config/semesters.yaml
+# Bootstrap configuration for academic semesters
+
+semesters:
+  - code: "SS25"
+    display_name: "Sommersemester 2025"
+    start_date: "2025-03-01"
+    end_date: "2025-08-31"
+
+  - code: "WS25"
+    display_name: "Wintersemester 2025/26"
+    start_date: "2025-09-01"
+    end_date: "2026-02-28"
+
+  - code: "SS26"
+    display_name: "Sommersemester 2026"
+    start_date: "2026-03-01"
+    end_date: "2026-08-31"
+
+  - code: "WS26"
+    display_name: "Wintersemester 2026/27"
+    start_date: "2026-09-01"
+    end_date: "2027-02-28"
+
+  - code: "SS27"
+    display_name: "Sommersemester 2027"
+    start_date: "2027-03-01"
+    end_date: "2027-08-31"
+
+  - code: "WS27"
+    display_name: "Wintersemester 2027/28"
+    start_date: "2027-09-01"
+    end_date: "2028-02-29"

@@ -1,4 +1,3 @@
-# core/management/commands/bootstrap_acls.py
 """
 Sync Django Groups & Permissions from a YAML file (idempotent).
 
@@ -7,6 +6,11 @@ Usage:
   python manage.py bootstrap_acls
   python manage.py bootstrap_acls --file config/access.yaml
 """
+# File: core/management/commands/bootstrap_acls.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from pathlib import Path
 from typing import Dict, List, Set
 
@@ -77,8 +81,8 @@ class Command(BaseCommand):
         parser.add_argument(
             "--file",
             "-f",
-            default="config/access.yaml",
-            help="Path to YAML config (default: config/access.yaml)",
+            default="config/fixtures/access.yaml",
+            help="Path to YAML config (default: config/fixtures/access.yaml)",
         )
         parser.add_argument(
             "--dry-run",

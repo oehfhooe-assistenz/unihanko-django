@@ -1,10 +1,14 @@
-# academia/utils.py
 """
 Utility functions for Academia module.
 
 Includes ECTS calculation, aliquotation, audit synchronization,
 and password generation utilities.
 """
+# File: academia/utils.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from __future__ import annotations
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP

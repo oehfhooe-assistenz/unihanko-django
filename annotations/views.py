@@ -1,3 +1,8 @@
+# File: annotations/views.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from django.shortcuts import get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.decorators.http import require_http_methods

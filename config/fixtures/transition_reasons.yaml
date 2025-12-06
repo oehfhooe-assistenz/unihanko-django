@@ -1,0 +1,128 @@
+# config/transition_reasons.yaml
+# Bootstrap configuration for role transition reasons
+
+reasons:
+  # ========== Incoming (I##) ==========
+  - code: "I01"
+    name: "Eintritt (Bestellung, Zuweisung) [SB]"
+    name_en: "Entry (Appointment, Assignment) [Clerk]"
+    active: true
+
+  - code: "I02"
+    name: "Eintritt (Betrauung) [interim]"
+    name_en: "Entry (Entrustment) [interim]"
+    active: true
+
+  - code: "I03"
+    name: "Eintritt (Dienstverhältnis) [HS-DVV]"
+    name_en: "Entry (Employment) [HS-DVV]"
+    active: true
+
+  - code: "I04"
+    name: "Entsendung (Delegierte) [Kollegium]"
+    name_en: "Despatch (Delegates) [AcadBoard]"
+    active: true
+
+  - code: "I05"
+    name: "Beginn Funktionsperiode (Wahlamt) [HV-STV]"
+    name_en: "Start of Term (Electoral Office) [HV-STV]"
+    active: true
+
+  #no O mirror for 6
+
+  - code: "I07"
+    name: "Einsetzung (Rechtsfolge) [HSG]"
+    name_en: "Institution (Legal Effect) [HSG]"
+    active: true
+
+  - code: "I08"
+    name: "Einsetzung (behördliche Weisung) [KoKo]"
+    name_en: "Institution (Regulatory Directive) [CoComm]"
+    active: true
+
+  #no O mirror for 9
+
+  - code: "I99"
+    name: "Beginn (Systemrollen) [SYS]"
+    name_en: "Start (System Roles)"
+    active: true
+
+
+  # ========== Outgoing (O##) ==========
+  - code: "O01"
+    name: "Austritt (regulär)"
+    name_en: "Exit (regular)"
+    active: true
+
+  - code: "O02"
+    name: "Rücktritt (Wahlamt) [HV-STV]"
+    name_en: "Resignation (Electoral Office)"
+    active: true
+
+  - code: "O03"
+    name: "Fristablauf, Kündigung (Dienstverhältnis) [HS-DVV]"
+    name_en: "EoC, Termination (Employment) [HS-DVV]"
+    active: true
+
+  - code: "O04"
+    name: "Abberufung (Abwahl) [HV]"
+    name_en: "Recall/Dismissal via Assembly [HV]"
+    active: true
+
+  - code: "O05"
+    name: "Ende Funktionsperiode (Wahlamt) [HV-STV]"
+    name_en: "End of Term (Electoral Office) [HV-STV]"
+    active: true
+
+  - code: "O06"
+    name: "Exmatrikulation [FH-HSG]"
+    name_en: "Deregistration [FH-HSG]"
+    active: true
+
+  - code: "O07"
+    name: "Beendigung (Rechtsfolge) [HSG]"
+    name_en: "Cesser (Legal Effect) [HSG]"
+    active: true
+
+  - code: "O08"
+    name: "Beendigung (behördliche Weisung) [KoKo]"
+    name_en: "Cesser (Regulatory Directive) [CoComm]"
+    active: true
+
+  - code: "O09"
+    name: "Entlassung (Dienstverhältnis) [HS-DVV]"
+    name_en: "Firing (Employment) [HS-DVV]"
+    active: true
+
+  - code: "O99"
+    name: "Ende (Systemrollen) [SYS]"
+    name_en: "End (System Roles) [SYS]"
+    active: true
+
+  # ========== Changes (C##) ==========
+
+  - code: "C01"
+    name: "Organisatorische Umstrukturierung [Satzung]"
+    name_en: "Organizational restructuring [Statutes]"
+    active: true
+
+  - code: "C04"
+    name: "Bestätigung (Anwahl) [HV-Beschluss]"
+    name_en: "Confirmation (Election) [HV-Resolution]"
+    active: true
+
+  - code: "C07"
+    name: "Übergangsfortsetzung (Schreiben) [HV-HSG]"
+    name_en: "Transitional Continuation (Letter) [HV-HSG]"
+    active: true
+
+  - code: "C99"
+    name: "Wechsel (Systemrollen) [SYS]"
+    name_en: "Change (System Roles) [SYS]"
+    active: true
+
+  # ========== Other (X99) ==========
+  - code: "X99"
+    name: "Sonstiges (siehe Sachverhalt)"
+    name_en: "Other (see Annotations)"
+    active: true

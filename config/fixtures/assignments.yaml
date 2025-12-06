@@ -1,0 +1,30 @@
+# Bootstrap data for assignments (PersonRole)
+# File: people/fixtures/assignments.yaml
+
+# Header - configuration
+model: PersonRole
+dedup: [person, role, start_date]  # Skip if same person+role+start_date exists
+
+# Payload - records to import
+records:
+  # Lazy lookup - just matric_no
+  - person: {matric_no: "s2210562023"}
+    role: {short_name: "Vorsitz"}
+    start_date: "2024-07-01"
+    end_date: "2025-06-30"
+    notes: "Board chair for FY 2024/25"
+    end_reason: {code: "I01"}
+  
+  # Strict lookup - first_name + last_name + email
+  - person: {first_name: "Max", last_name: "Mustermann", email: "max.mustermann@fhooe.at"}
+    role: {short_name: "II-StvVorsitz"}
+    start_date: "2024-07-01"
+    notes: "Deputy chair"
+  
+  # With transition reasons
+  - person: {matric_no: "s2210562024"}
+    role: {short_name: "WiRef"}
+    start_reason: {code: "I01"}
+    start_date: "2024-07-01"
+    end_date: "2025-06-30"
+    end_reason: {code: "O01"}

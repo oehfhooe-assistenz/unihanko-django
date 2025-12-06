@@ -1,0 +1,13 @@
+# config/terms.yaml
+# Bootstrap configuration for assembly legislative terms
+
+terms:
+  - label: "Hochschulvertretung ÖH FH OÖ 2025-2027"
+    start_date: "2025-07-01"
+    end_date: "2027-06-30"
+    is_active: true
+
+  - label: "Hochschulvertretung ÖH FH OÖ 2027-2029"
+    start_date: "2027-07-01"
+    end_date: "2029-06-30"
+    is_active: false

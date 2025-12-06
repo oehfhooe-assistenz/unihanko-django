@@ -1,4 +1,8 @@
-# hankosign/utils.py
+# File: hankosign/utils.py
+# Version: 1.0.0
+# Author: vas
+# Modified: 2025-11-28
+
 from __future__ import annotations
 from typing import Tuple, Optional, Union
 
@@ -110,7 +114,7 @@ def can_act(
     return True, None, sig, action, pol
 
 import logging
-logger = logging.getLogger('hankosign')
+logger = logging.getLogger('unihanko.hankosign')
 def record_signature(
     user: User,
     action_ref: Union[str, Action],
