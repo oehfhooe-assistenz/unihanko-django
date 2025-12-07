@@ -7,34 +7,63 @@ must be configured manually via admin.
 Usage:
   python manage.py bootstrap_orginfo --dry-run
   python manage.py bootstrap_orginfo
-  python manage.py bootstrap_orginfo --file config/orginfo.yaml
+  python manage.py bootstrap_orginfo --file /custom/orginfo.yaml
 """
 # File: organisation/management/commands/bootstrap_orginfo.py
-# Version: 1.0.0
+# Version: 1.0.2
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-06
 
 from pathlib import Path
 import yaml
 from django.core.management.base import BaseCommand, CommandError
 from organisation.models import OrgInfo
+from django.conf import settings
 
+def get_fixture_path(filename, *, sensitive=False):
+    """
+    Resolve fixture file location.
+    
+    - Non-sensitive: always from repo fixtures/
+    - Sensitive: from mount in prod, repo in DEBUG
+    """
+    if sensitive and not settings.DEBUG:
+        # Production: sensitive files ONLY from mount
+        return settings.BOOTSTRAP_DATA_DIR / filename
+    else:
+        # Dev OR non-sensitive: use repo fixtures
+        return Path(__file__).parent.parent.parent / "fixtures" / filename
 
 class Command(BaseCommand):
     help = "Bootstrap OrgInfo singleton with basic organization data (idempotent)"
 
     def add_arguments(self, parser):
-        parser.add_argument("--file", "-f", default="config/fixtures/orginfo.yaml")
+        parser.add_argument(
+            "--file", "-f",
+            default=None,
+            help="Path to YAML file (default: mount in prod, repo in DEBUG)"
+        )
         parser.add_argument("--dry-run", action="store_true")
 
     def handle(self, *args, **opts):
-        path = Path(opts["file"])
+        file_path = opts["file"]
+        if not file_path:
+            file_path = get_fixture_path("orginfo.yaml", sensitive=True)
+        else:
+            file_path = Path(file_path)
+        
         dry = opts["dry_run"]
         
-        if not path.exists():
-            raise CommandError(f"YAML file not found: {path}")
+        if not file_path.exists():
+            if settings.DEBUG:
+                self.stdout.write(self.style.WARNING(
+                    f'Skipping orginfo bootstrap: {file_path} not found (DEBUG mode - optional)'
+                ))
+                return
+            else:
+                raise CommandError(f'Required file not found: {file_path}')
         
-        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        data = yaml.safe_load(file_path.read_text(encoding="utf-8")) or {}
         
         if not data:
             self.stdout.write(self.style.WARNING("No organization data defined."))

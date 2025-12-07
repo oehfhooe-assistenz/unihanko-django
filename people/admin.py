@@ -436,7 +436,7 @@ class PersonAdmin(
         action = get_action("LOCK:-@people.person")
         if not action:
             raise PermissionDenied(_("Lock action is not configured."))
-        record_signature(request.user, action, obj, note=_("Personnel record locked"))
+        record_signature(request, action, obj, note=_("Personnel record locked"))
         create_system_annotation(obj, "LOCK", user=request.user)
         return True
     
@@ -450,7 +450,7 @@ class PersonAdmin(
         action = get_action("UNLOCK:-@people.person")
         if not action:
             raise PermissionDenied(_("Unlock action is not configured."))
-        record_signature(request.user, action, obj, note=_("Personnel record unlocked"))
+        record_signature(request, action, obj, note=_("Personnel record unlocked"))
         create_system_annotation(obj, "UNLOCK", user=request.user)
         return True
 
@@ -497,7 +497,7 @@ class PersonAdmin(
                 if st.get("explicit_locked"):
                     already += 1
                     continue
-                record_signature(request.user, action, obj, note=_("Personnel record locked (bulk)"))
+                record_signature(request, action, obj, note=_("Personnel record locked (bulk)"))
                 create_system_annotation(obj, "LOCK", user=request.user)
                 ok += 1
             except Exception:
@@ -530,7 +530,7 @@ class PersonAdmin(
                 if not st.get("explicit_locked"):
                     already += 1
                     continue
-                record_signature(request.user, action, obj, note=_("Personnel record unlocked (bulk)"))
+                record_signature(request, action, obj, note=_("Personnel record unlocked (bulk)"))
                 create_system_annotation(obj, "UNLOCK", user=request.user)
                 ok += 1
             except Exception:
@@ -594,7 +594,7 @@ class PersonAdmin(
             self.message_user(request, _("Release action not configured."), level=messages.ERROR); return
         for p in queryset:
             try:
-                record_signature(request.user, action, p, note=_("Included in roster PDF export"))
+                record_signature(request, action, p, note=_("Included in roster PDF export"))
             except Exception:
                 # Don’t hard-fail the whole export; you still get the audit trail per-success
                 pass
@@ -613,7 +613,7 @@ class PersonAdmin(
         if not action:
             self.message_user(request, _("Release action not configured."), level=messages.ERROR)
             return
-        record_signature(request.user, action, obj, note=_("Regenerated access code"))
+        record_signature(request, action, obj, note=_("Regenerated access code"))
         new_code = obj.regenerate_access_code()
         self.message_user(request, _("New access code generated: %(code)s") % {"code": new_code}, level=messages.SUCCESS)
     _REGEN_MESSAGE = _("Regenerate the access code for this person? The old code will stop working.")

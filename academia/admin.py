@@ -1,7 +1,7 @@
 # File: academia/admin.py
-# Version: 1.0.0
+# Version: 1.0.1
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-06
 from core.admin_mixins import log_deletions
 from django.contrib import admin, messages
 from django import forms
@@ -342,7 +342,7 @@ class SemesterAdmin(
             messages.error(request, _("Lock action not configured"))
             return
         record_signature(
-            request.user,
+            request,
             action,
             obj,
             note=f"Semester {obj.code} locked for audit"
@@ -366,7 +366,7 @@ class SemesterAdmin(
             messages.error(request, _("Unlock action not configured"))
             return
         record_signature(
-            request.user,
+            request,
             action,
             obj,
             note=f"Semester {obj.code} unlocked for corrections"
@@ -583,6 +583,17 @@ class InboxRequestAdmin(
                     'submission_ip'
                 ])
         return ro
+    
+    def save_model(self, request, obj, form, change):
+        # Auto-set uploaded_form_at when file is uploaded
+        if change and 'uploaded_form' in form.changed_data and obj.uploaded_form:
+            obj.uploaded_form_at = timezone.now()
+            
+            # For admin-filed requests, also set affidavit2 as "admin confirms upload"
+            if obj.filing_source == 'ADMIN':
+                obj.affidavit2_confirmed_at = timezone.now()
+        
+        super().save_model(request, obj, form, change)
 
     @transaction.atomic
     @safe_admin_action
@@ -599,7 +610,7 @@ class InboxRequestAdmin(
             messages.error(request, _("Verify action not configured"))
             return
         record_signature(
-            request.user,
+            request,
             action,
             obj,
             note=f"Request {obj.reference_code} verified"
@@ -623,7 +634,7 @@ class InboxRequestAdmin(
             messages.error(request, _("Approve action not configured"))
             return
         record_signature(
-            request.user,
+            request,
             action,
             obj,
             note=f"Request {obj.reference_code} approved by chair"
@@ -647,7 +658,7 @@ class InboxRequestAdmin(
             messages.error(request, _("Reject action not configured"))
             return
         record_signature(
-            request.user,
+            request,
             action,
             obj,
             note=f"Request {obj.reference_code} rejected by chair"

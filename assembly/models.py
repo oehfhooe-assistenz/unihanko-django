@@ -1,7 +1,7 @@
 # File: assembly/models.py
-# Version: 1.0.0
+# Version: 1.0.1
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-06
 
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -627,11 +627,12 @@ class SessionItem(models.Model):
             count = SessionItem.objects.filter(session=self.session).count() + 1
             self.item_code = f"S{count:03d}"
         
-        # Call parent save
         super().save(*args, **kwargs)
         
-        # If this is an election, update PersonRole
-        if self.kind == self.Kind.ELECTION and self.elected_person_role_id:
+        # Only update PersonRole if session is approved
+        if (self.kind == self.Kind.ELECTION and 
+            self.elected_person_role_id and
+            self.session.status in (Session.Status.APPROVED, Session.Status.VERIFIED)):
             pr = self.elected_person_role
             pr.elected_via = self
             if self.session.session_date:

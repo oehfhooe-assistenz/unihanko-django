@@ -1,7 +1,7 @@
 # File: finances/models.py
-# Version: 1.0.0
+# Version: 1.0.1
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-06
 
 from __future__ import annotations
 from datetime import date, timedelta
@@ -723,9 +723,9 @@ class PaymentPlan(models.Model):
             if not self.plan_code:
                 self.plan_code = self._generate_plan_code()
             
-            # 5. Set initial status
-            self.status = paymentplan_status(self)
-        
+
+        # 5. Always update status (not just on creation)
+        self.status = paymentplan_status(self)
         super().save(*args, **kwargs)
         
         # Log after successful save

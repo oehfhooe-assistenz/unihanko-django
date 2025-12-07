@@ -148,7 +148,6 @@ class MaintenanceModeMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
         # Use OS-appropriate temp directory
-        import tempfile
         self.flag_file = os.path.join(tempfile.gettempdir(), 'maintenance.flag')
     
     def __call__(self, request):

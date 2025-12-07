@@ -1,7 +1,7 @@
 # File: hankosign/models.py
-# Version: 1.0.0
+# Version: 1.0.1
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-06
 
 from __future__ import annotations
 from django.db import models
@@ -230,7 +230,12 @@ class Signature(models.Model):
 
     # Computed immutable signature id
     signature_id = models.CharField(max_length=64, editable=False, db_index=True)
-
+    ip_address = models.GenericIPAddressField(
+        _("IP address"),
+        null=True,
+        blank=True,
+        help_text=_("IP address from which signature was created (for audit/verification)")
+    )
     history = HistoricalRecords()
 
     class Meta:
@@ -266,7 +271,8 @@ class Signature(models.Model):
             self.verb = self.verb or self.action.verb
             self.stage = self.stage or self.action.stage
             self.scope_ct_id = self.scope_ct_id or self.action.scope_id
-
+            self.is_repeatable = self.action.is_repeatable
+            
             # Compute HMAC over stable tuple
             msg = "|".join(
                 [

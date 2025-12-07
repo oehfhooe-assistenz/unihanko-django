@@ -702,7 +702,7 @@ class EmploymentDocumentAdmin(
         if not action:
             messages.error(request, _("Submission action is not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Document %(code)s submitted") % {"code": f"{obj.code}"})
+        record_signature(request, action, obj, note=_("Document %(code)s submitted") % {"code": f"{obj.code}"})
         create_system_annotation(obj, "SUBMIT", user=request.user)
         messages.success(request, _("Submitted."))
     submit_doc.label = _("Submit")
@@ -723,7 +723,7 @@ class EmploymentDocumentAdmin(
         if not action:
             messages.error(request, _("Withdraw action is not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Document %(code)s withdrawn") % {"code": f"{obj.code}"})
+        record_signature(request, action, obj, note=_("Document %(code)s withdrawn") % {"code": f"{obj.code}"})
         create_system_annotation(obj, "WITHDRAW", user=request.user)
         messages.success(request, _("Withdrawn."))
     withdraw_doc.label = _("Withdraw submission")
@@ -744,7 +744,7 @@ class EmploymentDocumentAdmin(
         if not action:
             messages.error(request, _("WiRef approval action is not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Document %(code)s approved (WiRef)") % {"code": f"{obj.code}"})
+        record_signature(request, action, obj, note=_("Document %(code)s approved (WiRef)") % {"code": f"{obj.code}"})
         create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Approved (WiRef)."))
     approve_wiref_doc.label = _("Approve (WiRef)")
@@ -765,7 +765,7 @@ class EmploymentDocumentAdmin(
         if not action:
             messages.error(request, _("Chair approval action is not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Document %(code)s approved (Chair)") % {"code": f"{obj.code}"})
+        record_signature(request, action, obj, note=_("Document %(code)s approved (Chair)") % {"code": f"{obj.code}"})
         create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Approved (Chair)."))
     approve_chair_doc.label = _("Approve (Chair)")
@@ -786,7 +786,7 @@ class EmploymentDocumentAdmin(
         if not action:
             messages.error(request, _("WiRef rejection action is not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Document %(code)s rejected (WiRef)") % {"code": f"{obj.code}"})
+        record_signature(request, action, obj, note=_("Document %(code)s rejected (WiRef)") % {"code": f"{obj.code}"})
         create_system_annotation(obj, "REJECT", user=request.user)
         messages.success(request, _("Rejected (WiRef)."))
     reject_wiref_doc.label = _("Reject (WiRef)")
@@ -807,7 +807,7 @@ class EmploymentDocumentAdmin(
         if not action:
             messages.error(request, _("Chair rejection action is not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Document %(code)s rejected (Chair)") % {"code": f"{obj.code}"})
+        record_signature(request, action, obj, note=_("Document %(code)s rejected (Chair)") % {"code": f"{obj.code}"})
         create_system_annotation(obj, "REJECT", user=request.user)
         messages.success(request, _("Rejected (Chair)."))
     reject_chair_doc.label = _("Reject (Chair)")
@@ -1291,7 +1291,7 @@ class TimeSheetAdmin(
         if not action:
             messages.error(request, _("Submission action is not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Timesheet %(period)s submitted") % {"period": f"{obj.year}-{obj.month:02d}"})
+        record_signature(request, action, obj, note=_("Timesheet %(period)s submitted") % {"period": f"{obj.year}-{obj.month:02d}"})
         create_system_annotation(obj, "SUBMIT", user=request.user)
         messages.success(request, _("Timesheet submitted."))
     submit_timesheet.label = _("Submit")
@@ -1313,7 +1313,7 @@ class TimeSheetAdmin(
         if not action:
             messages.error(request, _("Withdraw action is not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Timesheet %(period)s withdrawn") % {"period": f"{obj.year}-{obj.month:02d}"})
+        record_signature(request, action, obj, note=_("Timesheet %(period)s withdrawn") % {"period": f"{obj.year}-{obj.month:02d}"})
         create_system_annotation(obj, "WITHDRAW", user=request.user)
         messages.success(request, _("Submission withdrawn."))
     withdraw_timesheet.label = _("Withdraw submission")
@@ -1335,7 +1335,7 @@ class TimeSheetAdmin(
         if not action:
             messages.error(request, _("WiRef approval action is not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Timesheet %(period)s approved") % {"period": f"{obj.year}-{obj.month:02d}"})
+        record_signature(request, action, obj, note=_("Timesheet %(period)s approved") % {"period": f"{obj.year}-{obj.month:02d}"})
         create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Approved by WiRef."))
     approve_wiref.label = _("Approve (WiRef)")
@@ -1357,7 +1357,7 @@ class TimeSheetAdmin(
         if not action:
             messages.error(request, _("Chair approval action is not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Timesheet %(period)s approved") % {"period": f"{obj.year}-{obj.month:02d}"})
+        record_signature(request, action, obj, note=_("Timesheet %(period)s approved") % {"period": f"{obj.year}-{obj.month:02d}"})
         create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Approved by Chair."))
     approve_chair.label = _("Approve (Chair)")
@@ -1379,7 +1379,7 @@ class TimeSheetAdmin(
         if not action:
             messages.error(request, _("WiRef rejection action is not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Timesheet %(period)s rejected") % {"period": f"{obj.year}-{obj.month:02d}"})
+        record_signature(request, action, obj, note=_("Timesheet %(period)s rejected") % {"period": f"{obj.year}-{obj.month:02d}"})
         create_system_annotation(obj, "REJECT", user=request.user)
         messages.success(request, _("Rejected by WiRef."))
     reject_wiref.label = _("Reject (WiRef)")
@@ -1401,7 +1401,7 @@ class TimeSheetAdmin(
         if not action:
             messages.error(request, _("Chair rejection action is not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Timesheet %(period)s rejected") % {"period": f"{obj.year}-{obj.month:02d}"})
+        record_signature(request, action, obj, note=_("Timesheet %(period)s rejected") % {"period": f"{obj.year}-{obj.month:02d}"})
         create_system_annotation(obj, "REJECT", user=request.user)
         messages.success(request, _("Rejected by Chair."))
     reject_chair.label = _("Reject (Chair)")
@@ -1423,7 +1423,7 @@ class TimeSheetAdmin(
         if not action:
             messages.error(request, _("Lock action is not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Timesheet %(period)s locked") % {"period": f"{obj.year}-{obj.month:02d}"})
+        record_signature(request, action, obj, note=_("Timesheet %(period)s locked") % {"period": f"{obj.year}-{obj.month:02d}"})
         create_system_annotation(obj, "LOCK", user=request.user)
         messages.success(request, _("Locked."))
     lock_timesheet.label = _("Lock")
@@ -1441,7 +1441,7 @@ class TimeSheetAdmin(
         if not action:
             messages.error(request, _("Unlock action is not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Timesheet %(period)s unlocked") % {"period": f"{obj.year}-{obj.month:02d}"})
+        record_signature(request, action, obj, note=_("Timesheet %(period)s unlocked") % {"period": f"{obj.year}-{obj.month:02d}"})
         create_system_annotation(obj, "UNLOCK", user=request.user)
         messages.success(request, _("Unlocked."))
     unlock_timesheet.label = _("Unlock")

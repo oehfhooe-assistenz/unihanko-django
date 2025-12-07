@@ -1,28 +1,54 @@
 """Bootstrap HolidayCalendar from YAML (idempotent)."""
 # File: employees/management/commands/bootstrap_holidays.py
-# Version: 1.0.0
+# Version: 1.0.2
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-06
 
 from pathlib import Path
 import yaml
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from employees.models import HolidayCalendar
+from django.conf import settings
+
+def get_fixture_path(filename, *, sensitive=False):
+    """
+    Resolve fixture file location.
+    
+    - Non-sensitive: always from repo fixtures/
+    - Sensitive: from mount in prod, repo in DEBUG
+    """
+    if sensitive and not settings.DEBUG:
+        # Production: sensitive files ONLY from mount
+        return settings.BOOTSTRAP_DATA_DIR / filename
+    else:
+        # Dev OR non-sensitive: use repo fixtures
+        return Path(__file__).parent.parent.parent / "fixtures" / filename
 
 class Command(BaseCommand):
     help = "Create/refresh Holiday Calendar from YAML (idempotent)"
 
     def add_arguments(self, parser):
-        parser.add_argument("--file", "-f", default="config/fixtures/holiday_calendar.yaml")
+        parser.add_argument(
+            "--file", "-f",
+            default=None,
+            help="Path to YAML file (default: auto-resolved from fixtures)"
+        )
         parser.add_argument("--dry-run", action="store_true")
 
     def handle(self, *args, **opts):
-        path = Path(opts["file"])
+        file_path = opts["file"]
+        if not file_path:
+            file_path = get_fixture_path("holiday_calendar.yaml", sensitive=False)
+        else:
+            file_path = Path(file_path)
+        
         dry = opts["dry_run"]
-        if not path.exists():
-            raise CommandError(f"YAML file not found: {path}")
-        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        
+        if not file_path.exists():
+            raise CommandError(f"YAML file not found: {file_path}")
+        
+        data = yaml.safe_load(file_path.read_text(encoding="utf-8")) or {}
         calendars_cfg = data.get("calendars", []) or []
         if not calendars_cfg:
             self.stdout.write(self.style.WARNING("No holiday calendars defined."))

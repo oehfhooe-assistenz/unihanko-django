@@ -10,9 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 # File: config/settings.py
-# Version: 1.0.0
+# Version: 1.0.2
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-06
 
 import environ
 from pathlib import Path
@@ -31,26 +31,31 @@ environ.Env.read_env(BASE_DIR / '.env')
 UNIHANKO_VERSION = "1.0.0"
 UNIHANKO_CODENAME = "Sakura"
 UNIHANKO_VERSION_FULL = f"v{UNIHANKO_VERSION} \"{UNIHANKO_CODENAME}\""
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env('SECRET_KEY', default='django-insecure-rz9r+bbkq_y+p&y&$m98m()h+b2g4n4eedn4c*h51zzzntna*h')
-# Separate secret key for HankoSign signature generation
-HANKOSIGN_SECRET = env('HANKOSIGN_SECRET', default='django-insecure-GENERATE_ANOTHER_ONE_HERE')
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool('DEBUG', default=True)
+DEBUG = env.bool('DEBUG', default=False)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 LOGIN_URL = "/admin/login/"
 LOGIN_REDIRECT_URL = "/admin/"
 
+# Fail loudly if secrets not set in production
+if not DEBUG:
+    SECRET_KEY = env('SECRET_KEY')  # No default - raises error if missing
+    HANKOSIGN_SECRET = env('HANKOSIGN_SECRET')
+else:
+    # Development: allow defaults
+    SECRET_KEY = env('SECRET_KEY', default='django-insecure-rz9r+bbkq_y+p&y&$m98m()h+b2g4n4eedn4c*h51zzzntna*h')
+    HANKOSIGN_SECRET = env('HANKOSIGN_SECRET', default='django-insecure-GENERATE_ANOTHER_ONE_HERE')
+
 if DEBUG:
     # Development: logs in project directory
     LOGS_DIR = BASE_DIR / 'logs'
+    # Development: can bootstrap from repo fixtures (convenience)
+    BOOTSTRAP_DATA_DIR = BASE_DIR / 'config' / 'fixtures'
 else:
     # Production/Staging ('Suupu'): Docker mount
     LOGS_DIR = Path('/var/log/unihanko')
+    # Production: sensitive bootstrap data from mount (never in repo)
+    BOOTSTRAP_DATA_DIR = Path('/mnt/bootstrap-data')
+    BOOTSTRAP_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # Ensure directory exists
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
@@ -267,8 +272,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': env('DB_ENGINE', default='django.db.backends.sqlite3'),
+        'NAME': env('DB_NAME', default=str(BASE_DIR / 'db.sqlite3')),
+        'USER': env('DB_USER', default=''),
+        'PASSWORD': env('DB_PASSWORD', default=''),
+        'HOST': env('DB_HOST', default=''),
+        'PORT': env('DB_PORT', default=''),
     }
 }
 
@@ -333,6 +342,7 @@ TINYMCE_DEFAULT_CONFIG = {
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # Where collectstatic puts files
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -344,7 +354,14 @@ if DEBUG:
     MEDIA_ROOT = BASE_DIR / 'media'
 else:
     # Production/Staging: Use MinIO
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    STORAGES = {
+        'default': {
+            'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
+        },
+        'staticfiles': {
+            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+        },
+    }
     
     AWS_ACCESS_KEY_ID = env('MINIO_ACCESS_KEY')
     AWS_SECRET_ACCESS_KEY = env('MINIO_SECRET_KEY')

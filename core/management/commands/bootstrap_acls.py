@@ -4,12 +4,12 @@ Sync Django Groups & Permissions from a YAML file (idempotent).
 Usage:
   python manage.py bootstrap_acls --dry-run
   python manage.py bootstrap_acls
-  python manage.py bootstrap_acls --file config/access.yaml
+  python manage.py bootstrap_acls --file /custom/access.yaml
 """
 # File: core/management/commands/bootstrap_acls.py
-# Version: 1.0.0
+# Version: 1.0.2
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-06
 
 from pathlib import Path
 from typing import Dict, List, Set
@@ -19,8 +19,23 @@ from django.apps import apps
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand, CommandError
+from django.conf import settings
 
 PERM_KINDS = {"view", "add", "change", "delete"}
+
+def get_fixture_path(filename, *, sensitive=False):
+    """
+    Resolve fixture file location.
+    
+    - Non-sensitive: always from repo fixtures/
+    - Sensitive: from mount in prod, repo in DEBUG
+    """
+    if sensitive and not settings.DEBUG:
+        # Production: sensitive files ONLY from mount
+        return settings.BOOTSTRAP_DATA_DIR / filename
+    else:
+        # Dev OR non-sensitive: use repo fixtures
+        return Path(__file__).parent.parent.parent / "fixtures" / filename
 
 
 def get_model(label: str):
@@ -81,8 +96,8 @@ class Command(BaseCommand):
         parser.add_argument(
             "--file",
             "-f",
-            default="config/fixtures/access.yaml",
-            help="Path to YAML config (default: config/fixtures/access.yaml)",
+            default=None,
+            help="Path to YAML file (default: mount in prod, repo in DEBUG)",
         )
         parser.add_argument(
             "--dry-run",
@@ -91,13 +106,24 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **opts):
-        path = Path(opts["file"])
+        file_path = opts["file"]
+        if not file_path:
+            file_path = get_fixture_path("access.yaml", sensitive=True)
+        else:
+            file_path = Path(file_path)
+        
         dry = opts["dry_run"]
 
-        if not path.exists():
-            raise CommandError(f"YAML file not found: {path}")
+        if not file_path.exists():
+            if settings.DEBUG:
+                self.stdout.write(self.style.WARNING(
+                    f'Skipping ACL bootstrap: {file_path} not found (DEBUG mode - optional)'
+                ))
+                return
+            else:
+                raise CommandError(f'Required file not found: {file_path}')
 
-        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        data = yaml.safe_load(file_path.read_text(encoding="utf-8")) or {}
         groups_cfg: Dict = data.get("groups", {}) or {}
 
         if not groups_cfg:
@@ -163,3 +189,5 @@ class Command(BaseCommand):
 
         if dry:
             self.stdout.write(self.style.WARNING("Dry run complete. No changes applied."))
+        else:
+            self.stdout.write(self.style.SUCCESS(f"\n✓ Bootstrap complete! {len(groups_cfg)} groups synced."))

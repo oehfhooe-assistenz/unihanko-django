@@ -573,7 +573,7 @@ class PaymentPlanAdmin(
         if not action:
             messages.error(request, _("Submit action not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Payment plan %(code)s submitted") % {"code": f"{obj.plan_code}"})
+        record_signature(request, action, obj, note=_("Payment plan %(code)s submitted") % {"code": f"{obj.plan_code}"})
         create_system_annotation(obj, "SUBMIT", user=request.user)
         messages.success(request, _("Submitted."))
     submit_plan.label = _("Submit")
@@ -598,7 +598,7 @@ class PaymentPlanAdmin(
         if not action:
             messages.error(request, _("Withdraw action not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Payment plan %(code)s withdrawn") % {"code": f"{obj.plan_code}"})
+        record_signature(request, action, obj, note=_("Payment plan %(code)s withdrawn") % {"code": f"{obj.plan_code}"})
         create_system_annotation(obj, "WITHDRAW", user=request.user)
         messages.success(request, _("Withdrawn."))
     withdraw_plan.label = _("Withdraw")
@@ -622,7 +622,7 @@ class PaymentPlanAdmin(
         if not action:
             messages.error(request, _("WiRef approval action not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Payment plan %(code)s approved (WiRef)") % {"code": f"{obj.plan_code}"})
+        record_signature(request, action, obj, note=_("Payment plan %(code)s approved (WiRef)") % {"code": f"{obj.plan_code}"})
         create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Approved (WiRef)."))
     approve_wiref.label = _("Approve (WiRef)")
@@ -646,7 +646,7 @@ class PaymentPlanAdmin(
         if not action:
             messages.error(request, _("Chair approval action not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Payment plan %(code)s approved (Chair)") % {"code": f"{obj.plan_code}"})
+        record_signature(request, action, obj, note=_("Payment plan %(code)s approved (Chair)") % {"code": f"{obj.plan_code}"})
         create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Approved (Chair)."))
     approve_chair.label = _("Approve (Chair)")
@@ -671,7 +671,7 @@ class PaymentPlanAdmin(
         if not action:
             messages.error(request, _("Verify action not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Payment plan %(code)s bank-transaction verified (WiRef)") % {"code": f"{obj.plan_code}"})
+        record_signature(request, action, obj, note=_("Payment plan %(code)s bank-transaction verified (WiRef)") % {"code": f"{obj.plan_code}"})
         create_system_annotation(obj, "VERIFY", user=request.user)
         messages.success(request, _("Banking verified. Plan is now ACTIVE."))
     verify_banking.label = _("Verify banking")
@@ -705,7 +705,7 @@ class PaymentPlanAdmin(
             messages.error(request, _("Cancel action not configured."))
             return
         
-        record_signature(request.user, action, obj, note=_("Payment plan %(code)s cancelled") % {"code": obj.plan_code})
+        record_signature(request, action, obj, note=_("Payment plan %(code)s cancelled") % {"code": obj.plan_code})
         create_system_annotation(obj, "REJECT", user=request.user)
         messages.success(request, _("Plan cancelled."))
     cancel_plan.label = _("Cancel plan")
@@ -1193,7 +1193,7 @@ class FiscalYearAdmin(
         if not action:
             messages.error(request, _("Lock action not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Fiscal year %(code)s locked") % {"code": f"{obj.code}"})
+        record_signature(request, action, obj, note=_("Fiscal year %(code)s locked") % {"code": f"{obj.code}"})
         create_system_annotation(obj, "LOCK", user=request.user)
         messages.success(request, _("Fiscal year locked."))
     lock_year.label = _("Lock year")
@@ -1218,7 +1218,7 @@ class FiscalYearAdmin(
         if not action:
             messages.error(request, _("Unlock action not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Fiscal year %(code)s unlocked") % {"code": f"{obj.code}"})
+        record_signature(request, action, obj, note=_("Fiscal year %(code)s unlocked") % {"code": f"{obj.code}"})
         create_system_annotation(obj, "UNLOCK", user=request.user)
         messages.success(request, _("Fiscal year unlocked."))
     unlock_year.label = _("Unlock year")

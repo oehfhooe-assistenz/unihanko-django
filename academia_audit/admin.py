@@ -1,7 +1,7 @@
 # File: academia_audit/admin.py
-# Version: 1.0.0
+# Version: 1.0.1
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-06
 
 from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
@@ -97,6 +97,22 @@ class AuditEntryInline(StackedInlinePaginated):
                 ])
         
         return ro
+    
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        for instance in instances:
+            if isinstance(instance, AuditEntry) and instance.pk:
+                # Auto-set checked_at when ECTS fields are modified via inline
+                original = AuditEntry.objects.get(pk=instance.pk)
+                ects_fields = ['aliquoted_ects', 'final_ects', 'reimbursed_ects', 'remaining_ects', 'notes']
+                changed = any(
+                    getattr(instance, field) != getattr(original, field)
+                    for field in ects_fields
+                )
+                if changed:
+                    instance.checked_at = timezone.now()
+            instance.save()
+        formset.save_m2m()
     
     def has_add_permission(self, request, obj):
         # Can't add entries via inline - use synchronize action
@@ -268,6 +284,7 @@ class AuditSemesterAdmin(
         else:
             # Locked audit workflows
             if st.get("verified"):
+                drop('synchronize_entries')
                 # After verified, can't verify again (not repeatable)
                 drop('verify_audit_complete')
 
@@ -300,7 +317,7 @@ class AuditSemesterAdmin(
         if not action:
             messages.error(request, _("Lock action not configured."))
             return
-        record_signature(request.user, action, obj, note=f"Audit semester {obj.semester.code} locked")
+        record_signature(request, action, obj, note=f"Audit semester {obj.semester.code} locked")
         create_system_annotation(obj, "LOCK", user=request.user)
         messages.success(request, _("Audit semester locked."))
 
@@ -320,7 +337,7 @@ class AuditSemesterAdmin(
         if not action:
             messages.error(request, _("Unlock action not configured."))
             return
-        record_signature(request.user, action, obj, note=f"Audit semester {obj.semester.code} unlocked")
+        record_signature(request, action, obj, note=f"Audit semester {obj.semester.code} unlocked")
         create_system_annotation(obj, "UNLOCK", user=request.user)
         messages.success(request, _("Audit semester unlocked."))
 
@@ -364,7 +381,7 @@ class AuditSemesterAdmin(
         if not action:
             messages.error(request, _("Verify action not configured."))
             return
-        record_signature(request.user, action, obj, note=f"Audit complete for {obj.semester.code}")
+        record_signature(request, action, obj, note=f"Audit complete for {obj.semester.code}")
         create_system_annotation(obj, "VERIFY", user=request.user)
         messages.success(request, _("Audit verified complete."))
 
@@ -387,7 +404,7 @@ class AuditSemesterAdmin(
         if not action:
             messages.error(request, _("Approval action not configured."))
             return
-        record_signature(request.user, action, obj, note=f"Audit approved for {obj.semester.code}")
+        record_signature(request, action, obj, note=f"Audit approved for {obj.semester.code}")
         create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Audit approved by chair."))
     approve_audit.label = _("Approve (Chair)")
@@ -406,7 +423,7 @@ class AuditSemesterAdmin(
         if not action:
             messages.error(request, _("Reject action not configured."))
             return
-        record_signature(request.user, action, obj, note=f"Audit rejected for {obj.semester.code}")
+        record_signature(request, action, obj, note=f"Audit rejected for {obj.semester.code}")
         create_system_annotation(obj, "REJECT", user=request.user)
         messages.warning(request, _("Audit rejected. Please review and re-verify."))
     reject_audit.label = _("Reject (Chair)")
@@ -430,7 +447,7 @@ class AuditSemesterAdmin(
         obj.audit_sent_university_at = timezone.now()
         obj.save(update_fields=['audit_sent_university_at'])
 
-        record_signature(request.user, action, obj, note=f"Audit sent to university for {obj.semester.code}")
+        record_signature(request, action, obj, note=f"Audit sent to university for {obj.semester.code}")
         create_system_annotation(obj, "VERIFY", user=request.user)
         messages.success(request, _("Verified: Audit sent to university."))
 
@@ -593,6 +610,14 @@ class AuditEntryAdmin(
                     ro.extend(['aliquoted_ects', 'final_ects', 'reimbursed_ects', 
                             'remaining_ects', 'notes', 'person_roles', 'inbox_requests'])
         return ro
+
+    def save_model(self, request, obj, form, change):
+        if change:
+            # Auto-set checked_at when admin modifies ECTS fields
+            ects_fields = {'aliquoted_ects', 'final_ects', 'reimbursed_ects', 'remaining_ects', 'notes'}
+            if any(field in form.changed_data for field in ects_fields):
+                obj.checked_at = timezone.now()
+        super().save_model(request, obj, form, change)
 
     def has_delete_permission(self, request, obj=None):
         return False

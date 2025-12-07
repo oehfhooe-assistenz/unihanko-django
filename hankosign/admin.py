@@ -1,7 +1,7 @@
 # File: hankosign/admin.py
-# Version: 1.0.0
+# Version: 1.0.1
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-06
 
 from django.contrib import admin
 from django import forms
@@ -25,8 +25,8 @@ class SignatureInline(StackedInlinePaginated):
     per_page = 10
     pagination_key = "signature"
     can_delete = False
-    readonly_fields = ("at", "verb", "stage", "content_type", "object_id", "signature_id", "note")
-    fields = ("at", "verb", "stage", "content_type", "object_id", "signature_id", "note")
+    readonly_fields = ("at", "verb", "stage", "content_type", "object_id", "signature_id", "note", "ip_address")
+    fields = ("at", "verb", "stage", "content_type", "object_id", "signature_id", "note", "ip_address")
     ordering = ("-at",)
 
     def has_add_permission(self, request, obj):
@@ -217,7 +217,7 @@ class SignatureAdmin(admin.ModelAdmin):
         (_("Target"), {"fields": ("content_type", "object_id")}),
         (_("Action"), {"fields": ("action", "verb", "stage", "scope_ct")}),
         (_("Signer"), {"fields": ("signatory",)}),
-        (_("Result"), {"fields": ("signature_id", "at", "note", "payload")}),
+        (_("Result"), {"fields": ("signature_id", "at", "note", "payload", "ip_address")}),
     )
 
     def get_model_perms(self, request):

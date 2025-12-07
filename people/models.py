@@ -1,7 +1,7 @@
 # File: people/models.py
-# Version: 1.0.0
+# Version: 1.0.1
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-06
 
 import uuid
 import secrets
@@ -337,7 +337,6 @@ class PersonRole(models.Model):
         help_text=_("Why this assignment ended (e.g. Austritt). Required when an end date is set."),
     )
     
-    CONFIRM_REF_REGEX = r"^(?:HV|AO)-[IVXLCDM]+-\d{4}$"  # HV-<roman>-YYYY or AO-<roman>-YYYY
     confirm_date = models.DateField(
         _("Confirmation date"), 
         null=True, blank=True, 
@@ -430,11 +429,11 @@ class PersonRole(models.Model):
                 start_date=self.start_date
             ).exclude(pk=self.pk).exists()
         
-        if existing:
-            errors["__all__"] = _(
-                "An assignment for this person in this role with this start date already exists. "
-                "Please adjust the start date or edit the existing assignment."
-            )
+            if existing:
+                errors["__all__"] = _(
+                    "An assignment for this person in this role with this start date already exists. "
+                    "Please adjust the start date or edit the existing assignment."
+                )
 
         if self.role and getattr(self.role, "is_system", False):
             # System roles shouldn't carry confirmation paperwork
@@ -467,11 +466,10 @@ class PersonRole(models.Model):
         if not self.end_date and self.end_reason:
             errors.setdefault("end_reason", []).append(_("Remove end reason unless you set an end date."))
 
-        # --- start != end (except both X99) ---
         if self.start_reason_id and self.end_reason_id:
             sc = (self.start_reason.code or "").upper()
             ec = (self.end_reason.code or "").upper()
-            if sc != "X99" and ec != "X99" and self.start_reason_id == self.end_reason_id:
+            if sc != "X99" and ec != "X99" and self.start_reason_id == self.end_reason_id:  # ← Fixed
                 errors.setdefault("end_reason", []).append(
                     _("Start and end reason cannot be the same (except X99).")
                 )

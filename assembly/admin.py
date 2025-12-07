@@ -1,7 +1,7 @@
 # File: assembly/admin.py
-# Version: 1.0.0
+# Version: 1.0.1
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-06
 
 from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
@@ -108,6 +108,15 @@ class MandateInline(StackedInlinePaginated):
     autocomplete_fields = ('person_role', 'backup_person_role')
     ordering = ('position',)
 
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        if obj and obj.term:
+            term_st = state_snapshot(obj.term)
+            if term_st.get("explicit_locked"):
+                ro.extend(['position', 'person_role', 'officer_role', 'start_date', 
+                        'end_date', 'backup_person_role', 'backup_person_text', 'party'])
+        return ro
+
 
 class VoteInline(StackedInlinePaginated):
     model = Vote
@@ -116,6 +125,15 @@ class VoteInline(StackedInlinePaginated):
     pagination_key = "vote"
     fields = ('mandate', 'vote')
     autocomplete_fields = ('mandate',)
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = list(super().get_readonly_fields(request, obj))
+        if obj:
+            session_admin = self.admin_site._registry.get(Session)
+            if session_admin and session_admin._is_locked(request, obj):
+                # For VoteInline: lock both fields
+                ro.extend(['mandate', 'vote'])
+        return ro
     
 
 class ElectionItemHRLinksInline(StackedInlinePaginated):
@@ -207,11 +225,11 @@ class SessionAttendanceInline(StackedInlinePaginated):
     
     def get_readonly_fields(self, request, obj=None):
         ro = list(super().get_readonly_fields(request, obj))
-        # Lock if session is locked
         if obj:
             session_admin = self.admin_site._registry.get(Session)
             if session_admin and session_admin._is_locked(request, obj):
-                ro.append('mandate')
+                # For SessionAttendance: lock both fields
+                ro.extend(['mandate', 'backup_attended'])
         return ro
 
 # ============================================================================
@@ -311,7 +329,7 @@ class TermAdmin(
         if not action:
             messages.error(request, _("Lock action not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Term %(code)s locked") % {"code": obj.code})
+        record_signature(request, action, obj, note=_("Term %(code)s locked") % {"code": obj.code})
         create_system_annotation(obj, "LOCK", user=request.user)
         messages.success(request, _("Term locked."))
     lock_term.label = _("Lock term")
@@ -331,7 +349,7 @@ class TermAdmin(
         if not action:
             messages.error(request, _("Unlock action not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Term %(code)s unlocked") % {"code": obj.code})
+        record_signature(request, action, obj, note=_("Term %(code)s unlocked") % {"code": obj.code})
         create_system_annotation(obj, "UNLOCK", user=request.user)
         messages.success(request, _("Term unlocked."))
     unlock_term.label = _("Unlock term")
@@ -563,7 +581,7 @@ class SessionAdmin(
         if not action:
             messages.error(request, _("Submit action not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Session %(code)s submitted") % {"code": obj.code})
+        record_signature(request, action, obj, note=_("Session %(code)s submitted") % {"code": obj.code})
         create_system_annotation(obj, "SUBMIT", user=request.user)
         messages.success(request, _("Submitted."))
     submit_session.label = _("Submit")
@@ -583,7 +601,7 @@ class SessionAdmin(
         if not action:
             messages.error(request, _("Withdraw action not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Session %(code)s withdrawn") % {"code": obj.code})
+        record_signature(request, action, obj, note=_("Session %(code)s withdrawn") % {"code": obj.code})
         create_system_annotation(obj, "WITHDRAW", user=request.user)
         messages.success(request, _("Withdrawn."))
     withdraw_session.label = _("Withdraw")
@@ -603,7 +621,7 @@ class SessionAdmin(
         if not action:
             messages.error(request, _("Approval action not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Session %(code)s approved") % {"code": obj.code})
+        record_signature(request, action, obj, note=_("Session %(code)s approved") % {"code": obj.code})
         create_system_annotation(obj, "APPROVE", user=request.user)
         messages.success(request, _("Approved."))
     approve_session.label = _("Approve (Chair)")
@@ -623,7 +641,7 @@ class SessionAdmin(
         if not action:
             messages.error(request, _("Reject action not configured."))
             return
-        record_signature(request.user, action, obj, note=_("Session %(code)s rejected") % {"code": obj.code})
+        record_signature(request, action, obj, note=_("Session %(code)s rejected") % {"code": obj.code})
         create_system_annotation(obj, "REJECT", user=request.user)
         messages.success(request, _("Rejected."))
     reject_session.label = _("Reject")
@@ -647,7 +665,7 @@ class SessionAdmin(
         # Set timestamp
         obj.sent_koko_hsg_at = timezone.now()
         obj.save(update_fields=['sent_koko_hsg_at'])
-        record_signature(request.user, action, obj, note=_("Session %(code)s sent to KoKo/HSG") % {"code": obj.code})
+        record_signature(request, action, obj, note=_("Session %(code)s sent to KoKo/HSG") % {"code": obj.code})
         create_system_annotation(obj, "VERIFY", user=request.user)
         messages.success(request, _("Verified and sent to KoKo/HSG."))
     verify_session.label = _("Verify (Sent to KoKo/HSG)")

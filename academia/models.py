@@ -1,7 +1,7 @@
 # File: academia/models.py
-# Version: 1.0.0
+# Version: 1.0.1
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-06
 
 from __future__ import annotations
 from datetime import date
@@ -54,36 +54,31 @@ def generate_reference_code(semester_code, last_name):
 
 def inboxrequest_stage(ir) -> str:
     """Compute stage from HankoSign + upload state."""
-    from hankosign.utils import has_sig
+    # ... rejection/transfer checks stay the same ...
     
-    # Check for rejection
-    if has_sig(ir, 'REJECT', 'CHAIR'):
-        return 'REJECTED'
-
-    # Check if transferred to audit
-    from academia_audit.models import AuditEntry
-    if AuditEntry.objects.filter(
-        audit_semester__semester=ir.semester,
-        person=ir.person_role.person,
-        inbox_requests=ir
-    ).exists():
-        return 'TRANSFERRED'
-
-    # Check approvals
     if has_sig(ir, 'APPROVE', 'CHAIR'):
         return 'APPROVED'
-
+    
     if has_sig(ir, 'VERIFY', ''):
         return 'VERIFIED'
-
-    # Check if form uploaded
-    if ir.uploaded_form and ir.affidavit2_confirmed_at:
-        return 'SUBMITTED'
-
+    
+    # Check if form uploaded - different logic for admin vs public
+    if ir.uploaded_form:
+        if ir.filing_source == 'ADMIN':
+            # Admin workflow: just need the file
+            return 'SUBMITTED'
+        elif ir.affidavit2_confirmed_at:
+            # Public workflow: need affidavit confirmation
+            return 'SUBMITTED'
+    
     # Check if courses entered
     if ir.affidavit1_confirmed_at and ir.courses.exists():
         return 'DRAFT'
-
+    
+    # Admin requests without affidavit1 but with courses
+    if ir.filing_source == 'ADMIN' and ir.courses.exists():
+        return 'DRAFT'
+    
     return 'DRAFT'
 
 

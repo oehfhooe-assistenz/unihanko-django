@@ -1,7 +1,7 @@
 # File: hankosign/utils.py
-# Version: 1.0.0
+# Version: 1.0.1
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2026-12-06
 
 from __future__ import annotations
 from typing import Tuple, Optional, Union
@@ -115,7 +115,10 @@ def can_act(
 
 import logging
 logger = logging.getLogger('unihanko.hankosign')
+
+
 def record_signature(
+    request,
     user: User,
     action_ref: Union[str, Action],
     obj,
@@ -123,6 +126,7 @@ def record_signature(
     note: str = "",
     payload=None,
 ) -> Signature:
+    user = request.user
     ok, reason, sig, action, pol = can_act(user, action_ref, obj)
     if not ok:
         from django.core.exceptions import PermissionDenied
@@ -155,6 +159,17 @@ def record_signature(
                         verb=action.verb, stage=action.stage, signatory=sig)
                 .order_by("-at", "-id")
                 .first())
+    
+    ip_address = None
+    if request:
+        # Try X-Forwarded-For first (for proxies), fallback to REMOTE_ADDR
+        ip_address = request.META.get('HTTP_X_FORWARDED_FOR')
+        if ip_address:
+            # X-Forwarded-For can be comma-separated list, take first
+            ip_address = ip_address.split(',')[0].strip()
+        else:
+            ip_address = request.META.get('REMOTE_ADDR')
+
     signum = Signature.objects.create(
         signatory=sig,
         content_type=ct,
@@ -166,6 +181,7 @@ def record_signature(
         note=note or "",
         payload=payload or {},
         is_repeatable=bool(action.is_repeatable),  # snapshot
+        ip_address=ip_address,
     )
     logger.info(
         f"Signature recorded: {signum.verb}/{signum.stage} "
@@ -336,30 +352,30 @@ def object_status(obj, *, final_stage="CHAIR", tier1_stage="WIREF"):
       draft | submitted | approved-tier1 | final | rejected-tier1 | rejected-final | locked
     """
     st = state_snapshot(obj)
-
+    
     approved = st.get("approved", set()) or set()
-    rejected = st.get("rejected", set()) or set()
-
+    rejected = st.get("rejected", False)  # ← Boolean, not set
+    
     # 1) explicit lock always wins
     if st.get("explicit_locked"):
         return {"code": "locked", "label": _("Locked")}
-
-    # 2) final approve / reject
+    
+    # 2) ANY rejection is terminal (remove stage-specific checks)
+    if rejected:
+        return {"code": "rejected", "label": _("Rejected")}
+    
+    # 3) final approve (remove final reject check)
     if final_stage in approved or st.get("final"):
         return {"code": "final", "label": _("Final")}
-    if final_stage in rejected:
-        return {"code": "rejected-final", "label": _("Rejected (Final)")}
-
-    # 3) tier1 approve / reject
-    if tier1_stage in rejected:
-        return {"code": "rejected-tier1", "label": _("Rejected (WiRef)")}
+    
+    # 4) tier1 approve (remove tier1 reject check)
     if tier1_stage in approved:
         return {"code": "approved-tier1", "label": _("Approved (WiRef)")}
-
-    # 4) submitted vs draft
+    
+    # 5) submitted vs draft
     if st.get("submitted"):
         return {"code": "submitted", "label": _("Submitted")}
-
+    
     return {"code": "draft", "label": _("Draft")}
 
 
@@ -496,7 +512,7 @@ def sign_once(
     key = _once_key(user_id=request.user.id, obj=obj, action=action, rid=get_rid(request))
     if cache.add(key, 1, window_seconds):
         # First hit within window → perform the real write
-        return record_signature(request.user, action, obj, note=note, payload=payload)
+        return record_signature(request, action, obj, note=note, payload=payload)
 
     # Not first → no-op; hand back the latest row for convenience
     ct = ContentType.objects.get_for_model(obj.__class__)
