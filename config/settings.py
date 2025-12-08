@@ -252,6 +252,11 @@ MIDDLEWARE = [
     'core.middleware.ConstraintErrorMiddleware',
     'core.middleware.MaintenanceModeMiddleware',
 ]
+
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 SITE_ID = 1
 ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
@@ -343,7 +348,10 @@ if not DEBUG:
 # Axes configuration
 AXES_FAILURE_LIMIT = 5  # Lock after 5 failed attempts
 AXES_COOLOFF_TIME = 1  # 1 hour lockout
-AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True
+AXES_LOCKOUT_PARAMETERS = [
+    'username',
+    'ip_address',
+]
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
