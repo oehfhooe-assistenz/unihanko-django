@@ -1,11 +1,11 @@
 # File: academia/models.py
-# Version: 1.0.1
+# Version: 1.0.5
 # Author: vas
-# Modified: 2025-12-06
+# Modified: 2025-12-08
 
 from __future__ import annotations
 from datetime import date
-from django.db import models
+from django.db import models, transaction, IntegrityError
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.utils import timezone
@@ -16,6 +16,8 @@ from hankosign.utils import state_snapshot, has_sig
 from people.models import PersonRole, Person
 import secrets
 import random
+from decimal import Decimal
+from django.core.validators import FileExtensionValidator
 
 
 # --- Utility Functions -------------------------------------------------------
@@ -26,7 +28,7 @@ def generate_semester_password():
     from .utils import get_random_words
 
     word1, word2 = get_random_words(2)
-    number = random.randint(10, 99)
+    number = secrets.randbelow(90) + 10
     return f"{word1}-{word2}-{number}"
 
 
@@ -54,21 +56,27 @@ def generate_reference_code(semester_code, last_name):
 
 def inboxrequest_stage(ir) -> str:
     """Compute stage from HankoSign + upload state."""
-    # ... rejection/transfer checks stay the same ...
+    # Check rejection first (terminal state)
+    if has_sig(ir, 'REJECT', 'CHAIR'):
+        return 'REJECTED'
     
+    # Check transfer to audit (terminal state)  
+    if has_sig(ir, 'TRANSFER', ''):
+        return 'TRANSFERRED'
+    
+    # Check approval
     if has_sig(ir, 'APPROVE', 'CHAIR'):
         return 'APPROVED'
     
+    # Check verification
     if has_sig(ir, 'VERIFY', ''):
         return 'VERIFIED'
     
     # Check if form uploaded - different logic for admin vs public
     if ir.uploaded_form:
         if ir.filing_source == 'ADMIN':
-            # Admin workflow: just need the file
             return 'SUBMITTED'
         elif ir.affidavit2_confirmed_at:
-            # Public workflow: need affidavit confirmation
             return 'SUBMITTED'
     
     # Check if courses entered
@@ -183,6 +191,10 @@ class Semester(models.Model):
         if self.start_date and self.end_date and self.end_date < self.start_date:
             errors['end_date'] = _("End date must be on or after start date.")
 
+        # Validate filing window ordering
+        if self.filing_start and self.filing_end and self.filing_end <= self.filing_start:
+            errors['filing_end'] = _("Filing end must be after filing start.")
+
         # Prevent editing if locked
         if self.pk:
             original = Semester.objects.get(pk=self.pk)
@@ -216,6 +228,13 @@ class Semester(models.Model):
             return False
         return self.filing_start <= now <= self.filing_end
 
+def validate_file_size(file):
+    max_size = 10 * 1024 * 1024
+    if file.size > max_size:
+        raise ValidationError(
+            _("File size must not exceed 10MB. Current: %(size).1f MB") %
+            {'size': file.size / (1024 * 1024)}
+        )
 
 class InboxRequest(models.Model):
     """
@@ -312,6 +331,10 @@ class InboxRequest(models.Model):
         upload_to='academia/forms/%Y/%m/',
         null=True,
         blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['pdf']),
+            validate_file_size
+        ],
         help_text=_("Signed form with professor signatures")
     )
 
@@ -339,6 +362,11 @@ class InboxRequest(models.Model):
                 name='uq_inbox_one_per_person_per_semester'
             )
         ]
+        indexes = [
+            models.Index(fields=['stage']),
+            models.Index(fields=['semester', 'stage']),
+            models.Index(fields=['-created_at']),
+        ]
 
     def __str__(self):
         return f"{self.reference_code} - {self.person_role.person.last_name}"
@@ -348,18 +376,25 @@ class InboxRequest(models.Model):
         if not self.reference_code and self.person_role_id and self.semester_id:
             semester_code = self.semester.code
             last_name = self.person_role.person.last_name
-
-            # Ensure uniqueness
+            
             max_attempts = 100
             for _ in range(max_attempts):
                 code = generate_reference_code(semester_code, last_name)
-                if not InboxRequest.objects.filter(reference_code=code).exists():
-                    self.reference_code = code
-                    break
-
-            if not self.reference_code:
-                raise ValidationError(_("Could not generate unique reference code"))
-
+                try:
+                    with transaction.atomic():
+                        # Try to save with this code - database constraint ensures uniqueness
+                        self.reference_code = code
+                        self.stage = inboxrequest_stage(self)
+                        super().save(*args, **kwargs)
+                        return  # Success - exit early
+                except IntegrityError:
+                    # Code collision - try again with new code
+                    self.reference_code = None
+                    continue
+            
+            raise ValidationError(_("Could not generate unique reference code after 100 attempts"))
+        
+        # Normal save path
         self.stage = inboxrequest_stage(self)
         super().save(*args, **kwargs)
 
@@ -411,11 +446,12 @@ class InboxRequest(models.Model):
         if errors:
             raise ValidationError(errors)
 
-
     @property
     def total_ects(self):
         """Calculate total ECTS from all courses"""
-        return sum(course.ects_amount for course in self.courses.all())
+        from django.db.models import Sum
+        result = self.courses.aggregate(total=Sum('ects_amount'))
+        return result['total'] or Decimal('0.00')
 
 
 class InboxCourse(models.Model):

@@ -1,7 +1,7 @@
 # File: people/models.py
-# Version: 1.0.1
+# Version: 1.0.3
 # Author: vas
-# Modified: 2025-12-06
+# Modified: 2025-12-08
 
 import uuid
 import secrets
@@ -113,21 +113,35 @@ class Person(models.Model):
         ]
 
     def clean(self):
-        errors = {}
+        super().clean()
         
-        # Check for duplicate matric_no (only if set)
-        if self.matric_no:
-            existing = Person.objects.filter(
-                matric_no=self.matric_no
-            ).exclude(pk=self.pk).exists()
-            
-            if existing:
-                errors["matric_no"] = _(
-                    "This matriculation number is already assigned to another person."
-                )
+    def save(self, *args, **kwargs):
+        from django.db import transaction
         
-        if errors:
-            raise ValidationError(errors)
+        creating = not self.pk
+        
+        # Auto-assign access code on create
+        if not self.personal_access_code:
+            self.personal_access_code = self._generate_unique_access_code()
+        
+        # Atomic duplicate check for matric_no
+        if creating and self.matric_no:
+            with transaction.atomic():
+                # Lock and check for duplicate matric_no
+                existing = Person.objects.select_for_update().filter(
+                    matric_no=self.matric_no
+                ).exists()
+                
+                if existing:
+                    from django.core.exceptions import ValidationError
+                    raise ValidationError({
+                        "matric_no": _(
+                            "This matriculation number is already assigned to another person."
+                        )
+                    })
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.last_name}, {self.first_name}"
@@ -172,11 +186,6 @@ class Person(models.Model):
             self.save(update_fields=["personal_access_code", "updated_at"])
         return self.personal_access_code
     
-    def save(self, *args, **kwargs):
-        # Auto-assign a code on create (or if missing from legacy rows)
-        if not self.personal_access_code:
-            self.personal_access_code = self._generate_unique_access_code()
-        super().save(*args, **kwargs)
 
 class Role(models.Model):
     class Kind(models.TextChoices):
@@ -406,12 +415,37 @@ class PersonRole(models.Model):
 
     def __str__(self):
         to = self.end_date.isoformat() if self.end_date else "…"
-        return f"{self.person} — {self.role} ({self.start_date} → {to})"
+        return f"{self.person} — {self.role} ({self.start_date} -> {to})"
 
     @property
     def is_active(self) -> bool:
         return self.end_date is None
     
+    def save(self, *args, **kwargs):
+        from django.db import transaction
+        
+        creating = not self.pk
+        
+        # Atomic duplicate check for (person, role, start_date)
+        if creating and self.person_id and self.role_id and self.start_date:
+            with transaction.atomic():
+                existing = PersonRole.objects.select_for_update().filter(
+                    person_id=self.person_id,
+                    role_id=self.role_id,
+                    start_date=self.start_date
+                ).exists()
+                
+                if existing:
+                    raise ValidationError({
+                        "__all__": _(
+                            "An assignment for this person in this role with this start date already exists. "
+                            "Please adjust the start date or edit the existing assignment."
+                        )
+                    })
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
+
 
     # Optional server-side form validation niceties (admin will show nicer errors)
     def clean(self):
@@ -420,20 +454,6 @@ class PersonRole(models.Model):
         super().clean()
 
         errors = {}
-
-        # Check for duplicate (person, role, start_date)
-        if self.person_id and self.role_id and self.start_date:
-            existing = PersonRole.objects.filter(
-                person_id=self.person_id,
-                role_id=self.role_id,
-                start_date=self.start_date
-            ).exclude(pk=self.pk).exists()
-        
-            if existing:
-                errors["__all__"] = _(
-                    "An assignment for this person in this role with this start date already exists. "
-                    "Please adjust the start date or edit the existing assignment."
-                )
 
         if self.role and getattr(self.role, "is_system", False):
             # System roles shouldn't carry confirmation paperwork

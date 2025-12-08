@@ -1,7 +1,7 @@
 # File: academia_audit/admin.py
-# Version: 1.0.1
+# Version: 1.0.5
 # Author: vas
-# Modified: 2025-12-06
+# Modified: 2025-12-08
 
 from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
@@ -62,18 +62,25 @@ class AuditEntryResource(resources.ModelResource):
 class AuditEntryInline(StackedInlinePaginated):
     model = AuditEntry
     extra = 0
-    fields = (
-        'person',
-        'aliquoted_ects',
-        'final_ects',
-        'reimbursed_ects',
-        'remaining_ects',
-        'checked_at',
-        'notes',
+    fieldsets = (
+        (_("Person"), {
+            'fields': ('person',)
+        }),
+        (_("ECTS Calculations"), {
+            'fields': (
+                'aliquoted_ects',
+                'final_ects',
+                'reimbursed_ects',
+                'remaining_ects',
+            )
+        }),
+        (_("Review"), {
+            'fields': ('linked_pdfs_display', 'checked_at', 'notes')
+        }),
     )
     per_page = 5
     pagination_key = "audit-entry"
-    readonly_fields = ('person',)  # Scope field always readonly
+    readonly_fields = ('person', 'linked_pdfs_display')  # Scope field always readonly
     autocomplete_fields = ('person',)
     show_change_link = True
     can_delete = False
@@ -114,6 +121,28 @@ class AuditEntryInline(StackedInlinePaginated):
             instance.save()
         formset.save_m2m()
     
+    @admin.display(description=_("Request Forms"))
+    def linked_pdfs_display(self, obj):
+        """Display links to all uploaded forms from linked inbox requests."""
+        from django.utils.safestring import mark_safe
+        
+        if not obj or not obj.pk:
+            return "—"
+        
+        requests = obj.inbox_requests.all()
+        if not requests:
+            return _("No requests")
+        
+        links = []
+        for req in requests:
+            if req.uploaded_form:
+                url = req.uploaded_form.url
+                links.append(f'<a href="{url}" target="_blank">📄 {req.reference_code}</a>')
+            else:
+                links.append(f'<span style="color: #999;">{req.reference_code} (no form)</span>')
+        
+        return mark_safe('<br>'.join(links))
+
     def has_add_permission(self, request, obj):
         # Can't add entries via inline - use synchronize action
         return False
@@ -193,6 +222,12 @@ class AuditSemesterAdmin(
         'print_audit_pdf',
     )
 
+    def get_queryset(self, request):
+        from django.db.models import Count
+        qs = super().get_queryset(request)
+        qs = qs.select_related('semester').annotate(_entry_count=Count('entries'))
+        return qs
+
     def _is_manager(self, request):
         return is_academia_audit_manager(request.user)
 
@@ -215,9 +250,9 @@ class AuditSemesterAdmin(
             return "—"
         return f"{obj.semester.start_date:%Y-%m-%d} → {obj.semester.end_date:%Y-%m-%d}"
 
-    @admin.display(description=_("Entries"))
+    @admin.display(description=_("Entries"), ordering='_entry_count')
     def entry_count(self, obj):
-        return obj.entries.count()
+        return str(obj._entry_count)
 
     @admin.display(description=_("Locked"))
     def active_text(self, obj):
@@ -531,7 +566,7 @@ class AuditEntryAdmin(
     list_filter = ('audit_semester', 'checked_at')
     search_fields = ('person__last_name', 'person__first_name')
     autocomplete_fields = ('audit_semester', 'person')
-    readonly_fields = ('created_at', 'updated_at', 'calculation_details_display')
+    readonly_fields = ('created_at', 'updated_at', 'calculation_details_display', 'linked_pdfs_display')
     inlines = [AnnotationInline]
     fieldsets = (
         (_("Scope"), {
@@ -543,11 +578,11 @@ class AuditEntryAdmin(
                 'final_ects',
                 'reimbursed_ects',
                 'remaining_ects',
-                'calculation_details_display',
+                'calculation_details_display'
             )
         }),
         (_("Manual Review"), {
-            'fields': ('checked_at',)
+            'fields': ('linked_pdfs_display', 'checked_at')
         }),
         (_("Record note"), {
             'fields': ('notes',)
@@ -556,6 +591,11 @@ class AuditEntryAdmin(
             'fields': ('version', 'created_at', 'updated_at')
         }),
     )
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        qs = qs.select_related('audit_semester__semester', 'person')
+        return qs
 
     def _is_manager(self, request):
         return is_academia_audit_manager(request.user)
@@ -587,6 +627,30 @@ class AuditEntryAdmin(
             true_code="ok",
             false_code="off",
         )
+    
+
+    @admin.display(description=_("Linked Request Forms"))
+    def linked_pdfs_display(self, obj):
+        """Display links to all uploaded forms from linked inbox requests."""
+        from django.utils.safestring import mark_safe
+        from django.urls import reverse
+        
+        if not obj.pk:
+            return "—"
+        
+        requests = obj.inbox_requests.all()
+        if not requests:
+            return "—"
+        
+        links = []
+        for req in requests:
+            if req.uploaded_form:
+                url = req.uploaded_form.url
+                links.append(f'<a href="{url}" target="_blank">📄 {req.reference_code}</a>')
+            else:
+                links.append(f'{req.reference_code} (no form)')
+        
+        return mark_safe('<br>'.join(links))
 
     @admin.display(description=_("Calculation Details"))
     def calculation_details_display(self, obj):

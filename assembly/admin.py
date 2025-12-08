@@ -1,7 +1,7 @@
 # File: assembly/admin.py
-# Version: 1.0.1
+# Version: 1.0.5
 # Author: vas
-# Modified: 2025-12-06
+# Modified: 2025-12-08
 
 from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
@@ -569,7 +569,13 @@ class SessionAdmin(
             return actions
         
         return actions
-    
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        qs = qs.select_related('term')
+        qs = qs.prefetch_related('attendees', 'absent', 'items')
+        return qs
+
     @transaction.atomic
     @safe_admin_action
     def submit_session(self, request, obj):
@@ -799,6 +805,11 @@ class SessionItemAdmin(
     def signatures_box(self, obj):
         return render_signatures_box(obj)
     
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        qs = qs.select_related('session__term', 'elected_person_role__person', 'elected_person_role__role')
+        return qs
+
     def get_change_actions(self, request, object_id, form_url):
         """Show dispatch print only for ELEC items"""
         actions = super().get_change_actions(request, object_id, form_url)

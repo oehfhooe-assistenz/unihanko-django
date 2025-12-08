@@ -1,7 +1,7 @@
 # File: helppages/models.py
-# Version: 1.0.0
+# Version: 1.0.1
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-08
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
@@ -89,12 +89,24 @@ class HelpPage(models.Model):
 
     def clean(self):
         super().clean()
-        if self.pk is None or self._state.adding:
-            if HelpPage.objects.filter(content_type=self.content_type).exists():
-                from django.core.exceptions import ValidationError
-                raise ValidationError({
-                    "content_type": _("A help page for this model already exists.")
-                })
+
+            
+    def save(self, *args, **kwargs):
+        from django.db import transaction
+        from django.core.exceptions import ValidationError
+        
+        if not self.pk:
+            with transaction.atomic():
+                # Lock check for duplicate
+                if HelpPage.objects.select_for_update().filter(
+                    content_type=self.content_type
+                ).exists():
+                    raise ValidationError({
+                        "content_type": _("A help page for this model already exists.")
+                    })
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
     
     @property
     def app_label(self):

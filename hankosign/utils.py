@@ -1,7 +1,7 @@
 # File: hankosign/utils.py
-# Version: 1.0.1
+# Version: 1.0.5
 # Author: vas
-# Modified: 2026-12-06
+# Modified: 2026-12-08
 
 from __future__ import annotations
 from typing import Tuple, Optional, Union
@@ -18,6 +18,7 @@ from django.db.models import Q, Case, When, IntegerField
 from .models import Action, Policy, Signatory, Signature
 User = get_user_model()
 from django.core.cache import cache
+from django.db import transaction
 
 
 def resolve_signatory(user: User) -> Optional[Signatory]:
@@ -134,55 +135,57 @@ def record_signature(
 
     ct = ContentType.objects.get_for_model(obj.__class__)
 
-    # For non-repeatable policies: REFUSE repeats
-    if not action.is_repeatable:
-        exists = Signature.objects.filter(
+    with transaction.atomic():
+        # For non-repeatable policies: REFUSE repeats
+        if not action.is_repeatable:
+            exists = Signature.objects.select_for_update().filter(
+                content_type=ct, object_id=str(obj.pk),
+                verb=action.verb, stage=action.stage,
+            ).exists()
+            if exists:
+                from django.core.exceptions import PermissionDenied
+                raise PermissionDenied(_("This action has already been performed."))
+
+        # Soft dedupe window: same signatory, same verb/stage/object within N seconds
+        window = timezone.now() - timedelta(seconds=10)
+        recent = Signature.objects.filter(
             content_type=ct, object_id=str(obj.pk),
             verb=action.verb, stage=action.stage,
+            signatory=sig,
+            at__gte=window,
         ).exists()
-        if exists:
-            from django.core.exceptions import PermissionDenied
-            raise PermissionDenied(_("This action has already been performed."))
+        if recent:
+            # swallow as a no-op; return the latest row for convenience
+            return (Signature.objects
+                    .filter(content_type=ct, object_id=str(obj.pk),
+                            verb=action.verb, stage=action.stage, signatory=sig)
+                    .order_by("-at", "-id")
+                    .first())
+        
+        ip_address = None
+        if request:
+            # Try X-Forwarded-For first (for proxies), fallback to REMOTE_ADDR
+            ip_address = request.META.get('HTTP_X_FORWARDED_FOR')
+            if ip_address:
+                # X-Forwarded-For can be comma-separated list, take first
+                ip_address = ip_address.split(',')[0].strip()
+            else:
+                ip_address = request.META.get('REMOTE_ADDR')
 
-    # Soft dedupe window: same signatory, same verb/stage/object within N seconds
-    window = timezone.now() - timedelta(seconds=10)
-    recent = Signature.objects.filter(
-        content_type=ct, object_id=str(obj.pk),
-        verb=action.verb, stage=action.stage,
-        signatory=sig,
-        at__gte=window,
-    ).exists()
-    if recent:
-        # swallow as a no-op; return the latest row for convenience
-        return (Signature.objects
-                .filter(content_type=ct, object_id=str(obj.pk),
-                        verb=action.verb, stage=action.stage, signatory=sig)
-                .order_by("-at", "-id")
-                .first())
-    
-    ip_address = None
-    if request:
-        # Try X-Forwarded-For first (for proxies), fallback to REMOTE_ADDR
-        ip_address = request.META.get('HTTP_X_FORWARDED_FOR')
-        if ip_address:
-            # X-Forwarded-For can be comma-separated list, take first
-            ip_address = ip_address.split(',')[0].strip()
-        else:
-            ip_address = request.META.get('REMOTE_ADDR')
+        signum = Signature.objects.create(
+            signatory=sig,
+            content_type=ct,
+            object_id=str(obj.pk),
+            action=action,
+            verb=action.verb,
+            stage=action.stage,
+            scope_ct=action.scope,
+            note=note or "",
+            payload=payload or {},
+            is_repeatable=bool(action.is_repeatable),  # snapshot
+            ip_address=ip_address,
+        )
 
-    signum = Signature.objects.create(
-        signatory=sig,
-        content_type=ct,
-        object_id=str(obj.pk),
-        action=action,
-        verb=action.verb,
-        stage=action.stage,
-        scope_ct=action.scope,
-        note=note or "",
-        payload=payload or {},
-        is_repeatable=bool(action.is_repeatable),  # snapshot
-        ip_address=ip_address,
-    )
     logger.info(
         f"Signature recorded: {signum.verb}/{signum.stage} "
         f"on {signum.content_type.model}#{signum.object_id} "
@@ -512,7 +515,7 @@ def sign_once(
     key = _once_key(user_id=request.user.id, obj=obj, action=action, rid=get_rid(request))
     if cache.add(key, 1, window_seconds):
         # First hit within window → perform the real write
-        return record_signature(request, action, obj, note=note, payload=payload)
+        return record_signature(request, request.user, action, obj, note=note, payload=payload)
 
     # Not first → no-op; hand back the latest row for convenience
     ct = ContentType.objects.get_for_model(obj.__class__)

@@ -1,14 +1,19 @@
 # File: assembly/tests.py
-# Version: 1.0.0
+# Version: 1.0.5
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-08
 
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.utils import timezone
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
+from django.urls import reverse
 from datetime import date, timedelta
 
 from people.models import Person, Role, PersonRole
 from .models import Term, Composition, Mandate, Session, SessionItem, Vote
+
+User = get_user_model()
 
 
 class TermTestCase(TestCase):
@@ -141,3 +146,378 @@ class MandateTestCase(TestCase):
         mandate.end_date = date(2025, 6, 30)
         mandate.save()
         self.assertFalse(mandate.is_active)
+
+
+# ============================================================================
+# RACE CONDITION TESTS
+# ============================================================================
+
+class SessionRaceConditionTestCase(TestCase):
+    """Test race condition protection in Session code generation"""
+    
+    def setUp(self):
+        self.term = Term.objects.create(
+            label="Test Term",
+            start_date=date(2025, 1, 1)
+        )
+    
+    def test_concurrent_session_creation(self):
+        """Test that concurrent session creation doesn't produce duplicate codes
+        
+        Note: On SQLite, we test sequential uniqueness since SQLite doesn't
+        handle concurrent writes well. On production databases (PostgreSQL, etc.),
+        the atomic transaction pattern will handle true concurrency.
+        """
+        from django.db import connection
+        
+        # For SQLite, test sequential creation
+        if connection.vendor == 'sqlite':
+            codes = []
+            for i in range(10):
+                session = Session.objects.create(
+                    term=self.term,
+                    session_type=Session.Type.REGULAR,
+                    session_date=date(2025, 2, i+1)
+                )
+                codes.append(session.code)
+            
+            # All codes must be unique
+            self.assertEqual(len(codes), len(set(codes)), f"Duplicate codes: {codes}")
+            return
+        
+        # For real databases, test actual concurrency
+        from threading import Thread
+        
+        connection.close()
+        
+        results = []
+        errors = []
+        
+        def create_session():
+            try:
+                session = Session.objects.create(
+                    term=self.term,
+                    session_type=Session.Type.REGULAR,
+                    session_date=date(2025, 2, 1)
+                )
+                results.append(session.code)
+            except Exception as e:
+                errors.append(str(e))
+        
+        # Simulate 5 concurrent creates
+        threads = [Thread(target=create_session) for _ in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        
+        # All should succeed with unique codes
+        self.assertEqual(len(results), 5, f"Expected 5 sessions, got {len(results)}. Errors: {errors}")
+        self.assertEqual(len(set(results)), 5, f"Duplicate codes found: {results}")
+    
+    def test_session_code_uniqueness(self):
+        """Test that session codes are always unique"""
+        codes = []
+        for i in range(10):
+            session = Session.objects.create(
+                term=self.term,
+                session_type=Session.Type.REGULAR if i % 2 == 0 else Session.Type.EXTRAORDINARY,
+                session_date=date(2025, 2, i+1)
+            )
+            codes.append(session.code)
+        
+        # All codes must be unique
+        self.assertEqual(len(codes), len(set(codes)), f"Duplicate codes: {codes}")
+
+
+class SessionItemRaceConditionTestCase(TestCase):
+    """Test race condition protection in SessionItem code generation"""
+    
+    def setUp(self):
+        self.term = Term.objects.create(
+            label="Test Term",
+            start_date=date(2025, 1, 1)
+        )
+        self.session = Session.objects.create(
+            term=self.term,
+            session_type=Session.Type.REGULAR,
+            session_date=date(2025, 2, 1)
+        )
+    
+    def test_concurrent_item_creation(self):
+        """Test that concurrent item creation doesn't produce duplicate codes
+        
+        Note: On SQLite, we test sequential uniqueness since SQLite doesn't
+        handle concurrent writes well. On production databases (PostgreSQL, etc.),
+        the atomic transaction pattern will handle true concurrency.
+        """
+        from django.db import connection
+        
+        # For SQLite, test sequential creation
+        if connection.vendor == 'sqlite':
+            codes = []
+            for i in range(10):
+                item = SessionItem.objects.create(
+                    session=self.session,
+                    order=i+1,
+                    kind=SessionItem.Kind.PROCEDURAL,
+                    title=f"Item {i+1}"
+                )
+                codes.append(item.item_code)
+            
+            # All codes must be unique
+            self.assertEqual(len(codes), len(set(codes)), f"Duplicate codes: {codes}")
+            return
+        
+        # For real databases, test actual concurrency
+        from threading import Thread
+        
+        connection.close()
+        
+        results = []
+        errors = []
+        
+        def create_item(order):
+            try:
+                item = SessionItem.objects.create(
+                    session=self.session,
+                    order=order,
+                    kind=SessionItem.Kind.PROCEDURAL,
+                    title=f"Item {order}"
+                )
+                results.append(item.item_code)
+            except Exception as e:
+                errors.append(str(e))
+        
+        # Simulate 5 concurrent creates
+        threads = [Thread(target=create_item, args=(i+1,)) for i in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        
+        # All should succeed with unique codes
+        self.assertEqual(len(results), 5, f"Expected 5 items, got {len(results)}. Errors: {errors}")
+        self.assertEqual(len(set(results)), 5, f"Duplicate codes found: {results}")
+
+
+# ============================================================================
+# SECURITY & AUTHORIZATION TESTS
+# ============================================================================
+
+class ProtocolEditorSecurityTestCase(TestCase):
+    """Test security and authorization for protocol editor views"""
+    
+    def setUp(self):
+        # Create users
+        self.manager = User.objects.create_user(
+            username='manager',
+            password='testpass123',
+            is_staff=True
+        )
+        # Give manager permissions
+        change_session_perm = Permission.objects.get(
+            content_type__app_label='assembly',
+            codename='change_session'
+        )
+        self.manager.user_permissions.add(change_session_perm)
+        
+        self.regular_staff = User.objects.create_user(
+            username='staff',
+            password='testpass123',
+            is_staff=True
+        )
+        # Give regular staff permission
+        self.regular_staff.user_permissions.add(change_session_perm)
+        
+        self.non_staff = User.objects.create_user(
+            username='nostaff',
+            password='testpass123',
+            is_staff=False
+        )
+        
+        # Create test data
+        self.term = Term.objects.create(
+            label="Test Term",
+            start_date=date(2025, 1, 1)
+        )
+        self.session = Session.objects.create(
+            term=self.term,
+            session_type=Session.Type.REGULAR,
+            session_date=date(2025, 2, 1)
+        )
+        self.item = SessionItem.objects.create(
+            session=self.session,
+            order=1,
+            kind=SessionItem.Kind.PROCEDURAL,
+            title="Test Item"
+        )
+        
+        self.client = Client()
+    
+    def test_non_staff_blocked(self):
+        """Non-staff users cannot access protocol editor"""
+        self.client.login(username='nostaff', password='testpass123')
+        response = self.client.get(
+            reverse('assembly:protocol_editor_session', args=[self.session.pk])
+        )
+        # Should redirect to login
+        self.assertEqual(response.status_code, 302)
+    
+    def test_staff_without_permission_blocked(self):
+        """Staff without change_session permission cannot access"""
+        staff_no_perm = User.objects.create_user(
+            username='staffnoperm',
+            password='testpass123',
+            is_staff=True
+        )
+        self.client.login(username='staffnoperm', password='testpass123')
+        response = self.client.get(
+            reverse('assembly:protocol_editor_session', args=[self.session.pk])
+        )
+        self.assertEqual(response.status_code, 403)
+    
+    def test_locked_session_blocks_save_for_regular_staff(self):
+        """Regular staff cannot modify locked session items"""
+        # Submit session to lock it using hankosign utils
+        from hankosign.utils import get_action, record_signature
+        
+        # Get the submit action
+        submit_action = get_action('SUBMIT:ASS@assembly.session')
+        if not submit_action:
+            # Action doesn't exist in test DB, skip test
+            self.skipTest("HankoSign submit action not configured")
+        
+        # Sign to lock (pass None as request since we're in tests)
+        record_signature(None, submit_action, self.session, note="Test lock", user=self.manager)
+        
+        # Try to save item as regular staff
+        self.client.login(username='staff', password='testpass123')
+        response = self.client.post(
+            reverse('assembly:protocol_update_item', args=[self.session.pk, self.item.pk]),
+            {'title': 'Modified Title', 'kind': 'PROC', 'order': 1}
+        )
+        
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(response.json()['success'])
+    
+    def test_locked_session_blocks_delete_for_regular_staff(self):
+        """Regular staff cannot delete items from locked session"""
+        from hankosign.utils import get_action, record_signature
+        
+        submit_action = get_action('SUBMIT:ASS@assembly.session')
+        if not submit_action:
+            self.skipTest("HankoSign submit action not configured")
+        
+        record_signature(None, submit_action, self.session, note="Test lock", user=self.manager)
+        
+        # Try to delete
+        self.client.login(username='staff', password='testpass123')
+        response = self.client.post(
+            reverse('assembly:protocol_delete_item', args=[self.session.pk, self.item.pk])
+        )
+        
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(response.json()['success'])
+    
+    def test_locked_session_blocks_reorder_for_regular_staff(self):
+        """Regular staff cannot reorder items in locked session"""
+        from hankosign.utils import get_action, record_signature
+        
+        submit_action = get_action('SUBMIT:ASS@assembly.session')
+        if not submit_action:
+            self.skipTest("HankoSign submit action not configured")
+        
+        record_signature(None, submit_action, self.session, note="Test lock", user=self.manager)
+        
+        # Try to reorder
+        self.client.login(username='staff', password='testpass123')
+        response = self.client.post(
+            reverse('assembly:protocol_reorder_items', args=[self.session.pk]),
+            data='[1, 2, 3]',
+            content_type='application/json'
+        )
+        
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(response.json()['success'])
+    
+    def test_locked_session_blocks_insert_for_regular_staff(self):
+        """Regular staff cannot insert items into locked session"""
+        from hankosign.utils import get_action, record_signature
+        
+        submit_action = get_action('SUBMIT:ASS@assembly.session')
+        if not submit_action:
+            self.skipTest("HankoSign submit action not configured")
+        
+        record_signature(None, submit_action, self.session, note="Test lock", user=self.manager)
+        
+        # Try to insert
+        self.client.login(username='staff', password='testpass123')
+        response = self.client.get(
+            reverse('assembly:protocol_insert_at', args=[self.session.pk, 1])
+        )
+        
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(response.json()['success'])
+    
+    def test_unlocked_session_allows_modifications(self):
+        """Regular staff CAN modify unlocked session"""
+        self.client.login(username='staff', password='testpass123')
+        
+        response = self.client.post(
+            reverse('assembly:protocol_update_item', args=[self.session.pk, self.item.pk]),
+            {
+                'title': 'Modified Title',
+                'kind': 'PROC',
+                'order': 1,
+                'content': 'New content'
+            }
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+        
+        # Verify change
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.title, 'Modified Title')
+
+
+class SessionStatusWorkflowTestCase(TestCase):
+    """Test session status transitions"""
+    
+    def setUp(self):
+        self.term = Term.objects.create(
+            label="Test Term",
+            start_date=date(2025, 1, 1)
+        )
+        self.session = Session.objects.create(
+            term=self.term,
+            session_type=Session.Type.REGULAR,
+            session_date=date(2025, 2, 1)
+        )
+        self.user = User.objects.create_user(
+            username='testuser',
+            password='testpass123',
+            is_staff=True,
+            is_superuser=True
+        )
+    
+    def test_session_starts_as_draft(self):
+        """New sessions start in DRAFT status"""
+        self.assertEqual(self.session.status, Session.Status.DRAFT)
+    
+    def test_session_status_updates_on_save(self):
+        """Session status updates based on signatures"""
+        from hankosign.utils import get_action, record_signature
+        
+        # Get the submit action
+        submit_action = get_action('SUBMIT:ASS@assembly.session')
+        if not submit_action:
+            self.skipTest("HankoSign submit action not configured")
+        
+        # Submit
+        record_signature(None, submit_action, self.session, note="Test submit", user=self.user)
+        
+        # Save to update status
+        self.session.save()
+        self.assertEqual(self.session.status, Session.Status.SUBMITTED)

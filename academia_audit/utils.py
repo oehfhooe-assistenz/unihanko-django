@@ -4,9 +4,9 @@ Utility functions for Academia Audit module.
 Includes audit synchronization and ECTS calculation helpers.
 """
 # File: academia_audit/utils.py
-# Version: 1.0.0
+# Version: 1.0.5
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-08
 
 from __future__ import annotations
 from datetime import date
@@ -189,10 +189,13 @@ def synchronize_audit_entries(audit_semester):
                 approved_requests_filtered.append(req)
 
         # Sum reimbursed ECTS
+        from django.db.models import Sum
+
         total_reimbursed = Decimal('0.00')
         for req in approved_requests_filtered:
-            for course in req.courses.all():
-                total_reimbursed += Decimal(str(course.ects_amount))
+            course_sum = req.courses.aggregate(total=Sum('ects_amount'))['total']
+            if course_sum:
+                total_reimbursed += Decimal(str(course_sum))
 
         # Calculate remaining ECTS
         remaining_ects = max(final_ects - total_reimbursed, Decimal('0.00'))

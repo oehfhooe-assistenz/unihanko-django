@@ -1,7 +1,7 @@
 # File: assembly/models.py
-# Version: 1.0.1
+# Version: 1.0.5
 # Author: vas
-# Modified: 2025-12-06
+# Modified: 2025-12-08
 
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -276,6 +276,11 @@ class Mandate(models.Model):
         verbose_name = _("Mandate")
         verbose_name_plural = _("Mandates")
         ordering = ["position", "-start_date"]
+        indexes = [
+            models.Index(fields=['composition', 'position']),
+            models.Index(fields=['officer_role']),
+            models.Index(fields=['start_date', 'end_date']),
+        ]
     
     def __str__(self):
         status = "active" if not self.end_date else "ended"
@@ -392,16 +397,40 @@ class Session(models.Model):
         verbose_name = _("Session")
         verbose_name_plural = _("Sessions")
         ordering = ["-session_date", "code"]
+        indexes = [
+            models.Index(fields=['term', 'session_date']),
+            models.Index(fields=['session_type']),
+            models.Index(fields=['-session_date']),
+        ]
     
     def __str__(self):
         return f"{self.code} — {self.session_date}"
     
     def save(self, *args, **kwargs):
+        from django.db import transaction, IntegrityError
+        
         if not self.code:
-            self.code = self.generate_code()
-        if self.pk:
-            self.status = session_status(self)
-        super().save(*args, **kwargs)
+            for attempt in range(5):
+                try:
+                    with transaction.atomic():
+                        count = Session.objects.filter(term=self.term).count() + 1
+                        self.code = f"{self.term.code}_{int_to_roman(count)}:{self.session_type}"
+                        
+                        if self.pk:
+                            self.status = session_status(self)
+                        
+                        super().save(*args, **kwargs)
+                        return  # ← Success, exit function
+                except IntegrityError:
+                    if attempt == 4:
+                        raise ValidationError(_("Failed to generate unique session code after 5 attempts"))
+                    # Try again with next iteration
+                    continue
+        else:
+            # Code already exists, just save normally
+            if self.pk:
+                self.status = session_status(self)
+            super().save(*args, **kwargs)
     
     def generate_code(self):
         """Generate HV25_27_I:or, HV25_27_II:ao, etc."""
@@ -618,18 +647,35 @@ class SessionItem(models.Model):
         verbose_name_plural = _("Session Items")
         ordering = ["session", "order"]
         unique_together = [("session", "order")]
+        indexes = [
+            models.Index(fields=['session', 'order']),
+            models.Index(fields=['kind']),
+            models.Index(fields=['voting_mode']),
+        ]
     
     def __str__(self):
         return f"{self.item_code} — {self.title}"
     
     def save(self, *args, **kwargs):
+        from django.db import transaction, IntegrityError
+        
         if not self.item_code:
-            count = SessionItem.objects.filter(session=self.session).count() + 1
-            self.item_code = f"S{count:03d}"
+            for attempt in range(5):
+                try:
+                    with transaction.atomic():
+                        count = SessionItem.objects.filter(session=self.session).count() + 1
+                        self.item_code = f"S{count:03d}"
+                        super().save(*args, **kwargs)
+                        break  # ← Use break instead of return
+                except IntegrityError:
+                    if attempt == 4:
+                        raise ValidationError(_("Failed to generate unique item code"))
+                    continue
+        else:
+            # Code exists, save normally
+            super().save(*args, **kwargs)
         
-        super().save(*args, **kwargs)
-        
-        # Only update PersonRole if session is approved
+        # Update PersonRole for elections (NOW runs for all saves)
         if (self.kind == self.Kind.ELECTION and 
             self.elected_person_role_id and
             self.session.status in (Session.Status.APPROVED, Session.Status.VERIFIED)):

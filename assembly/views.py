@@ -1,7 +1,7 @@
 # File: assembly/views.py
-# Version: 1.0.0
+# Version: 1.0.5
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-08
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-
+from django.core.exceptions import PermissionDenied
 from .models import Session, SessionItem, Vote, Mandate
 from .forms import SessionItemProtocolForm
 
@@ -18,6 +18,8 @@ from .forms import SessionItemProtocolForm
 @staff_member_required
 def protocol_editor(request, session_id=None):
     """📝 PROTOKOL-KUN Mk. 1"""
+    if not request.user.has_perm('assembly.change_session'):
+        raise PermissionDenied(_("You don't have permission to edit sessions"))
     session = None
     items = []
     annotations_by_item = {}
@@ -67,6 +69,19 @@ def protocol_editor(request, session_id=None):
 def protocol_save_item(request, session_id, item_id=None):
     """Save or create a session item via AJAX."""
     session = get_object_or_404(Session, pk=session_id)
+    
+    # CRITICAL FIX: Check if session is locked
+    from hankosign.utils import state_snapshot
+    from core.utils.authz import is_assembly_manager
+    
+    st = state_snapshot(session)
+    is_locked = st.get('submitted', False) or st.get('explicit_locked', False) or 'CHAIR' in st.get('approved', set())
+    
+    if is_locked and not is_assembly_manager(request.user):
+        return JsonResponse({
+            'success': False,
+            'message': str(_('Session is locked. Cannot modify items.'))
+        }, status=403)
     
     if item_id:
         item = get_object_or_404(SessionItem, pk=item_id, session=session)
@@ -124,6 +139,20 @@ def protocol_delete_item(request, session_id, item_id):
     from django.db.models import F
     
     session = get_object_or_404(Session, pk=session_id)
+    
+    # CRITICAL FIX: Check if session is locked
+    from hankosign.utils import state_snapshot
+    from core.utils.authz import is_assembly_manager
+    
+    st = state_snapshot(session)
+    is_locked = st.get('submitted', False) or st.get('explicit_locked', False) or 'CHAIR' in st.get('approved', set())
+    
+    if is_locked and not is_assembly_manager(request.user):
+        return JsonResponse({
+            'success': False,
+            'message': str(_('Session is locked. Cannot delete items.'))
+        }, status=403)
+    
     item = get_object_or_404(SessionItem, pk=item_id, session=session)
     
     item_code = item.item_code
@@ -150,6 +179,18 @@ def protocol_reorder_items(request, session_id):
     """Reorder session items."""
     session = get_object_or_404(Session, pk=session_id)
     
+    from hankosign.utils import state_snapshot
+    from core.utils.authz import is_assembly_manager
+    
+    st = state_snapshot(session)
+    is_locked = st.get('submitted', False) or st.get('explicit_locked', False) or 'CHAIR' in st.get('approved', set())
+    
+    if is_locked and not is_assembly_manager(request.user):
+        return JsonResponse({
+            'success': False,
+            'message': str(_('Session is locked. Cannot reorder items.'))
+        }, status=403)
+
     import json
     item_ids = json.loads(request.body)
     
@@ -170,6 +211,18 @@ def protocol_insert_at(request, session_id, insert_after_order):
     
     session = get_object_or_404(Session, pk=session_id)
     
+    from hankosign.utils import state_snapshot
+    from core.utils.authz import is_assembly_manager
+    
+    st = state_snapshot(session)
+    is_locked = st.get('submitted', False) or st.get('explicit_locked', False) or 'CHAIR' in st.get('approved', set())
+    
+    if is_locked and not is_assembly_manager(request.user):
+        return JsonResponse({
+            'success': False,
+            'message': str(_('Session is locked. Cannot insert items.'))
+        }, status=403)
+
     SessionItem.objects.filter(
         session=session,
         order__gt=insert_after_order

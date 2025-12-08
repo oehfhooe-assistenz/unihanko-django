@@ -1,7 +1,7 @@
 # File: academia/admin.py
-# Version: 1.0.1
+# Version: 1.0.5
 # Author: vas
-# Modified: 2025-12-06
+# Modified: 2025-12-08
 from core.admin_mixins import log_deletions
 from django.contrib import admin, messages
 from django import forms
@@ -23,6 +23,7 @@ from .models import Semester, InboxRequest, InboxCourse, generate_semester_passw
 from django_admin_inline_paginator_plus.admin import StackedInlinePaginated
 from people.models import PersonRole, Person
 from organisation.models import OrgInfo
+from django.db.models import Count
 from core.pdf import render_pdf_response
 from core.admin_mixins import (
     ImportExportGuardMixin,
@@ -278,10 +279,14 @@ class SemesterAdmin(
         else:
             return format_html('<span style="color: #6b7280;">✓ Closed</span>')
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        qs = qs.annotate(_requests_count=Count('inbox_requests'))
+        return qs
+
     @admin.display(description=_("Requests"))
     def requests_count(self, obj):
-        count = obj.inbox_requests.count()
-        return str(count)
+        return str(obj._requests_count)
 
     @admin.display(description=_("Locked"))
     def active_text(self, obj):
@@ -499,6 +504,15 @@ class InboxRequestAdmin(
             drop('verify_request', 'approve_request', 'reject_request')
 
         return actions
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        qs = qs.select_related(
+            'semester',
+            'person_role__person',
+            'person_role__role'
+        ).prefetch_related('courses')
+        return qs
 
     @admin.display(description=_("Status"))
     def status_text(self, obj):

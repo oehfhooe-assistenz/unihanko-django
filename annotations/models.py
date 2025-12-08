@@ -1,7 +1,7 @@
 # File: annotations/models.py
-# Version: 1.0.0
+# Version: 1.0.5
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-08
 
 from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -70,8 +70,12 @@ class Annotation(models.Model):
         verbose_name = _("Annotation")
         verbose_name_plural = _("Annotations")
     
+
     def __str__(self):
-        creator = self.created_by.get_full_name() if self.created_by else "SYSTEM"
+        if self.created_by:
+            creator = self.created_by.get_full_name() or self.created_by.username
+        else:
+            creator = "SYSTEM"
         return f"{self.get_annotation_type_display()} by {creator} at {self.created_at:%Y-%m-%d %H:%M}"
     
     @property

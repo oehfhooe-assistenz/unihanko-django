@@ -1,7 +1,7 @@
 # File: academia_audit/models.py
-# Version: 1.0.0
+# Version: 1.0.5
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-08
 
 from __future__ import annotations
 from django.db import models
@@ -12,7 +12,17 @@ from simple_history.models import HistoricalRecords
 from concurrency.fields import AutoIncVersionField
 from hankosign.utils import state_snapshot
 from people.models import PersonRole, Person
+from django.core.validators import FileExtensionValidator
 
+
+def validate_pdf_size(file):
+    """Validate PDF size (max 25MB for audit documents)."""
+    max_size = 25 * 1024 * 1024  # 25MB
+    if file.size > max_size:
+        raise ValidationError(
+            _("File size must not exceed 25MB. Current: %(size).1f MB") %
+            {'size': file.size / (1024 * 1024)}
+        )
 
 class AuditSemester(models.Model):
     """
@@ -44,7 +54,11 @@ class AuditSemester(models.Model):
         upload_to='academia/audits/',
         null=True,
         blank=True,
-        help_text=_("Generated audit report for university")
+        validators=[
+            FileExtensionValidator(allowed_extensions=['pdf']),
+            validate_pdf_size
+        ],
+        help_text=_("Upload for the complete, signed audit report")
     )
 
     # Audit workflow timestamps
@@ -208,6 +222,10 @@ class AuditEntry(models.Model):
                 fields=['audit_semester', 'person'],
                 name='uq_audit_one_per_person_per_audit_semester'
             )
+        ]
+        indexes = [
+            models.Index(fields=['audit_semester']),
+            models.Index(fields=['checked_at']),
         ]
 
     def __str__(self):

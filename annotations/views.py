@@ -1,7 +1,7 @@
 # File: annotations/views.py
-# Version: 1.0.0
+# Version: 1.0.5
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-08
 
 from django.shortcuts import get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
@@ -18,22 +18,6 @@ from .models import Annotation
 @require_http_methods(["POST"])
 @transaction.atomic
 def add_annotation(request):
-    """
-    AJAX endpoint to add an annotation to any object.
-    
-    POST params:
-        - content_type_id: ID of the ContentType
-        - object_id: ID of the specific object
-        - text: Annotation text
-        - annotation_type: Optional, defaults to USER
-    
-    Returns JSON:
-        {
-            "success": true,
-            "annotation_id": 123,
-            "message": "Annotation added"
-        }
-    """
     content_type_id = request.POST.get('content_type_id')
     object_id = request.POST.get('object_id')
     text = request.POST.get('text', '').strip()
@@ -47,6 +31,36 @@ def add_annotation(request):
     
     try:
         content_type = get_object_or_404(ContentType, pk=content_type_id)
+        model_class = content_type.model_class()
+        
+        # CRITICAL FIX 1: Verify object exists
+        try:
+            target_object = model_class.objects.get(pk=object_id)
+        except model_class.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': str(_('Object not found'))
+            }, status=404)
+        
+        # CRITICAL FIX 2: Check user has change permission for this model
+        app_label = content_type.app_label
+        model_name = content_type.model
+        perm = f'{app_label}.change_{model_name}'
+        
+        if not request.user.has_perm(perm):
+            return JsonResponse({
+                'success': False,
+                'message': str(_('Permission denied'))
+            }, status=403)
+        
+        # CRITICAL FIX 3: Validate annotation_type
+        valid_types = [choice[0] for choice in Annotation.AnnotationType.choices]
+        if annotation_type not in valid_types:
+            annotation_type = Annotation.AnnotationType.USER
+        
+        # CRITICAL FIX 4: Only superusers can create SYSTEM annotations
+        if annotation_type == Annotation.AnnotationType.SYSTEM and not request.user.is_superuser:
+            annotation_type = Annotation.AnnotationType.USER
         
         annotation = Annotation.objects.create(
             content_type=content_type,
@@ -65,7 +79,7 @@ def add_annotation(request):
     except Exception as e:
         return JsonResponse({
             'success': False,
-            'message': str(e)
+            'message': str(_('An error occurred'))  # Don't leak error details
         }, status=500)
 
 
@@ -85,6 +99,19 @@ def delete_annotation(request, annotation_id):
             'success': False,
             'message': str(_('You do not have permission to delete this annotation'))
         }, status=403)
+    
+    # Additional check: verify user still has permission for parent object's model
+    if not request.user.is_superuser:
+        content_type = annotation.content_type
+        app_label = content_type.app_label
+        model_name = content_type.model
+        perm = f'{app_label}.change_{model_name}'
+        
+        if not request.user.has_perm(perm):
+            return JsonResponse({
+                'success': False,
+                'message': str(_('Permission denied'))
+            }, status=403)
     
     annotation.delete()
     

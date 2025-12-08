@@ -5,9 +5,9 @@ Includes ECTS calculation, aliquotation, audit synchronization,
 and password generation utilities.
 """
 # File: academia/utils.py
-# Version: 1.0.0
+# Version: 1.0.5
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-08
 
 from __future__ import annotations
 from datetime import date
@@ -32,29 +32,25 @@ def get_random_words(count=2):
         List of random words
     """
     wordlist_path = Path(__file__).parent / 'wordlist.yaml'
+    secure_random = random.SystemRandom()
 
     try:
         with open(wordlist_path, 'r', encoding='utf-8') as f:
             data = yaml.safe_load(f)
             words = data.get('words', [])
-
             if not words:
-                # Fallback words if YAML is empty
                 words = [
                     'forest', 'mountain', 'river', 'ocean', 'valley',
                     'sunrise', 'sunset', 'thunder', 'breeze', 'meadow',
                     'glacier', 'canyon', 'desert', 'island', 'storm'
                 ]
-
-            return random.sample(words, min(count, len(words)))
-
+            return secure_random.sample(words, min(count, len(words)))
     except FileNotFoundError:
-        # Fallback if file doesn't exist yet
         fallback = [
             'forest', 'mountain', 'river', 'ocean', 'valley',
             'sunrise', 'sunset', 'thunder', 'breeze', 'meadow'
         ]
-        return random.sample(fallback, count)
+        return secure_random.sample(fallback, count)
 
 
 # --- ECTS Calculation --------------------------------------------------------

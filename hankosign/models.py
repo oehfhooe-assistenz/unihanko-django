@@ -1,7 +1,7 @@
 # File: hankosign/models.py
-# Version: 1.0.1
+# Version: 1.0.3
 # Author: vas
-# Modified: 2025-12-06
+# Modified: 2025-12-08
 
 from __future__ import annotations
 from django.db import models
@@ -78,16 +78,24 @@ class Action(models.Model):
     
     def clean(self):
         super().clean()
-        if self.pk is None or self._state.adding:
-            exists = Action.objects.filter(
-                verb=self.verb,
-                stage=self.stage or "",
-                scope=self.scope
-            ).exists()
-            if exists:
-                raise ValidationError({
-                    "__all__": _("An action with this verb/stage/scope combination already exists.")
-                })
+
+    def save(self, *args, **kwargs):
+        from django.db import transaction
+        
+        if self.pk is None:
+            with transaction.atomic():
+                exists = Action.objects.select_for_update().filter(
+                    verb=self.verb,
+                    stage=self.stage or "",
+                    scope=self.scope
+                ).exists()
+                if exists:
+                    raise ValidationError({
+                        "__all__": _("An action with this verb/stage/scope combination already exists.")
+                    })
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
 
 
 class Policy(models.Model):
@@ -125,9 +133,26 @@ class Policy(models.Model):
         return f"{self.role} → {self.actions.count()} actions"
 
     def save(self, *args, **kwargs):
+        from django.db import transaction
+        
         # run full validation; clean() will read _actions_ids_pending
         self.full_clean()
-        super().save(*args, **kwargs)
+        
+        # Atomic duplicate check for creation
+        if not self.pk and self.action_id and self.role_id:
+            with transaction.atomic():
+                exists = Policy.objects.select_for_update().filter(
+                    role=self.role,
+                    action=self.action
+                ).exists()
+                if exists:
+                    raise ValidationError({
+                        "__all__": _("A policy for this role and action already exists.")
+                    })
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
+        
         # after we have a PK, if we had pending M2M, write them now
         if self._actions_ids_pending is not None:
             self.actions.set(self._actions_ids_pending)
@@ -148,16 +173,6 @@ class Policy(models.Model):
             raise ValidationError({"actions": _("Use either the legacy FK *or* the list, not both.")})
         if not has_fk and not has_m2m:
             raise ValidationError({"actions": _("Pick at least one Action (legacy FK or the list).")})
-        
-        if self.action_id and self.role_id:
-            exists = Policy.objects.filter(
-                role=self.role,
-                action=self.action
-            ).exclude(pk=self.pk).exists()
-            if exists:
-                raise ValidationError({
-                    "__all__": _("A policy for this role and action already exists.")
-                })
 
 
 

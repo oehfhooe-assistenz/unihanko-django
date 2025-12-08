@@ -1,7 +1,7 @@
 # File: employees/models.py
-# Version: 1.0.0
+# Version: 1.0.3
 # Author: vas
-# Modified: 2025-11-28
+# Modified: 2025-12-08
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import get_language
-
+from django.db.models import Sum, Q
 from simple_history.models import HistoricalRecords
 from concurrency.fields import AutoIncVersionField
 
@@ -648,40 +648,57 @@ class TimeSheet(models.Model):
                 workdays += 1
         return workdays * daily
 
+
     def recompute_aggregates(self, commit: bool = False):
         """
         Recalculate expected/worked/credit/closing.
         If commit=True, persist with a direct update (no save()).
         """
-        # expected never needs a PK
+        from django.db import transaction
+        
+        # Always compute expected (doesn't need lock)
         self.expected_minutes = self.compute_expected_minutes()
-
-        work = 0
-        credit = 0
-
-        # Only iterate entries if we have a PK
-        if self.pk:
-            for e in self.entries.all():
-                if e.kind == TimeEntry.Kind.WORK:
-                    work += (e.minutes or 0)
-                elif e.kind in (TimeEntry.Kind.LEAVE, TimeEntry.Kind.SICK):
-                    credit += (e.minutes or 0)
-
-        self.worked_minutes = work
-        self.credit_minutes = credit
-        self.closing_saldo_minutes = (
-            self.opening_saldo_minutes + work + credit - self.expected_minutes
-        )
-
-        if commit and self.pk:
-            # persist without calling save() again (avoid recursion)
-            TimeSheet.objects.filter(pk=self.pk).update(
-                expected_minutes=self.expected_minutes,
-                worked_minutes=self.worked_minutes,
-                credit_minutes=self.credit_minutes,
-                closing_saldo_minutes=self.closing_saldo_minutes,
-                updated_at=timezone.now(),
+        
+        if not self.pk:
+            # New sheet, no entries yet
+            self.worked_minutes = 0
+            self.credit_minutes = 0
+            self.closing_saldo_minutes = self.opening_saldo_minutes - self.expected_minutes
+            return
+        
+        # Use atomic DB aggregation
+        with transaction.atomic():
+            # Lock the timesheet row
+            ts = TimeSheet.objects.select_for_update().get(pk=self.pk)
+            
+            # Aggregate directly in DB (atomic)
+            work_agg = TimeEntry.objects.filter(
+                timesheet_id=self.pk,
+                kind=TimeEntry.Kind.WORK
+            ).aggregate(total=Sum('minutes'))
+            
+            credit_agg = TimeEntry.objects.filter(
+                timesheet_id=self.pk,
+                kind__in=[TimeEntry.Kind.LEAVE, TimeEntry.Kind.SICK]
+            ).aggregate(total=Sum('minutes'))
+            
+            work = int(work_agg['total'] or 0)
+            credit = int(credit_agg['total'] or 0)
+            
+            self.worked_minutes = work
+            self.credit_minutes = credit
+            self.closing_saldo_minutes = (
+                ts.opening_saldo_minutes + work + credit - self.expected_minutes
             )
+            
+            if commit:
+                TimeSheet.objects.filter(pk=self.pk).update(
+                    expected_minutes=self.expected_minutes,
+                    worked_minutes=self.worked_minutes,
+                    credit_minutes=self.credit_minutes,
+                    closing_saldo_minutes=self.closing_saldo_minutes,
+                    updated_at=timezone.now(),
+                )
 
     def clean(self):
         errors = {}
@@ -703,31 +720,42 @@ class TimeSheet(models.Model):
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
+        from django.db import transaction, IntegrityError
+        import time
+        
         creating = self.pk is None
-
-        # Snapshot opening saldo on first save (if not set)
+        
+        # Snapshot opening saldo on first save
         if creating and self.opening_saldo_minutes == 0:
             self.opening_saldo_minutes = self.employee.saldo_minutes
-
-        # Compute expected without touching entries yet
+        
         self.expected_minutes = self.compute_expected_minutes()
-
-        # On create, keep worked/credit at 0 and compute closing
+        
         if creating:
             self.worked_minutes = 0
             self.credit_minutes = 0
             self.closing_saldo_minutes = (
                 self.opening_saldo_minutes - self.expected_minutes
             )
-
-        # write row to get a PK
-        super().save(*args, **kwargs)
-
-        # On updates (PK exists), refresh aggregates from entries
-        if not creating:
+            
+            # Atomic creation with retry
+            max_attempts = 5
+            for attempt in range(max_attempts):
+                try:
+                    with transaction.atomic():
+                        super().save(*args, **kwargs)
+                        break  # Success!
+                except IntegrityError as e:
+                    if 'unique_together' in str(e).lower() and attempt < max_attempts - 1:
+                        time.sleep(0.1)  # Brief delay
+                        continue
+                    raise  # Re-raise if not duplicate or max attempts
+        else:
+            # Update path (no race condition risk)
+            super().save(*args, **kwargs)
             self.recompute_aggregates(commit=True)
 
-from hankosign.utils import state_snapshot
+
 class TimeEntry(models.Model):
     class Kind(models.TextChoices):
         WORK = "WORK", _("Work")
@@ -794,9 +822,6 @@ class TimeEntry(models.Model):
                     "An identical entry already exists for this date and type."
                 )
 
-        if ts and state_snapshot(ts)["explicit_locked"]:
-            errors["timesheet"] = _("Timesheet is locked; entries cannot be modified.")
-
         # ---- normalize seconds so HH:MM works cleanly
         if self.start_time:
             self.start_time = self.start_time.replace(second=0, microsecond=0)
@@ -855,6 +880,20 @@ class TimeEntry(models.Model):
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
+        # Calculate minutes from time span if provided
+        if self.start_time and self.end_time:
+            start = self.start_time.replace(second=0, microsecond=0)
+            end = self.end_time.replace(second=0, microsecond=0)
+            dt_start = datetime.combine(self.date or date.today(), start)
+            dt_end = datetime.combine(self.date or date.today(), end)
+            if dt_end > dt_start:
+                self.minutes = round((dt_end - dt_start).total_seconds() / 60)
+        
+        # Smart default for LEAVE/SICK if minutes not set
+        elif (self.minutes or 0) == 0 and self.kind in (self.Kind.LEAVE, self.Kind.SICK):
+            if self.timesheet_id:
+                self.minutes = self.timesheet.employee.daily_expected_minutes
+        
         # Auto-provision PTO snapshot if this is a LEAVE entry
         if self.kind == self.Kind.LEAVE and self.timesheet_id and self.date:
             emp = self.timesheet.employee

@@ -10,13 +10,14 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 # File: config/settings.py
-# Version: 1.0.2
+# Version: 1.0.3
 # Author: vas
-# Modified: 2025-12-06
+# Modified: 2025-12-08
 
 import environ
 from pathlib import Path
 import os
+from django.core.exceptions import ImproperlyConfigured
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -31,6 +32,8 @@ environ.Env.read_env(BASE_DIR / '.env')
 UNIHANKO_VERSION = "1.0.0"
 UNIHANKO_CODENAME = "Sakura"
 UNIHANKO_VERSION_FULL = f"v{UNIHANKO_VERSION} \"{UNIHANKO_CODENAME}\""
+# Environment indicator (tracks deployment)
+ENVIRONMENT = env('ENVIRONMENT', default='development')
 DEBUG = env.bool('DEBUG', default=False)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 LOGIN_URL = "/admin/login/"
@@ -217,6 +220,7 @@ INSTALLED_APPS = [
     'adminsortable2',
     'captcha',
     'django_admin_inline_paginator_plus',
+    'axes',
 
     'core',
     'annotations',
@@ -241,6 +245,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'axes.middleware.AxesMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'simple_history.middleware.HistoryRequestMiddleware',
@@ -267,6 +272,52 @@ TEMPLATES = [
 ]
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# Security settings for production (behind Caddy reverse proxy)
+if not DEBUG:
+    # Proxy configuration - CRITICAL
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # ^ Tells Django to trust Caddy's X-Forwarded-Proto header
+    
+    # DO NOT SET SECURE_SSL_REDIRECT = True
+    # Caddy already handles HTTP→HTTPS redirect, and Django only sees HTTP internally
+    # Setting this would cause infinite redirects!
+    
+    # Cookie Security - CRITICAL (these are about cookie flags, not transport)
+    SESSION_COOKIE_SECURE = True  # Browser only sends cookie over HTTPS
+    CSRF_COOKIE_SECURE = True     # Browser only sends CSRF token over HTTPS
+    SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access
+    CSRF_COOKIE_HTTPONLY = True     # Prevent JavaScript access
+    SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
+    CSRF_COOKIE_SAMESITE = 'Lax'     # CSRF protection
+    CSRF_COOKIE_AGE = 31449600  # 1 year
+    
+    # Content Security - STILL USEFUL
+    SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME sniffing
+    SECURE_BROWSER_XSS_FILTER = True    # Enable XSS filter
+    
+    # HSTS - OPTIONAL (Caddy can set these headers instead)
+    # If Caddy sets HSTS headers, these are redundant but harmless
+    SECURE_HSTS_SECONDS = 31536000  
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # Session Security
+    SESSION_COOKIE_AGE = 86400  # 24 hours
+    SESSION_SAVE_EVERY_REQUEST = True
+    
+    # CSRF trusted origins - CRITICAL
+    CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
+    if not CSRF_TRUSTED_ORIGINS:
+        raise ValueError(
+            "CSRF_TRUSTED_ORIGINS must be set in production .env file. "
+            "Example: CSRF_TRUSTED_ORIGINS=https://unihanko.example.com"
+        )
+else:
+    # Development settings
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_AGE = 1209600  # 2 weeks
+
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -278,9 +329,21 @@ DATABASES = {
         'PASSWORD': env('DB_PASSWORD', default=''),
         'HOST': env('DB_HOST', default=''),
         'PORT': env('DB_PORT', default=''),
+        'CONN_MAX_AGE': env.int('DB_CONN_MAX_AGE', default=600) if not DEBUG else 0,  # 10 min pool
+        'OPTIONS': {
+            'connect_timeout': 10,
+        } if not DEBUG else {},
     }
 }
 
+# Admin session timeout (shorter than regular users)
+if not DEBUG:
+    ADMIN_SESSION_COOKIE_AGE = 14400  # 4 hours for admin sessions
+
+# Axes configuration
+AXES_FAILURE_LIMIT = 5  # Lock after 5 failed attempts
+AXES_COOLOFF_TIME = 1  # 1 hour lockout
+AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -385,7 +448,6 @@ CAPTCHA_FOREGROUND_COLOR = '#FF6B35'
 CAPTCHA_NOISE_FUNCTIONS = ('captcha.helpers.noise_dots',)
 CAPTCHA_LENGTH = 4  # Number of characters
 CAPTCHA_TIMEOUT = 5  # Minutes
-
 
 #jazzmin configuration
 from .settings_jazzmin import JAZZMIN_SETTINGS, JAZZMIN_UI_TWEAKS

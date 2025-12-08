@@ -45,3 +45,42 @@ INFO 2025-11-10 23:01:15,415 utils Signature recorded: RELEASE/ on person#1 by T
 INFO 2025-11-10 23:03:03,882 utils Signature recorded: RELEASE/ on person#1 by Test Calendar 
 INFO 2025-11-10 23:12:18,517 utils Signature recorded: RELEASE/ on person#1 by Test Calendar 
 INFO 2025-11-12 21:59:11,900 utils Signature recorded: RELEASE/ on timesheet#1 by Test Calendar 
+INFO 2025-12-08 19:30:35,471 utils 70740 86824 Signature recorded: APPROVE/WIREF on person#1 by Test User 
+INFO 2025-12-08 19:30:37,895 utils 70740 86824 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:30:38,382 utils 70740 86824 Signature recorded: VERIFY/ on person#1 by Test User 
+INFO 2025-12-08 19:30:38,883 utils 70740 86824 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:30:38,888 utils 70740 86824 Signature recorded: APPROVE/WIREF on person#1 by Test User 
+INFO 2025-12-08 19:30:39,921 utils 70740 86824 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:30:39,928 utils 70740 86824 Signature recorded: REJECT/ on person#1 by Test User 
+INFO 2025-12-08 19:30:40,419 utils 70740 86824 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:30:43,855 utils 70740 86824 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:30:44,333 utils 70740 86824 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:30:44,837 utils 70740 86824 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:30:45,327 utils 70740 86824 Signature recorded: VERIFY/ on person#1 by Test User 
+INFO 2025-12-08 19:30:45,830 utils 70740 86824 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:30:46,311 utils 70740 86824 Signature recorded: VERIFY/ on person#1 by Test User 
+INFO 2025-12-08 19:30:47,334 utils 70740 86824 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:30:47,338 utils 70740 86824 Signature recorded: APPROVE/WIREF on person#1 by Test User 
+INFO 2025-12-08 19:30:48,308 utils 70740 86824 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:30:48,315 utils 70740 86824 Signature recorded: REJECT/ on person#1 by Test User 
+INFO 2025-12-08 19:30:49,297 utils 70740 86824 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:35:24,416 utils 88292 85176 Signature recorded: APPROVE/WIREF on person#1 by Test User 
+INFO 2025-12-08 19:35:26,818 utils 88292 85176 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:35:27,299 utils 88292 85176 Signature recorded: VERIFY/ on person#1 by Test User 
+INFO 2025-12-08 19:35:27,805 utils 88292 85176 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:35:27,811 utils 88292 85176 Signature recorded: APPROVE/WIREF on person#1 by Test User 
+INFO 2025-12-08 19:35:28,853 utils 88292 85176 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:35:28,860 utils 88292 85176 Signature recorded: REJECT/ on person#1 by Test User 
+INFO 2025-12-08 19:35:29,338 utils 88292 85176 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:35:32,811 utils 88292 85176 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:35:33,341 utils 88292 85176 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:35:33,842 utils 88292 85176 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:35:34,313 utils 88292 85176 Signature recorded: VERIFY/ on person#1 by Test User 
+INFO 2025-12-08 19:35:34,318 utils 88292 85176 Signature recorded: VERIFY/ on person#1 by Test User 
+INFO 2025-12-08 19:35:34,805 utils 88292 85176 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:35:35,297 utils 88292 85176 Signature recorded: VERIFY/ on person#1 by Test User 
+INFO 2025-12-08 19:35:36,275 utils 88292 85176 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:35:36,279 utils 88292 85176 Signature recorded: APPROVE/WIREF on person#1 by Test User 
+INFO 2025-12-08 19:35:37,279 utils 88292 85176 Signature recorded: SUBMIT/ on person#1 by Test User 
+INFO 2025-12-08 19:35:37,285 utils 88292 85176 Signature recorded: REJECT/ on person#1 by Test User 
+INFO 2025-12-08 19:35:38,269 utils 88292 85176 Signature recorded: SUBMIT/ on person#1 by Test User 
