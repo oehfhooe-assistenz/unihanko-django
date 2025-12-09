@@ -705,7 +705,7 @@ class SessionAdmin(
         url = reverse('assembly:protocol_editor_session', args=[obj.pk])
         from django.shortcuts import redirect
         return redirect(url)
-    open_protocol_editor.label = "📝 " + _("Edit/View in P-KUN")
+    open_protocol_editor.label = "📝 " + _("Open in P-KUN")
     open_protocol_editor.attrs = {
         "class": "btn btn-block",
         "style": "margin-bottom: 1rem",

@@ -217,7 +217,7 @@ class FiscalYear(models.Model):
         help_text=_("Leave blank to auto-fill (1 year − 1 day)."),
     )
 
-    is_active = models.BooleanField(_("Active"), default=False)
+    is_active = models.BooleanField(_("Active (SSP Filing)"), default=False)
 
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
