@@ -354,7 +354,7 @@ def fy_list(request):
 
     context = {
         'fiscal_years': active_fys,
-        'page_title': _("Payment Plan Portal")
+        'page_title': _("Payment Plan Center")
     }
     return render(request, 'portal/payments/fy_list.html', context)
 

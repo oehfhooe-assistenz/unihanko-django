@@ -218,10 +218,10 @@ class Mandate(models.Model):
     """Individual seat holder - can change during term"""
     
     class OfficerRole(models.TextChoices):
-        CHAIR = "CHAIR", _("Vorsitzende/r")
-        DEPUTY_1 = "DEP1", _("1. Stellvertretung")
-        DEPUTY_2 = "DEP2", _("2. Stellvertretung")
-        MEMBER = "MEMB", _("Mandatar/in")
+        CHAIR = "CHAIR", _("Chair")
+        DEPUTY_1 = "DEP1", _("1st Deputy Chair")
+        DEPUTY_2 = "DEP2", _("Deputy Chair")
+        MEMBER = "MEMB", _("Mandatary")
     
     composition = models.ForeignKey(
         Composition, on_delete=models.CASCADE,
@@ -262,7 +262,7 @@ class Mandate(models.Model):
     )
     party = models.CharField(
         _("Party affiliation"), max_length=100, blank=True,
-        help_text=_("Wahlwerbende Gruppe/Liste (e.g., VSSTÖ, AG, GRAS)")
+        help_text=_("Party/Bloc affiliation (e.g., VSSTÖ, AG, GRAS)")
     )
     notes = models.TextField(_("Notes"), blank=True)
     
@@ -311,8 +311,8 @@ class Session(models.Model):
     """Individual HV meeting / Sitzung"""
     
     class Type(models.TextChoices):
-        REGULAR = "or", _("Ordentlich")
-        EXTRAORDINARY = "ao", _("Außerordentlich")
+        REGULAR = "or", _("Regular")
+        EXTRAORDINARY = "ao", _("Extraordinary")
 
     class Status(models.TextChoices):
         DRAFT = "DRAFT", _("Draft")
@@ -538,14 +538,14 @@ class SessionItem(models.Model):
     """Agenda item / Tagesordnungspunkt"""
     
     class Kind(models.TextChoices):
-        RESOLUTION = "RES", _("Beschluss")
-        PROCEDURAL = "PROC", _("Ablaufinformation")
-        ELECTION = "ELEC", _("Beschluss iSe Personalwahl")
+        RESOLUTION = "RES", _("Resolution")
+        PROCEDURAL = "PROC", _("Procedural")
+        ELECTION = "ELEC", _("Personnel Election by Resolution")
     
     class VotingMode(models.TextChoices):
-        NONE = "NONE", _("Keine Abstimmung")
-        COUNTED = "COUNT", _("Stimmenzählung")
-        NAMED = "NAMED", _("Namentliche Abstimmung")
+        NONE = "NONE", _("No vote")
+        COUNTED = "COUNT", _("Counted vote")
+        NAMED = "NAMED", _("Named vote")
     
     session = models.ForeignKey(
         Session, on_delete=models.CASCADE,
@@ -725,9 +725,9 @@ class Vote(models.Model):
     """Named voting record"""
     
     class Choice(models.TextChoices):
-        FOR = "FOR", _("Ja")
-        AGAINST = "AGAINST", _("Nein")
-        ABSTAIN = "ABSTAIN", _("Enthaltung")
+        FOR = "FOR", _("For")
+        AGAINST = "AGAINST", _("Against")
+        ABSTAIN = "ABSTAIN", _("Abstain")
     
     item = models.ForeignKey(
         SessionItem, on_delete=models.CASCADE,

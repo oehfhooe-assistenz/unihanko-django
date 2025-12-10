@@ -665,7 +665,7 @@ class EmploymentDocumentAdmin(
             return
         # defensive guard (in case someone hits the URL directly)
         if obj.kind != obj.Kind.KM:
-            messages.warning(request, _("Leave request is only available for KM documents."))
+            messages.warning(request, _("Sick leave request is only available for KM documents."))
             return
         sign_once(request, action, obj, note=_("Printed sick note receipt PDF"), window_seconds=10)
         emp = (

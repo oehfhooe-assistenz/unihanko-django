@@ -1,0 +1,6530 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-12-10 22:25+0100\n"
+"PO-Revision-Date: 2025-12-10 22:21+0000\n"
+"Last-Translator:   <admin@mail.com>\n"
+"Language-Team: \n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.8\n"
+"X-Translated-Using: django-rosetta 0.10.3\n"
+
+#: .\academia\admin.py:82
+msgid "Auto-generated on save. Superusers can regenerate via admin action."
+msgstr ""
+"Wird beim Speichern automatisch generiert. Superuser können es über eine "
+"Admin-Aktion neu generieren."
+
+#: .\academia\admin.py:86
+msgid ""
+"Bonus/malus ECTS (e.g., +2.0 or -2.0) applied to all roles in this semester"
+msgstr ""
+"Bonus/Malus ECTS (z. B. +2,0 oder -2,0), der auf alle Rollen in diesem "
+"Semester angewendet wird"
+
+#: .\academia\admin.py:99 .\academia\models.py:516
+msgid "At least one of course code or course name is required"
+msgstr ""
+"Mindestens der Name oder der Code der Lehrveranstaltung ist erforderlich"
+
+#: .\academia\admin.py:113
+msgid "Auto-generated on first save in format: SEMESTER-NAME-####"
+msgstr ""
+"Wird beim ersten Speichern automatisch im Format SEMESTER-NAME-#### generiert"
+
+#: .\academia\admin.py:117
+msgid "Timestamp when student confirmed initial submission affidavit"
+msgstr ""
+"Zeitstempel, zu dem der Student die eidesstattliche Erklärung zur ersten "
+"Einreichung bestätigt hat"
+
+#: .\academia\admin.py:121
+msgid "Timestamp when student uploads signed form"
+msgstr ""
+"Zeitstempel, zu dem der Student das unterschriebene Formular hochgeladen hat"
+
+#: .\academia\admin.py:212 .\academia\admin.py:431
+#: .\academia_audit\admin.py:195 .\academia_audit\admin.py:572
+#: .\assembly\admin.py:261 .\assembly\admin.py:405 .\assembly\admin.py:480
+#: .\assembly\admin.py:774 .\employees\admin.py:286 .\employees\admin.py:444
+#: .\employees\admin.py:944 .\finances\admin.py:248 .\finances\admin.py:909
+#: .\finances\admin.py:921 .\finances\admin.py:989 .\hankosign\admin.py:137
+#: .\people\admin.py:192 .\people\admin.py:317 .\people\admin.py:686
+#: .\people\admin.py:791
+msgid "Scope"
+msgstr "Geltungsbereich"
+
+#: .\academia\admin.py:215
+msgid "Public Filing"
+msgstr "Öffentliche Einreichung"
+
+#: .\academia\admin.py:218
+msgid "ECTS Configuration"
+msgstr "ECTS-Konfiguration"
+
+#: .\academia\admin.py:221 .\academia\admin.py:450
+#: .\academia_audit\admin.py:206 .\assembly\admin.py:264
+#: .\assembly\admin.py:408 .\assembly\admin.py:489 .\assembly\admin.py:794
+#: .\employees\admin.py:291 .\employees\admin.py:446 .\employees\admin.py:947
+#: .\finances\admin.py:275 .\finances\admin.py:948 .\finances\admin.py:992
+#: .\people\admin.py:207 .\people\admin.py:335 .\people\admin.py:806
+msgid "Workflow & HankoSign"
+msgstr "Arbeitsablauf & HankoSign"
+
+#: .\academia\admin.py:224 .\academia\admin.py:453
+#: .\academia_audit\admin.py:209 .\academia_audit\admin.py:590
+#: .\assembly\admin.py:267 .\assembly\admin.py:411 .\assembly\admin.py:493
+#: .\assembly\admin.py:797 .\employees\admin.py:292 .\employees\admin.py:447
+#: .\employees\admin.py:948 .\employees\admin.py:1493 .\finances\admin.py:278
+#: .\finances\admin.py:951 .\finances\admin.py:995 .\hankosign\admin.py:47
+#: .\hankosign\admin.py:101 .\hankosign\admin.py:139 .\helppages\admin.py:46
+#: .\people\admin.py:210 .\people\admin.py:338 .\people\admin.py:698
+#: .\people\admin.py:809
+msgid "System"
+msgstr "System"
+
+#: .\academia\admin.py:270
+msgid "Filing Window (Web)"
+msgstr "Einreichfenster (Portal)"
+
+#: .\academia\admin.py:287
+msgid "Requests"
+msgstr "Anträge"
+
+#: .\academia\admin.py:291 .\academia\admin.py:300 .\academia\admin.py:560
+#: .\academia\admin.py:573 .\academia_audit\admin.py:257
+#: .\academia_audit\admin.py:266 .\academia_audit\admin.py:617
+#: .\academia_audit\admin.py:626 .\assembly\admin.py:277
+#: .\assembly\admin.py:284 .\finances\admin.py:303 .\finances\admin.py:318
+#: .\finances\admin.py:1001 .\finances\admin.py:1012 .\hankosign\utils.py:364
+#: .\people\admin.py:355 .\people\admin.py:362
+msgid "Locked"
+msgstr "Gesperrt"
+
+#: .\academia\admin.py:299 .\academia\admin.py:572
+#: .\academia_audit\admin.py:265 .\academia_audit\admin.py:625
+#: .\assembly\admin.py:283 .\finances\admin.py:317 .\finances\admin.py:1011
+#: .\people\admin.py:361
+msgid "Open"
+msgstr "Offen"
+
+#: .\academia\admin.py:305 .\academia\admin.py:578
+#: .\academia_audit\admin.py:283 .\assembly\admin.py:289
+#: .\assembly\admin.py:423 .\assembly\admin.py:522 .\assembly\admin.py:804
+#: .\employees\admin.py:352 .\employees\admin.py:477 .\employees\admin.py:1175
+#: .\finances\admin.py:324 .\finances\admin.py:1018 .\hankosign\models.py:258
+#: .\people\admin.py:218 .\people\admin.py:377 .\people\admin.py:916
+msgid "Signatures"
+msgstr "Unterschriften"
+
+#: .\academia\admin.py:322
+msgid "Only superusers can regenerate passwords"
+msgstr "Nur Superuser können Kennwörter erneuern"
+
+#: .\academia\admin.py:328
+#, python-format
+msgid "Password regenerated: %(old)s → %(new)s"
+msgstr "Kennwort erneuert: %(old)s → %(new)s"
+
+#: .\academia\admin.py:334
+msgid "Regenerate Password"
+msgstr "Kennwort erneuern"
+
+#: .\academia\admin.py:344 .\academia\admin.py:368 .\academia\admin.py:616
+#: .\academia\admin.py:645 .\academia\admin.py:669 .\academia\admin.py:692
+#: .\academia_audit\admin.py:346 .\academia_audit\admin.py:366
+#: .\academia_audit\admin.py:386 .\academia_audit\admin.py:404
+#: .\academia_audit\admin.py:430 .\academia_audit\admin.py:452
+#: .\academia_audit\admin.py:471 .\academia_audit\admin.py:495
+msgid "Not authorized"
+msgstr "Nicht autorisiert"
+
+#: .\academia\admin.py:347
+msgid "Lock action not configured"
+msgstr "Aktion \"Sperren\" nicht konfiguriert"
+
+#: .\academia\admin.py:356
+msgid "Semester locked. Public filing closed."
+msgstr "Semester gesperrt. Öffentliche Einreichung geschlossen."
+
+#: .\academia\admin.py:358
+msgid "Lock Semester"
+msgstr "Semester sperren"
+
+#: .\academia\admin.py:371
+msgid "Unlock action not configured"
+msgstr "Aktion \"Entsperren\" nicht konfiguriert"
+
+#: .\academia\admin.py:380
+msgid "Semester unlocked. Use with caution."
+msgstr "Semester entsperrt. Mit Vorsicht verwenden."
+
+#: .\academia\admin.py:382
+msgid "Unlock Semester"
+msgstr "Semester entsperren"
+
+#: .\academia\admin.py:434
+msgid "ECTS Validation"
+msgstr "ECTS-Validierung"
+
+#: .\academia\admin.py:436
+msgid "Verify the student's ECTS claim is within their role entitlement"
+msgstr ""
+"Überprüfe, ob der ECTS-Anspruch des Studenten lt. Antrag innerhalb des "
+"Funktionsanspruchs liegt"
+
+#: .\academia\admin.py:438
+msgid "Student Content"
+msgstr "Eingaben Student"
+
+#: .\academia\admin.py:440
+msgid "Content submitted by student via public portal"
+msgstr "Vom Student über das öffentliche Portal eingereichte Inhalte"
+
+#: .\academia\admin.py:442
+msgid "Public Portal Submission Metadata"
+msgstr "Metadaten für die Einreichung über das öffentliche Portal"
+
+#: .\academia\admin.py:517 .\academia_audit\admin.py:234
+#: .\assembly\admin.py:518 .\assembly\models.py:343 .\employees\admin.py:464
+#: .\employees\admin.py:1095 .\finances\admin.py:297 .\finances\models.py:353
+#: .\hankosign\admin.py:138 .\templates\academia\inboxrequest_form_pdf.html:40
+#: .\templates\academia_audit\audit_semester_pdf.html:125
+#: .\templates\assembly\term_pdf.html:35
+#: .\templates\employees\document_receipt_pdf.html:46
+#: .\templates\employees\employee_pdf.html:45
+#: .\templates\finances\fiscalyear_pdf.html:35
+#: .\templates\finances\fiscalyears_list_pdf.html:27
+#: .\templates\people\people_list_pdf.html:28
+#: .\templates\portal\payments\plan_list.html:59
+#: .\templates\portal\payments\plan_list.html:61
+msgid "Status"
+msgstr "Status"
+
+#: .\academia\admin.py:531 .\academia_audit\admin.py:66
+#: .\academia_audit\models.py:136 .\assembly\models.py:239
+#: .\people\models.py:95 .\people\models.py:323
+#: .\templates\academia\inboxrequest_form_pdf.html:32
+#: .\templates\finances\paymentplan_pdf.html:20
+#: .\templates\finances\paymentplans_list_pdf.html:25
+#: .\templates\portal\status.html:244
+msgid "Person"
+msgstr "Person"
+
+#: .\academia\admin.py:536 .\portal\forms.py:104
+#: .\templates\academia\inboxrequest_form_pdf.html:55
+#: .\templates\academia_audit\audit_semester_pdf.html:124
+msgid "ECTS"
+msgstr "ECTS"
+
+#: .\academia\admin.py:540 .\templates\academia\inboxrequest_form_pdf.html:71
+#: .\templates\portal\file_request.html:98
+msgid "Total ECTS"
+msgstr "Gesamt-ECTS"
+
+#: .\academia\admin.py:544
+msgid "Max Entitled"
+msgstr "max. Anspruch"
+
+#: .\academia\admin.py:549
+msgid "Validation"
+msgstr "Validierung"
+
+#: .\academia\admin.py:554
+msgid "Valid"
+msgstr "valide"
+
+#: .\academia\admin.py:555
+msgid "Exceeds"
+msgstr "überschritten"
+
+#: .\academia\admin.py:618
+msgid "Cannot verify: No form uploaded yet"
+msgstr "Kann nicht verifiziert werden: Es wurde noch kein Formular hochgeladen"
+
+#: .\academia\admin.py:621 .\portal\views.py:234
+msgid "Warning: "
+msgstr "Warnung: "
+
+#: .\academia\admin.py:624
+msgid "Verify action not configured"
+msgstr "Aktion \"Verifizieren\" nicht konfiguriert"
+
+#: .\academia\admin.py:633
+msgid "Request verified. Ready for chair approval."
+msgstr "Antrag verifiziert. Bereit zur Genehmigung durch den Vorsitz."
+
+#: .\academia\admin.py:635
+msgid "Verify Request"
+msgstr "Antrag verifizieren"
+
+#: .\academia\admin.py:648
+msgid "Approve action not configured"
+msgstr "Aktion \"Genehmigen\" nicht konfiguriert"
+
+#: .\academia\admin.py:657
+msgid "Request approved."
+msgstr "Antrag genehmigt."
+
+#: .\academia\admin.py:659 .\academia_audit\admin.py:445
+#: .\assembly\admin.py:633 .\employees\admin.py:771 .\employees\admin.py:1363
+#: .\finances\admin.py:652 .\hankosign\utils.py:405
+msgid "Approve (Chair)"
+msgstr "Genehmigen (Vorsitz)"
+
+#: .\academia\admin.py:672
+msgid "Reject action not configured"
+msgstr "Aktion \"Zurückweisen\" nicht konfiguriert"
+
+#: .\academia\admin.py:681
+msgid "Request rejected. Student should contact administration."
+msgstr "Antrag zurückgeweisen. Der Student soll sich an die ÖH wenden."
+
+#: .\academia\admin.py:683 .\academia_audit\admin.py:464
+#: .\employees\admin.py:813 .\employees\admin.py:1407 .\hankosign\utils.py:406
+msgid "Reject (Chair)"
+msgstr "Zurückweisen (Vorsitz)"
+
+#: .\academia\admin.py:695
+msgid "Release action not configured"
+msgstr "Aktion \"Freigeben/Drucken\" nicht konfiguriert"
+
+#: .\academia\admin.py:725
+msgid "Print Form"
+msgstr "Antragsformular drucken"
+
+#: .\academia\apps.py:13
+msgid "Academia Inbox"
+msgstr "Academia Inbox"
+
+#: .\academia\models.py:106 .\assembly\models.py:89 .\assembly\models.py:144
+#: .\assembly\models.py:332 .\employees\models.py:498 .\finances\models.py:204
+#: .\finances\models.py:258 .\people\models.py:273
+#: .\templates\academia_audit\audit_semester_pdf.html:24
+#: .\templates\assembly\term_pdf.html:23
+#: .\templates\finances\fiscalyear_pdf.html:23
+#: .\templates\finances\fiscalyears_list_pdf.html:24
+#: .\templates\finances\paymentplans_list_pdf.html:24
+msgid "Code"
+msgstr "Code"
+
+#: .\academia\models.py:112
+msgid "Code must be in format: WS## or SS## (e.g., WS24, SS25)"
+msgstr "Der Code muss im Format WS## oder SS## vorliegen (z. B. WS24, SS25)."
+
+#: .\academia\models.py:115
+msgid "Short code in format WS## or SS## (e.g., WS24, SS25)"
+msgstr "Code im Kurzformat WS## oder SS## (z. B. WS24, SS25)"
+
+#: .\academia\models.py:119
+msgid "Display Name"
+msgstr "Anzeigename"
+
+#: .\academia\models.py:121
+msgid "Full name, e.g., Winter Semester 2024/25"
+msgstr "Vollständiger Name, z. B. Wintersemester 2024/25"
+
+#: .\academia\models.py:124 .\academia_audit\admin.py:275
+#: .\templates\employees\leaverequest_receipt_pdf.html:26
+#: .\templates\employees\sicknote_receipt_pdf.html:26
+msgid "Start Date"
+msgstr "Startdatum"
+
+#: .\academia\models.py:125 .\academia_audit\admin.py:279
+#: .\templates\employees\leaverequest_receipt_pdf.html:30
+#: .\templates\employees\sicknote_receipt_pdf.html:30
+msgid "End Date"
+msgstr "Enddatum"
+
+#: .\academia\models.py:129
+msgid "Filing Start"
+msgstr "Startdatum Einreichung"
+
+#: .\academia\models.py:132
+msgid "When public filing platform opens for new requests"
+msgstr "Datum, zu dem die öffentliche Plattform für neue Anträge geöffnet wird"
+
+#: .\academia\models.py:136
+msgid "Filing End"
+msgstr "Enddatum Einreichung"
+
+#: .\academia\models.py:139
+msgid "When public filing platform closes for new requests"
+msgstr ""
+"Datum, zu dem die öffentliche Einreichungsplattform für neue Anträge "
+"geschlossen wird"
+
+#: .\academia\models.py:143
+msgid "Access Password"
+msgstr "Zugangskennwort"
+
+#: .\academia\models.py:146
+msgid "Password for public filing access (auto-generated)"
+msgstr ""
+"Kennwort für den öffentlichen Zugriff auf die Datei (automatisch generiert)"
+
+#: .\academia\models.py:151
+#: .\templates\academia_audit\audit_semester_pdf.html:36
+msgid "ECTS Adjustment"
+msgstr "ECTS-Anpassung"
+
+#: .\academia\models.py:155
+msgid "Bonus/malus ECTS (e.g., +2 or -2) for elected roles"
+msgstr "Bonus/Malus ECTS (z. B. +2 oder -2) für HSG-Wahlämter"
+
+#: .\academia\models.py:167 .\academia\models.py:260
+#: .\academia_audit\admin.py:239 .\academia_audit\admin.py:603
+#: .\academia_audit\models.py:41
+#: .\templates\academia\inboxrequest_form_pdf.html:28
+msgid "Semester"
+msgstr "Semester"
+
+#: .\academia\models.py:168
+msgid "Semesters"
+msgstr "Semester"
+
+#: .\academia\models.py:192
+msgid "End date must be on or after start date."
+msgstr "Das Enddatum muss auf oder nach dem Startdatum liegen."
+
+#: .\academia\models.py:196
+msgid "Filing end must be after filing start."
+msgstr "Das Ende der Einreichung muss nach dem Beginn der Einreichung liegen."
+
+#: .\academia\models.py:217
+#, python-format
+msgid "Semester is locked. Cannot modify: %(fields)s"
+msgstr "Das Semester ist gesperrt. Kann nicht geändert werden: %(fields)s"
+
+#: .\academia\models.py:235
+#, python-format
+msgid "File size must not exceed 10MB. Current: %(size).1f MB"
+msgstr "Die Dateigröße darf 10 MB nicht überschreiten. Aktuell: %(size).1f MB"
+
+#: .\academia\models.py:248 .\assembly\models.py:318 .\employees\admin.py:828
+#: .\finances\models.py:316 .\hankosign\utils.py:382
+#: .\templates\portal\includes\stage_progress.html:13
+#: .\templates\portal\includes\stage_progress.html:30
+msgid "Draft"
+msgstr "Entwurf"
+
+#: .\academia\models.py:249 .\assembly\models.py:319 .\employees\admin.py:829
+#: .\hankosign\utils.py:380 .\templates\portal\includes\stage_progress.html:15
+msgid "Submitted"
+msgstr "Eingereicht"
+
+#: .\academia\models.py:250 .\hankosign\admin.py:153
+#: .\templates\portal\includes\stage_progress.html:17
+msgid "Verified"
+msgstr "Verifiziert"
+
+#: .\academia\models.py:251 .\templates\portal\includes\stage_progress.html:22
+#: .\templates\portal\includes\stage_progress.html:24
+msgid "Approved"
+msgstr "Genehmigt"
+
+#: .\academia\models.py:252 .\hankosign\utils.py:368
+#: .\templates\portal\includes\stage_progress.html:20
+msgid "Rejected"
+msgstr "Zurückgewiesen"
+
+#: .\academia\models.py:253
+msgid "Transferred to Audit"
+msgstr "Ans Audit weitergegeben"
+
+#: .\academia\models.py:267
+msgid "Person Role"
+msgstr "Funktion"
+
+#: .\academia\models.py:268
+msgid "The role under which ECTS are being claimed"
+msgstr "Die Funktion, unter der ECTS beansprucht werden"
+
+#: .\academia\models.py:272
+msgid "Stage"
+msgstr "Phase"
+
+#: .\academia\models.py:276
+msgid "Current workflow stage. Auto-computed from HankoSign signatures."
+msgstr ""
+"Aktuelle Workflow-Phase. Automatisch berechnet anhand der HankoSign-"
+"Signaturen."
+
+#: .\academia\models.py:281 .\templates\academia\inboxrequest_form_pdf.html:24
+#: .\templates\portal\access_login.html:86
+#: .\templates\portal\semester_list.html:54
+msgid "Reference Code"
+msgstr "Referenzcode"
+
+#: .\academia\models.py:285
+msgid "Unique code for student to access their request"
+msgstr "Einmaliger Code für Studenten, um auf ihren Antrag zuzugreifen"
+
+#: .\academia\models.py:289 .\finances\models.py:362
+msgid "Submission IP"
+msgstr "Antrags-IP-Adresse"
+
+#: .\academia\models.py:292
+msgid "IP address from which request was submitted (audit trail)"
+msgstr "IP-Adresse, von der aus der Antrag gesendet wurde (Prüfpfad)"
+
+#: .\academia\models.py:296
+msgid "Filing Source"
+msgstr "Antragsquelle"
+
+#: .\academia\models.py:299 .\portal\apps.py:13
+msgid "Public Portal"
+msgstr "Öffentliches Portal (SSP)"
+
+#: .\academia\models.py:300
+msgid "Admin Interface"
+msgstr "Admin-Schnittstelle"
+
+#: .\academia\models.py:303
+msgid "How this request was created (public portal or admin)"
+msgstr "Wie dieser Antrag erstellt wurde (via öffentliches Portal oder Admin)"
+
+#: .\academia\models.py:308
+msgid "Student Note"
+msgstr "Studentenvermerk"
+
+#: .\academia\models.py:310
+msgid "Optional note from student"
+msgstr "Optionaler Vermerk des Studenten"
+
+#: .\academia\models.py:315
+msgid "Affidavit 1 Confirmed At"
+msgstr "Eidesstattliche Erklärung 1 bestätigt am"
+
+#: .\academia\models.py:318
+msgid "When student confirmed initial submission affidavit"
+msgstr ""
+"Wenn der Student die eidesstattliche Erklärung zur ersten Einreichung "
+"bestätigt hat"
+
+#: .\academia\models.py:322
+msgid "Affidavit 2 Confirmed At"
+msgstr "Eidesstattliche Erklärung 2 bestätigt am"
+
+#: .\academia\models.py:325
+msgid "When student confirmed form upload affidavit"
+msgstr ""
+"Wenn der Student das Formular hochgeladen und die eidesstattliche Erklärung "
+"bestätigt hat"
+
+#: .\academia\models.py:330 .\templates\academia\inboxrequest_form_pdf.html:135
+msgid "Uploaded Form"
+msgstr "Hochgeladenes Formular"
+
+#: .\academia\models.py:338
+msgid "Signed form with professor signatures"
+msgstr ""
+"Unterzeichnetes Formular mit Unterschriften der Lehrveranstaltungsleiter"
+
+#: .\academia\models.py:342
+msgid "Uploaded Form At"
+msgstr "Formular-Upload am"
+
+#: .\academia\models.py:356 .\academia\models.py:470
+msgid "Inbox Request"
+msgstr "Inbox Request"
+
+#: .\academia\models.py:357 .\academia_audit\models.py:151
+msgid "Inbox Requests"
+msgstr "Inbox Requests"
+
+#: .\academia\models.py:395
+msgid "Could not generate unique reference code after 100 attempts"
+msgstr ""
+"Nach 100 Versuchen konnte kein eindeutiger Referenzcode generiert werden."
+
+#: .\academia\models.py:414
+msgid "This person already has a request for this semester."
+msgstr "Diese Person hat bereits einen Antrag für dieses Semester."
+
+#: .\academia\models.py:423
+msgid "Semester is locked. Cannot modify requests."
+msgstr "Das Semester ist gesperrt. Anträge können nicht geändert werden."
+
+#: .\academia\models.py:443
+#, python-format
+msgid "Request verified. Cannot modify: %(fields)s"
+msgstr "Antrag verifiziert. Kann nicht geändert werden: %(fields)s"
+
+#: .\academia\models.py:474 .\portal\forms.py:84
+#: .\templates\academia\inboxrequest_form_pdf.html:53
+msgid "Course Code"
+msgstr "LV-Code"
+
+#: .\academia\models.py:477
+msgid "Course code, e.g., LV101"
+msgstr "LV-Code, z. B. LV101"
+
+#: .\academia\models.py:481 .\portal\forms.py:94
+#: .\templates\academia\inboxrequest_form_pdf.html:54
+msgid "Course Name"
+msgstr "LV-Bezeichnung"
+
+#: .\academia\models.py:484
+msgid "Full course name, e.g., Advanced Mathematics"
+msgstr "Vollständige LV-Bezeichnung, z. B. „Fortgeschrittene Mathematik“"
+
+#: .\academia\models.py:488
+msgid "ECTS Amount"
+msgstr "ECTS-Punkte"
+
+#: .\academia\models.py:491
+msgid "ECTS credit for this course"
+msgstr "ECTS-Punkte für diese LV"
+
+#: .\academia\models.py:497 .\templates\portal\file_request.html:73
+msgid "Course"
+msgstr "Lehrveranstaltung"
+
+#: .\academia\models.py:498
+#: .\templates\academia_audit\audit_semester_pdf.html:123
+msgid "Courses"
+msgstr "Lehrveranstaltungen"
+
+#: .\academia\models.py:522
+msgid "ECTS amount must be greater than 0"
+msgstr "Die ECTS-Punkte müssen größer als 0 sein."
+
+#: .\academia_audit\admin.py:69 .\academia_audit\admin.py:575
+msgid "ECTS Calculations"
+msgstr "ECTS-Berechnungen"
+
+#: .\academia_audit\admin.py:77
+msgid "Review"
+msgstr "Überprüfung"
+
+#: .\academia_audit\admin.py:124
+msgid "Request Forms"
+msgstr "Antragsformulare"
+
+#: .\academia_audit\admin.py:134
+msgid "No requests"
+msgstr "keine Anträge"
+
+#: .\academia_audit\admin.py:203
+msgid "Audit Workflow"
+msgstr "Audit-Ablauf"
+
+#: .\academia_audit\admin.py:243 .\employees\models.py:85
+#: .\people\models.py:196 .\people\models.py:283
+#: .\templates\_includes\_person_info_section.html:16
+#: .\templates\assembly\composition_pdf.html:26
+#: .\templates\finances\paymentplan_pdf.html:24
+#: .\templates\hankosign\specimen_pdf.html:24
+#: .\templates\people\people_list_pdf.html:24
+#: .\templates\people\person_action_code_notice_pdf.html:24
+msgid "Name"
+msgstr "Name"
+
+#: .\academia_audit\admin.py:247 .\employees\admin.py:470
+#: .\employees\admin.py:1090
+#: .\templates\academia_audit\audit_semester_pdf.html:32
+#: .\templates\assembly\composition_pdf.html:29
+#: .\templates\assembly\term_pdf.html:31
+#: .\templates\employees\document_receipt_pdf.html:35
+#: .\templates\employees\timesheet_pdf.html:29
+#: .\templates\employees\timesheet_pdf.html:73
+#: .\templates\finances\fiscalyear_pdf.html:31
+#: .\templates\finances\fiscalyears_list_pdf.html:26
+#: .\templates\finances\paymentplans_list_pdf.html:28
+#: .\templates\people\person_pdf.html:27
+msgid "Period"
+msgstr "Zeitraum"
+
+#: .\academia_audit\admin.py:253
+msgid "Entries"
+msgstr "Einreichungen"
+
+#: .\academia_audit\admin.py:271
+msgid "Semester Code"
+msgstr "Semestercode"
+
+#: .\academia_audit\admin.py:349 .\assembly\admin.py:326
+#: .\employees\admin.py:1417 .\finances\admin.py:1190 .\people\admin.py:463
+msgid "Already locked."
+msgstr "Bereits gesperrt."
+
+#: .\academia_audit\admin.py:353 .\assembly\admin.py:330
+#: .\finances\admin.py:1194
+msgid "Lock action not configured."
+msgstr "Aktion \"Sperren\" nicht konfiguriert"
+
+#: .\academia_audit\admin.py:357
+msgid "Audit semester locked."
+msgstr "Audit-Semester gesperrt."
+
+#: .\academia_audit\admin.py:359
+msgid "Lock Audit"
+msgstr "Audit sperren"
+
+#: .\academia_audit\admin.py:369 .\assembly\admin.py:346
+#: .\finances\admin.py:1215
+msgid "Already unlocked."
+msgstr "Bereits entsperrt."
+
+#: .\academia_audit\admin.py:373 .\assembly\admin.py:350
+#: .\finances\admin.py:1219
+msgid "Unlock action not configured."
+msgstr "Aktion \"Entsperren\" nicht konfiguriert"
+
+#: .\academia_audit\admin.py:377
+msgid "Audit semester unlocked."
+msgstr "Audit-Semester entsperrt."
+
+#: .\academia_audit\admin.py:379
+msgid "Unlock Audit"
+msgstr "Audit entsperren"
+
+#: .\academia_audit\admin.py:391
+#, python-format
+msgid ""
+"Audit synchronized: %(created)d created, %(updated)d updated, %(skipped)d "
+"skipped (manually checked)."
+msgstr ""
+"Audit synchronisiert:%(created)d  erstellt,%(updated)d  aktualisiert,"
+"%(skipped)d  übersprungen (bereits manuell überprüft)."
+
+#: .\academia_audit\admin.py:397
+msgid "Synchronize Audit Entries"
+msgstr "Audit-Einträge synchronisieren"
+
+#: .\academia_audit\admin.py:411
+#, python-format
+msgid "Cannot verify: %(count)d entries are not yet manually checked."
+msgstr ""
+"Kann nicht überprüft werden:%(count)dEinträge wurden noch nicht manuell "
+"überprüft."
+
+#: .\academia_audit\admin.py:417 .\assembly\admin.py:668
+#: .\finances\admin.py:672
+msgid "Verify action not configured."
+msgstr "Aktion \"Verifizieren\" nicht konfiguriert"
+
+#: .\academia_audit\admin.py:421
+msgid "Audit verified complete."
+msgstr "Audit als abgeschlossen verifiziert."
+
+#: .\academia_audit\admin.py:423
+msgid "Verify Audit Complete"
+msgstr "Audit-Abschluss verifizieren"
+
+#: .\academia_audit\admin.py:433
+msgid "Verify audit complete first."
+msgstr "Verifiziere zuerst den Abschluss des Audits."
+
+#: .\academia_audit\admin.py:436 .\assembly\admin.py:624
+msgid "Already approved."
+msgstr "Bereits genehmigt."
+
+#: .\academia_audit\admin.py:440 .\assembly\admin.py:628
+msgid "Approval action not configured."
+msgstr "Aktion \"Genehmigen\" nicht konfiguriert"
+
+#: .\academia_audit\admin.py:444
+msgid "Audit approved by chair."
+msgstr "Audit vom Vorsitz genehmigt."
+
+#: .\academia_audit\admin.py:455 .\assembly\admin.py:644
+msgid "Already approved; cannot reject."
+msgstr "Bereits genehmigt; kann nicht zurückgewiesen werden."
+
+#: .\academia_audit\admin.py:459 .\assembly\admin.py:648
+msgid "Reject action not configured."
+msgstr "Aktion \"Zurückweisen\" nicht konfiguriert"
+
+#: .\academia_audit\admin.py:463
+msgid "Audit rejected. Please review and re-verify."
+msgstr "Audit zurückgewiesen. Bitte überprüfen und erneut verifizieren."
+
+#: .\academia_audit\admin.py:474
+msgid "Chair approval required first."
+msgstr "Zunächst ist die Genehmigung des Vorsitzes erforderlich."
+
+#: .\academia_audit\admin.py:478
+msgid "Verify sent action not configured."
+msgstr "Aktion \"Versand verifizieren\" nicht konfiguriert"
+
+#: .\academia_audit\admin.py:487
+msgid "Verified: Audit sent to university."
+msgstr "Verifiziert: Audit an die FH gesendet."
+
+#: .\academia_audit\admin.py:489
+msgid "Verify Audit Sent"
+msgstr "Audit-Versand verifizieren"
+
+#: .\academia_audit\admin.py:499
+msgid "No entries found. Run synchronization first."
+msgstr "Keine Einträge gefunden. Führe zuerst eine Synchronisierung durch."
+
+#: .\academia_audit\admin.py:504 .\assembly\admin.py:362
+#: .\assembly\admin.py:431 .\assembly\admin.py:684 .\assembly\admin.py:840
+#: .\finances\admin.py:722 .\finances\admin.py:758 .\finances\admin.py:1060
+#: .\finances\admin.py:1085 .\people\admin.py:551 .\people\admin.py:577
+#: .\people\admin.py:594 .\people\admin.py:614 .\people\admin.py:977
+#: .\people\admin.py:998 .\people\admin.py:1019 .\people\admin.py:1060
+msgid "Release action not configured."
+msgstr "Aktion \"Freigeben/Drucken\" nicht konfiguriert"
+
+#: .\academia_audit\admin.py:506
+msgid "Printed audit PDF"
+msgstr "Audit-PDF ausgedruckt"
+
+#: .\academia_audit\admin.py:527
+msgid "Print Audit PDF"
+msgstr "Audit-Bericht drucken"
+
+#: .\academia_audit\admin.py:584
+msgid "Manual Review"
+msgstr "Manuelle Überprüfung"
+
+#: .\academia_audit\admin.py:587 .\academia_audit\models.py:203
+#: .\employees\models.py:289 .\people\models.py:62 .\people\models.py:364
+#: .\templates\academia_audit\audit_semester_pdf.html:146
+msgid "Record note"
+msgstr "Vermerk"
+
+#: .\academia_audit\admin.py:607
+msgid "Checked"
+msgstr "Überprüft"
+
+#: .\academia_audit\admin.py:611 .\people\admin.py:156
+msgid "Yes"
+msgstr "Ja"
+
+#: .\academia_audit\admin.py:612 .\people\admin.py:156
+msgid "No"
+msgstr "Nein"
+
+#: .\academia_audit\admin.py:632
+msgid "Linked Request Forms"
+msgstr "verknüpfte Antragsformulare"
+
+#: .\academia_audit\admin.py:655 .\academia_audit\models.py:187
+msgid "Calculation Details"
+msgstr "Berechnungsdetails"
+
+#: .\academia_audit\apps.py:13
+msgid "Academia Audit"
+msgstr "Academia Audit"
+
+#: .\academia_audit\models.py:23
+#, python-format
+msgid "File size must not exceed 25MB. Current: %(size).1f MB"
+msgstr "Die Dateigröße darf 25 MB nicht überschreiten. Aktuell: %(size).1f MB"
+
+#: .\academia_audit\models.py:46
+msgid "Audit Generated At"
+msgstr "Audit erstellt am"
+
+#: .\academia_audit\models.py:49
+msgid "When audit entries were last synchronized"
+msgstr "Zeitpunkt der letzten Synchronisierung"
+
+#: .\academia_audit\models.py:53
+msgid "Audit PDF"
+msgstr "Audit-PDF"
+
+#: .\academia_audit\models.py:61
+msgid "Upload for the complete, signed audit report"
+msgstr "Upload des vollständigen, unterzeichneten Audit-PDFs"
+
+#: .\academia_audit\models.py:66
+msgid "Audit sent to university at"
+msgstr "Audit an die FH gesendet am"
+
+#: .\academia_audit\models.py:69
+msgid "Timestamp when audit was sent to university administration"
+msgstr "Zeitstempel, zu dem die Prüfung an die FH-Verwaltung gesendet wurde"
+
+#: .\academia_audit\models.py:81 .\academia_audit\models.py:129
+msgid "Audit Semester"
+msgstr "Audit-Semester"
+
+#: .\academia_audit\models.py:82
+msgid "Audit Semesters"
+msgstr "Audit-Semester"
+
+#: .\academia_audit\models.py:100
+msgid "An audit already exists for this semester."
+msgstr "Für dieses Semester liegt bereits ein Audit vor."
+
+#: .\academia_audit\models.py:109
+msgid "Audit semester is locked. Cannot modify."
+msgstr "Das Audit-Semester ist gesperrt. Es kann nicht geändert werden."
+
+#: .\academia_audit\models.py:143
+#: .\templates\academia\inboxrequest_form_pdf.html:84
+#: .\templates\academia_audit\audit_semester_pdf.html:94
+msgid "Person Roles"
+msgstr "Funktion"
+
+#: .\academia_audit\models.py:144
+msgid "All roles this person held during the semester"
+msgstr "Alle Funktionen, die diese Person während des Semesters innehatte"
+
+#: .\academia_audit\models.py:152
+msgid "Approved reimbursement requests for this person"
+msgstr "Genehmigte Anrechnungsanträge für diese Person"
+
+#: .\academia_audit\models.py:157
+#: .\templates\academia_audit\audit_semester_pdf.html:55
+#: .\templates\academia_audit\audit_semester_pdf.html:104
+msgid "Aliquoted ECTS"
+msgstr "Aliquotierte ECTS"
+
+#: .\academia_audit\models.py:160
+msgid "Base ECTS with aliquotation applied (before bonus/malus)"
+msgstr "Basis-ECTS mit angewandter Aliquotierung (vor Bonus/Malus)"
+
+#: .\academia_audit\models.py:164
+#: .\templates\academia_audit\audit_semester_pdf.html:56
+#: .\templates\academia_audit\audit_semester_pdf.html:112
+msgid "Final ECTS"
+msgstr "Endgültige ECTS"
+
+#: .\academia_audit\models.py:167
+msgid "Final ECTS entitled (after bonus/malus)"
+msgstr "Endgültige ECTS (nach Bonus/Malus)"
+
+#: .\academia_audit\models.py:171
+msgid "Reimbursed ECTS"
+msgstr "Angerechnete ECTS"
+
+#: .\academia_audit\models.py:175
+msgid "Sum of ECTS from specific course reimbursements"
+msgstr "Summe der ECTS aus spezifischen LV-Anrechnungen"
+
+#: .\academia_audit\models.py:179
+msgid "Remaining ECTS"
+msgstr "Verbleibende ECTS"
+
+#: .\academia_audit\models.py:182
+msgid "Remaining ECTS credited as general (bulk)"
+msgstr "Verbleibende ECTS-Punkte (als allgemeine angerechnet)"
+
+#: .\academia_audit\models.py:190
+msgid "Detailed breakdown of ECTS calculation per role"
+msgstr "Detaillierte Aufschlüsselung der ECTS-Berechnung pro Rolle"
+
+#: .\academia_audit\models.py:195
+msgid "Checked At"
+msgstr "Überprüft am"
+
+#: .\academia_audit\models.py:198
+msgid ""
+"Timestamp when this entry was manually reviewed/edited. Protects from "
+"synchronize overwrites."
+msgstr ""
+"Zeitstempel, wann dieser Eintrag manuell überprüft/bearbeitet wurde. Schützt "
+"vor Überschreibungen durch die Synchronisierung."
+
+#: .\academia_audit\models.py:205
+msgid "Optional notes for manual adjustments or corrections"
+msgstr "Optionale Vermerke für manuelle Anpassungen oder Korrekturen"
+
+#: .\academia_audit\models.py:217
+msgid "Audit Entry"
+msgstr "Audit-Eintrag"
+
+#: .\academia_audit\models.py:218
+msgid "Audit Entries"
+msgstr "Audit-Einträge"
+
+#: .\academia_audit\models.py:247
+msgid "This person already has an audit entry for this semester."
+msgstr ""
+"Diese Person verfügt bereits über einen Audit-Eintrag für dieses Semester."
+
+#: .\academia_audit\models.py:254
+msgid "Audit semester is locked. Cannot modify entries."
+msgstr ""
+"Das Audit-Semester ist gesperrt. Einträge können nicht geändert werden."
+
+#: .\academia_audit\models.py:258
+msgid "Reimbursed ECTS cannot be negative"
+msgstr "Angerechnete ECTS können nicht negativ sein."
+
+#: .\academia_audit\models.py:261
+msgid "Remaining ECTS cannot be negative"
+msgstr "Verbleibende ECTS können nicht negativ sein."
+
+#: .\annotations\admin.py:118 .\annotations\models.py:59
+msgid "Created by"
+msgstr "Erstellt von"
+
+#: .\annotations\admin.py:124 .\annotations\models.py:62
+#: .\assembly\models.py:104 .\assembly\models.py:179 .\assembly\models.py:269
+#: .\assembly\models.py:390 .\assembly\models.py:639 .\assembly\models.py:748
+#: .\employees\models.py:98 .\employees\models.py:291 .\employees\models.py:358
+#: .\employees\models.py:500 .\employees\models.py:610
+#: .\employees\models.py:780 .\finances\models.py:222 .\hankosign\models.py:50
+#: .\hankosign\models.py:112 .\hankosign\models.py:202 .\people\models.py:87
+#: .\people\models.py:369
+msgid "Created at"
+msgstr "Erstellt am"
+
+#: .\annotations\admin.py:150 .\annotations\models.py:70
+msgid "Annotation"
+msgstr "Sachverhalt"
+
+#: .\annotations\admin.py:153 .\annotations\admin.py:165
+msgid "Attached to"
+msgstr "verknüpft mit"
+
+#: .\annotations\admin.py:156 .\helppages\admin.py:32
+msgid "Metadata"
+msgstr "Metadaten"
+
+#: .\annotations\admin.py:171 .\annotations\models.py:52
+msgid "Text"
+msgstr "Text"
+
+#: .\annotations\apps.py:13 .\annotations\models.py:71
+#: .\templates\assembly\protocol_editor.html:795
+msgid "Annotations"
+msgstr "Sachverhalte"
+
+#: .\annotations\models.py:27
+msgid "User Comment"
+msgstr "Kommentar"
+
+#: .\annotations\models.py:28
+msgid "System Event"
+msgstr "Systemereignis"
+
+#: .\annotations\models.py:29
+msgid "Correction"
+msgstr "Korrektur"
+
+#: .\annotations\models.py:30
+msgid "Information"
+msgstr "Information"
+
+#: .\annotations\models.py:36
+msgid "Content type"
+msgstr "Inhaltstyp"
+
+#: .\annotations\models.py:37
+msgid "The type of object this annotation is attached to"
+msgstr "Der Typ des Objekts, an das dieser Sachverhalt angehängt ist"
+
+#: .\annotations\models.py:40
+msgid "Object ID"
+msgstr "Objekt-ID"
+
+#: .\annotations\models.py:41
+msgid "The ID of the specific object"
+msgstr "Die ID des spezifischen Objekts"
+
+#: .\annotations\models.py:47
+#: .\templates\employees\document_receipt_pdf.html:26
+msgid "Type"
+msgstr "Art"
+
+#: .\annotations\models.py:60
+msgid "User who created this annotation (null for system annotations)"
+msgstr ""
+"Benutzer, der diesen Sachverhalt erstellt hat (null für Systemanmerkungen)"
+
+#: .\annotations\models.py:63 .\assembly\models.py:105 .\assembly\models.py:180
+#: .\assembly\models.py:270 .\assembly\models.py:391 .\assembly\models.py:640
+#: .\employees\models.py:99 .\employees\models.py:292 .\employees\models.py:359
+#: .\employees\models.py:501 .\employees\models.py:611
+#: .\employees\models.py:781 .\finances\models.py:223 .\hankosign\models.py:51
+#: .\hankosign\models.py:113 .\hankosign\models.py:203 .\people\models.py:88
+#: .\people\models.py:370
+msgid "Updated at"
+msgstr "Aktualisiert am"
+
+#: .\annotations\views.py:29
+msgid "Missing required fields"
+msgstr "Fehlende Pflichtfelder"
+
+#: .\annotations\views.py:42
+msgid "Object not found"
+msgstr "Objekt nicht gefunden"
+
+#: .\annotations\views.py:53 .\annotations\views.py:113
+msgid "Permission denied"
+msgstr "Zugriff verweigert"
+
+#: .\annotations\views.py:76
+msgid "Annotation added successfully"
+msgstr "Sachverhalt erfolgreich hinzugefügt"
+
+#: .\annotations\views.py:82
+msgid "An error occurred"
+msgstr "Ein Fehler ist aufgetreten."
+
+#: .\annotations\views.py:100
+msgid "You do not have permission to delete this annotation"
+msgstr "Du hast keine Berechtigung, diesen Sachverhalt zu löschen."
+
+#: .\annotations\views.py:120
+msgid "Annotation deleted"
+msgstr "Sachverhalt gelöscht"
+
+#: .\assembly\admin.py:151 .\assembly\admin.py:152
+msgid "HR Links (Personnel Elections)"
+msgstr "HR-Links (Personalwahlen)"
+
+#: .\assembly\admin.py:200
+msgid "Link PersonRole first"
+msgstr "Verknüpfe zuerst eine Funktion"
+
+#: .\assembly\admin.py:211
+msgid "Print dispatch document"
+msgstr "Entsendungsbeleg drucken"
+
+#: .\assembly\admin.py:223
+msgid "Attendee"
+msgstr "Teilnehmer (Mandat & Ersatzperson)"
+
+#: .\assembly\admin.py:224
+msgid "Attendees (with backup tracking)"
+msgstr "Teilnehmer (Mandat & Ersatzperson)"
+
+#: .\assembly\admin.py:322
+msgid "You don't have permission to lock terms."
+msgstr "Du hast keine Berechtigung, Wahlperioden zu sperren."
+
+#: .\assembly\admin.py:332
+#, python-format
+msgid "Term %(code)s locked"
+msgstr "Wahlperiode %(code)s gesperrt"
+
+#: .\assembly\admin.py:334
+msgid "Term locked."
+msgstr "Wahlperiode gesperrt."
+
+#: .\assembly\admin.py:335
+msgid "Lock term"
+msgstr "Wahlperiode sperren"
+
+#: .\assembly\admin.py:342
+msgid "You don't have permission to unlock terms."
+msgstr "Du hast keine Berechtigung, Wahlperioden zu entsperren."
+
+#: .\assembly\admin.py:352
+#, python-format
+msgid "Term %(code)s unlocked"
+msgstr "Wahlperiode %(code)s entsperrt"
+
+#: .\assembly\admin.py:354
+msgid "Term unlocked."
+msgstr "Wahlperiode entsperrt."
+
+#: .\assembly\admin.py:355
+msgid "Unlock term"
+msgstr "Wahlperiode entsperren"
+
+#: .\assembly\admin.py:364
+msgid "Printed term overview"
+msgstr "Wahlperiodenübersicht ausgedruckt"
+
+#: .\assembly\admin.py:371
+msgid "Print Term PDF"
+msgstr "WP-Übersicht drucken"
+
+#: .\assembly\admin.py:418 .\templates\assembly\composition_pdf.html:20
+msgid "Active Mandates"
+msgstr "Aktive Mandatare"
+
+#: .\assembly\admin.py:433
+msgid "Printed board roster"
+msgstr "Mandatarübersicht ausgedruckt"
+
+#: .\assembly\admin.py:441
+msgid "Print Board Roster PDF"
+msgstr "Mandatarübersicht drucken"
+
+#: .\assembly\admin.py:483
+msgid "Schedule & Location"
+msgstr "Termin & Ort"
+
+#: .\assembly\admin.py:486
+msgid "Attendance"
+msgstr "Teilnehmer"
+
+#: .\assembly\admin.py:584 .\employees\admin.py:699 .\employees\admin.py:1288
+#: .\finances\admin.py:566
+msgid "Already submitted."
+msgstr "Bereits eingereicht."
+
+#: .\assembly\admin.py:588 .\finances\admin.py:574
+msgid "Submit action not configured."
+msgstr "Aktion \"Einreichen\" nicht konfiguriert."
+
+#: .\assembly\admin.py:590
+#, python-format
+msgid "Session %(code)s submitted"
+msgstr "Sitzung %(code)s eingereicht"
+
+#: .\assembly\admin.py:592 .\employees\admin.py:707 .\finances\admin.py:578
+msgid "Submitted."
+msgstr "Eingereicht."
+
+#: .\assembly\admin.py:593 .\employees\admin.py:708 .\employees\admin.py:1297
+#: .\finances\admin.py:579 .\hankosign\models.py:27 .\hankosign\utils.py:401
+msgid "Submit"
+msgstr "Einreichen"
+
+#: .\assembly\admin.py:601 .\employees\admin.py:717 .\finances\admin.py:591
+msgid "Not submitted."
+msgstr "Nicht eingereicht."
+
+#: .\assembly\admin.py:604
+msgid "Cannot withdraw after approval."
+msgstr "Nach der Genehmigung kann keine Rücknahme erfolgen."
+
+#: .\assembly\admin.py:608 .\finances\admin.py:599
+msgid "Withdraw action not configured."
+msgstr "Aktion \"Zurücknehmen\" nicht konfiguriert."
+
+#: .\assembly\admin.py:610
+#, python-format
+msgid "Session %(code)s withdrawn"
+msgstr "Sitzung %(code)s zurückgenommen"
+
+#: .\assembly\admin.py:612 .\employees\admin.py:728 .\finances\admin.py:603
+msgid "Withdrawn."
+msgstr "Zurückgenommen."
+
+#: .\assembly\admin.py:613 .\finances\admin.py:604 .\hankosign\models.py:31
+#: .\hankosign\utils.py:402
+msgid "Withdraw"
+msgstr "Zurücknehmen"
+
+#: .\assembly\admin.py:621 .\employees\admin.py:738 .\employees\admin.py:759
+#: .\finances\admin.py:616 .\finances\admin.py:640
+msgid "Submit first."
+msgstr "Zuerst einreichen."
+
+#: .\assembly\admin.py:630
+#, python-format
+msgid "Session %(code)s approved"
+msgstr "Sitzung %(code)s genehmigt"
+
+#: .\assembly\admin.py:632
+msgid "Approved."
+msgstr "Genehmigt."
+
+#: .\assembly\admin.py:641
+msgid "Nothing to reject."
+msgstr "Es gibt nichts zurückzuweisen."
+
+#: .\assembly\admin.py:650
+#, python-format
+msgid "Session %(code)s rejected"
+msgstr "Sitzung %(code)s zurückgewiesen"
+
+#: .\assembly\admin.py:652
+msgid "Rejected."
+msgstr "Zurückgewiesen."
+
+#: .\assembly\admin.py:653 .\hankosign\models.py:32
+msgid "Reject"
+msgstr "Zurückweisen"
+
+#: .\assembly\admin.py:661
+msgid "Approve first before verification."
+msgstr "Vor der Verifizierung erst genehmigen."
+
+#: .\assembly\admin.py:664 .\finances\admin.py:668
+msgid "Already verified."
+msgstr "Bereits verifiziert."
+
+#: .\assembly\admin.py:674
+#, python-format
+msgid "Session %(code)s sent to KoKo/HSG"
+msgstr "Sitzung %(code)s an KoKo/HSG übermittelt"
+
+#: .\assembly\admin.py:676
+msgid "Verified and sent to KoKo/HSG."
+msgstr "Verifiziert und an KoKo/HSG übermittelt."
+
+#: .\assembly\admin.py:677
+msgid "Verify (Sent to KoKo/HSG)"
+msgstr "KoKo/HSG-Versand verifizieren"
+
+#: .\assembly\admin.py:686
+msgid "Printed session protocol"
+msgstr "Sitzungsprotokoll ausgedruckt"
+
+#: .\assembly\admin.py:694
+msgid "Print Protocol PDF"
+msgstr "Sitzungsprotokoll drucken"
+
+#: .\assembly\admin.py:708
+msgid "Open in P-KUN"
+msgstr "in P-KUN öffnen"
+
+#: .\assembly\admin.py:777
+msgid "Content (Procedural)"
+msgstr "Inhalt (Sitzungsablauf)"
+
+#: .\assembly\admin.py:780
+msgid "Content (Resolution/Election)"
+msgstr "Inhalt (Beschluss/Personalwahl)"
+
+#: .\assembly\admin.py:783
+msgid "Voting"
+msgstr "Wahl"
+
+#: .\assembly\admin.py:787 .\templates\assembly\protocol_editor.html:584
+msgid "Election"
+msgstr "Personalwahl"
+
+#: .\assembly\admin.py:791 .\assembly\forms.py:101 .\assembly\models.py:267
+#: .\assembly\models.py:637 .\hankosign\admin.py:100 .\hankosign\models.py:110
+#: .\people\admin.py:204 .\people\admin.py:332 .\people\admin.py:695
+#: .\people\admin.py:803 .\people\admin.py:924
+#: .\templates\academia\inboxrequest_form_pdf.html:153
+#: .\templates\assembly\protocol_editor.html:711
+#: .\templates\employees\employee_pdf.html:76
+#: .\templates\employees\leaverequest_receipt_pdf.html:51
+#: .\templates\finances\fiscalyear_pdf.html:44
+#: .\templates\finances\paymentplan_pdf.html:103
+msgid "Notes"
+msgstr "Vermerke"
+
+#: .\assembly\admin.py:831
+msgid "Only election items can generate dispatch documents."
+msgstr "Nur Personalwahlen können Entsendungsbelege generieren."
+
+#: .\assembly\admin.py:835
+msgid "No person elected or temporary placeholders - cannot generate document."
+msgstr ""
+"Keine gewählte Person oder vorübergehende Platzhalter – kann kein Dokument "
+"erstellen."
+
+#: .\assembly\admin.py:842
+msgid "Printed dispatch document"
+msgstr "Entsendungsbeleg ausgedruckt"
+
+#: .\assembly\admin.py:852
+msgid "per pro, the ÖH FH OÖ"
+msgstr "i.V. ÖH FH OÖ"
+
+#: .\assembly\admin.py:863
+msgid "Print Dispatch Document"
+msgstr "Entsendungsbeleg drucken"
+
+#: .\assembly\forms.py:43
+msgid "Item title"
+msgstr "Titel"
+
+#: .\assembly\forms.py:47 .\assembly\forms.py:88 .\assembly\models.py:562
+msgid "Order"
+msgstr "Reihenfolge"
+
+#: .\assembly\forms.py:53
+msgid "Procedural content"
+msgstr "Inhalt (Verfahrensablauf)"
+
+#: .\assembly\forms.py:68
+msgid "Elected person (temp reference)"
+msgstr "Gewählte Person (vorläufiger Vermerk)"
+
+#: .\assembly\forms.py:72
+msgid "Elected role (temp reference)"
+msgstr "Gewählte Funktion (vorläufiger Vermerk)"
+
+#: .\assembly\forms.py:78
+msgid "Internal notes"
+msgstr "Interne Notizen"
+
+#: .\assembly\forms.py:86 .\assembly\models.py:566 .\employees\admin.py:459
+#: .\employees\models.py:482 .\employees\models.py:771
+#: .\templates\assembly\protocol_editor.html:579
+#: .\templates\employees\timesheet_pdf.html:107
+msgid "Kind"
+msgstr "Typ"
+
+#: .\assembly\forms.py:87 .\assembly\models.py:570 .\helppages\admin.py:61
+#: .\templates\assembly\protocol_editor.html:589
+#: .\templates\employees\document_receipt_pdf.html:30
+msgid "Title"
+msgstr "Titel"
+
+#: .\assembly\forms.py:89 .\assembly\models.py:576
+#: .\templates\assembly\protocol_editor.html:598
+msgid "Content"
+msgstr "Inhalt"
+
+#: .\assembly\forms.py:90 .\assembly\models.py:581
+#: .\templates\assembly\protocol_editor.html:606
+#: .\templates\assembly\protocol_editor.html:762
+msgid "Subject"
+msgstr "Gegenstand"
+
+#: .\assembly\forms.py:91 .\assembly\models.py:585
+#: .\templates\assembly\protocol_editor.html:611
+#: .\templates\assembly\protocol_editor.html:763
+msgid "Discussion"
+msgstr "Diskussion/Debatte"
+
+#: .\assembly\forms.py:92 .\assembly\models.py:589
+#: .\templates\assembly\protocol_editor.html:616
+#: .\templates\assembly\protocol_editor.html:764
+msgid "Outcome"
+msgstr "Ergebnis"
+
+#: .\assembly\forms.py:93 .\templates\assembly\protocol_editor.html:624
+msgid "Voting Mode"
+msgstr "Wahlmodus"
+
+#: .\assembly\forms.py:94 .\templates\assembly\protocol_editor.html:636
+msgid "Votes For"
+msgstr "Stimmen für"
+
+#: .\assembly\forms.py:95 .\templates\assembly\protocol_editor.html:641
+msgid "Votes Against"
+msgstr "Stimmen dagegen"
+
+#: .\assembly\forms.py:96 .\assembly\models.py:608
+#: .\templates\assembly\protocol_editor.html:646
+msgid "Abstentions"
+msgstr "Enthaltungen"
+
+#: .\assembly\forms.py:97 .\assembly\models.py:612
+#: .\templates\assembly\protocol_editor.html:653
+#: .\templates\assembly\protocol_editor.html:774
+msgid "Passed"
+msgstr "Angenommen"
+
+#: .\assembly\forms.py:98
+msgid "Elected Person (from system)"
+msgstr "Gewählte Person (aus dem System)"
+
+#: .\assembly\forms.py:99 .\templates\assembly\protocol_editor.html:699
+msgid "Elected Person (temp)"
+msgstr "Gewählte Person (vorläufiger Vermerk)"
+
+#: .\assembly\forms.py:100 .\templates\assembly\protocol_editor.html:704
+msgid "Elected Role (temp)"
+msgstr "Gewählte Funktion (voläufiger Vermerk)"
+
+#: .\assembly\models.py:90
+msgid "Auto-generated: HV25_27"
+msgstr "Automatisch generiert: HV25_27"
+
+#: .\assembly\models.py:92 .\finances\models.py:210 .\hankosign\models.py:47
+#: .\templates\academia_audit\audit_semester_pdf.html:28
+#: .\templates\assembly\term_pdf.html:27
+#: .\templates\finances\fiscalyear_pdf.html:27
+#: .\templates\finances\fiscalyears_list_pdf.html:25
+msgid "Label"
+msgstr "Bezeichnung"
+
+#: .\assembly\models.py:94 .\assembly\models.py:249 .\finances\models.py:212
+#: .\people\models.py:330
+msgid "Start date"
+msgstr "Startdatum"
+
+#: .\assembly\models.py:95 .\assembly\models.py:250 .\finances\models.py:214
+#: .\people\models.py:331
+msgid "End date"
+msgstr "Enddatum"
+
+#: .\assembly\models.py:95
+msgid "Usually +2 years from start"
+msgstr "In der Regel +2 Jahre ab Startdatum"
+
+#: .\assembly\models.py:98
+msgid "Active term"
+msgstr "Aktive Wahlperiode"
+
+#: .\assembly\models.py:99
+msgid "Only one term can be active at a time"
+msgstr "Es kann nur eine Wahlperiode aktiv sein"
+
+#: .\assembly\models.py:111 .\assembly\models.py:174 .\assembly\models.py:328
+msgid "Term"
+msgstr "Wahlperiode"
+
+#: .\assembly\models.py:112
+msgid "Terms"
+msgstr "Wahlperioden"
+
+#: .\assembly\models.py:152 .\assembly\models.py:303 .\employees\admin.py:413
+msgid "End date cannot be before start date."
+msgstr "Das Enddatum darf nicht vor dem Startdatum liegen."
+
+#: .\assembly\models.py:158
+msgid "A term with this code already exists."
+msgstr "Eine Wahlperiode mit diesem Code existiert bereits."
+
+#: .\assembly\models.py:186 .\assembly\models.py:229
+msgid "Composition"
+msgstr "Zusammensetzung"
+
+#: .\assembly\models.py:187
+msgid "Compositions"
+msgstr "Zusammensetzungen"
+
+#: .\assembly\models.py:207
+msgid "A composition already exists for this term."
+msgstr "Für diese Wahlperiode existiert bereits eine Zusammensetzung."
+
+#: .\assembly\models.py:211
+msgid "Cannot have more than 9 active mandates."
+msgstr "Es können nicht mehr als 9 Mandate gleichzeitig ausgeübt werden."
+
+#: .\assembly\models.py:221 .\organisation\models.py:76
+msgid "Chair"
+msgstr "Vorsitzende*r"
+
+#: .\assembly\models.py:222 .\organisation\models.py:79
+msgid "1st Deputy Chair"
+msgstr "1. stellvertretende*r Vorsitzende*r"
+
+#: .\assembly\models.py:223
+msgid "Deputy Chair"
+msgstr "Stellvertretende*r Vorsitzende*r"
+
+#: .\assembly\models.py:224
+msgid "Mandatary"
+msgstr "Mandatar"
+
+#: .\assembly\models.py:233 .\templates\assembly\composition_pdf.html:25
+msgid "Position"
+msgstr "Mandatsnummer"
+
+#: .\assembly\models.py:233
+msgid "Seat number (1-9)"
+msgstr "interne Mandatsnummer"
+
+#: .\assembly\models.py:243
+msgid "Officer role"
+msgstr "Stellung"
+
+#: .\assembly\models.py:257
+msgid "Backup person (in system)"
+msgstr "Ersatzperson (im System)"
+
+#: .\assembly\models.py:260
+msgid "Backup person (external)"
+msgstr "Ersatzperson (extern)"
+
+#: .\assembly\models.py:261
+msgid "For externals not in the system"
+msgstr "Für Ersatzpersonen, die noch nicht im System vermerkt sind"
+
+#: .\assembly\models.py:264
+msgid "Party affiliation"
+msgstr "Wahlwerbende Liste"
+
+#: .\assembly\models.py:265
+msgid "Party/Bloc affiliation (e.g., VSSTÖ, AG, GRAS)"
+msgstr "Ww. Listenzugehörigkeit (z. B. VSSTÖ, AG, GRAS)"
+
+#: .\assembly\models.py:276 .\assembly\models.py:486 .\assembly\models.py:740
+msgid "Mandate"
+msgstr "Mandat"
+
+#: .\assembly\models.py:277
+msgid "Mandates"
+msgstr "Mandate"
+
+#: .\assembly\models.py:299
+msgid "Position must be between 1 and 9."
+msgstr "Die Mandatsnummer muss zwischen 1 und 9 liegen."
+
+#: .\assembly\models.py:314
+msgid "Regular"
+msgstr "Ordentlich"
+
+#: .\assembly\models.py:315
+msgid "Extraordinary"
+msgstr "Außerordentlich"
+
+#: .\assembly\models.py:320
+msgid "Approved by Chair"
+msgstr "Vom Vorsitz genehmigt"
+
+#: .\assembly\models.py:321
+msgid "Sent to KoKo/HSG"
+msgstr "An KoKo/HSG gesendet"
+
+#: .\assembly\models.py:322
+msgid "Rejected re-work"
+msgstr "zur Überarbeitung zurückgewiesen"
+
+#: .\assembly\models.py:333
+msgid "Auto-generated: HV25_27_I:or"
+msgstr "Automatisch generiert: HV25_27_I:or"
+
+#: .\assembly\models.py:337
+msgid "Session type"
+msgstr "Sitzungsart"
+
+#: .\assembly\models.py:348
+msgid "Workflow status derived from signatures."
+msgstr "Aus Unterschriften abgeleiteter Workflow-Status."
+
+#: .\assembly\models.py:351
+msgid "Session date"
+msgstr "Sitzungsdatum"
+
+#: .\assembly\models.py:352
+msgid "Session time"
+msgstr "Sitzungstermin"
+
+#: .\assembly\models.py:353 .\templates\assembly\protocol_editor.html:524
+msgid "Location"
+msgstr "Ort"
+
+#: .\assembly\models.py:357
+msgid "Protocol number"
+msgstr "Protokollnummer"
+
+#: .\assembly\models.py:365 .\templates\assembly\protocol_editor.html:526
+msgid "Attendees"
+msgstr "Teilnehmende"
+
+#: .\assembly\models.py:370 .\templates\assembly\protocol_editor.html:534
+msgid "Absent"
+msgstr "Abwesende"
+
+#: .\assembly\models.py:373
+msgid "Other attendees"
+msgstr "sonstige Teilnehmende"
+
+#: .\assembly\models.py:374
+msgid "External guests (Anna Bauer; Peter Müller; ...)"
+msgstr "Gäste (Anna Bauer; Peter Müller; ...)"
+
+#: .\assembly\models.py:379
+msgid "Invitations sent at"
+msgstr "Einladungen verschickt am"
+
+#: .\assembly\models.py:382
+msgid "Minutes finalized at"
+msgstr "Protokoll fertiggestellt am"
+
+#: .\assembly\models.py:385
+msgid "Sent to KoKo/HSG at"
+msgstr "Gesendet an KoKo/HSG am"
+
+#: .\assembly\models.py:397 .\assembly\models.py:480 .\assembly\models.py:553
+#: .\templates\assembly\protocol_editor.html:511
+msgid "Session"
+msgstr "Sitzung"
+
+#: .\assembly\models.py:398
+msgid "Sessions"
+msgstr "Sitzungen"
+
+#: .\assembly\models.py:426
+msgid "Failed to generate unique session code after 5 attempts"
+msgstr ""
+"Nach 5 Versuchen konnte kein eindeutiger Sitzungscode generiert werden."
+
+#: .\assembly\models.py:455
+#, python-format
+msgid "Session date must fall within term period (%(start)s - %(end)s)."
+msgstr ""
+"Der Termin der Sitzung muss innerhalb der Wahlperiode liegen (%(start)s - "
+"%(end)s)."
+
+#: .\assembly\models.py:462
+msgid "A session with this code already exists."
+msgstr "Eine Sitzung mit diesem Code existiert bereits."
+
+#: .\assembly\models.py:490
+msgid "Backup Attended"
+msgstr "Teilnahme der Ersatzperson"
+
+#: .\assembly\models.py:492
+msgid "Check if backup person attended instead of primary mandatary"
+msgstr "Überprüfe, ob die Ersatzperson anstelle des Mandatars anwesend war."
+
+#: .\assembly\models.py:498
+msgid "Session Attendance"
+msgstr "Sitzungsteilnahme"
+
+#: .\assembly\models.py:499
+msgid "Session Attendances"
+msgstr "Sitzungsteilnahme"
+
+#: .\assembly\models.py:525
+msgid "This mandate is already recorded as attending this session."
+msgstr ""
+"Dieser Mandatar ist bereits zur Teilnahme an dieser Sitzung registriert."
+
+#: .\assembly\models.py:541 .\templates\assembly\protocol_editor.html:583
+msgid "Resolution"
+msgstr "Beschluss"
+
+#: .\assembly\models.py:542 .\templates\assembly\protocol_editor.html:582
+msgid "Procedural"
+msgstr "Sitzungsablauf"
+
+#: .\assembly\models.py:543
+msgid "Personnel Election by Resolution"
+msgstr "Personalwahl durch Beschluss"
+
+#: .\assembly\models.py:546
+msgid "No vote"
+msgstr "keine Wahl"
+
+#: .\assembly\models.py:547
+msgid "Counted vote"
+msgstr "Stimmenzählung"
+
+#: .\assembly\models.py:548
+msgid "Named vote"
+msgstr "namentliche Abstimmung"
+
+#: .\assembly\models.py:557
+msgid "Item code"
+msgstr "TOP-Code"
+
+#: .\assembly\models.py:558
+msgid "Auto-generated: S001, S002, ..."
+msgstr "Automatisch generiert: S001, S002, ..."
+
+#: .\assembly\models.py:562
+msgid "Position in agenda"
+msgstr "Position in der Tagesordnung"
+
+#: .\assembly\models.py:577
+msgid "For procedural items"
+msgstr "Für den Sitzungsablauf"
+
+#: .\assembly\models.py:582
+msgid "Subject of the item"
+msgstr "Gegenstand des Tagesordnungspunkts"
+
+#: .\assembly\models.py:586
+msgid "Discussion contents for the item"
+msgstr "Diskussionsinhalte für den Tagesordnungspunkt"
+
+#: .\assembly\models.py:590
+msgid "Result or outcome for the item"
+msgstr "Ergebnis oder Ausgang für den Tagesordnungspunkt"
+
+#: .\assembly\models.py:595
+msgid "Voting mode"
+msgstr "Wahlmodus"
+
+#: .\assembly\models.py:602
+msgid "Votes for"
+msgstr "Stimmen für"
+
+#: .\assembly\models.py:605
+msgid "Votes against"
+msgstr "Stimmen dagegen"
+
+#: .\assembly\models.py:620
+msgid "Elected person"
+msgstr "Gewählte Person"
+
+#: .\assembly\models.py:624
+msgid "Elected person (text reference)"
+msgstr "Gewählte Person (Textverweis)"
+
+#: .\assembly\models.py:627
+msgid ""
+"Temporary text reference for elected person - to be linked to PersonRole "
+"later"
+msgstr ""
+"Vorläufiger Textverweis für die gewählte Person – wird später mit Funktion "
+"verknüpft"
+
+#: .\assembly\models.py:631
+msgid "Elected role (text reference)"
+msgstr "Gewählte Funktion (Textverweis)"
+
+#: .\assembly\models.py:634
+msgid ""
+"Temporary text reference for elected role - to be linked to PersonRole later"
+msgstr ""
+"Vorläufiger Textverweis für die gewählte Rolle – wird später mit Funktion "
+"verknüpft"
+
+#: .\assembly\models.py:646
+msgid "Session Item"
+msgstr "Tagesordnungspunkt"
+
+#: .\assembly\models.py:647
+msgid "Session Items"
+msgstr "Tagesordnungspunkte"
+
+#: .\assembly\models.py:672
+msgid "Failed to generate unique item code"
+msgstr "Es konnte kein eindeutiger TOP-Code generiert werden."
+
+#: .\assembly\models.py:706
+#, python-format
+msgid "An item with order %(order)d already exists in this session."
+msgstr ""
+"Ein Tagesordnungspunkt mit der Reihung  %(order)d existiert bereits in "
+"dieser Sitzung."
+
+#: .\assembly\models.py:713
+msgid "For counted voting, all vote counts must be filled in."
+msgstr "Bei der Stimmenzählung müssen alle Stimmen eingetragen werden."
+
+#: .\assembly\models.py:728 .\templates\assembly\protocol_editor.html:681
+msgid "For"
+msgstr "Dafür"
+
+#: .\assembly\models.py:729 .\templates\assembly\protocol_editor.html:682
+msgid "Against"
+msgstr "Dagegen"
+
+#: .\assembly\models.py:730
+msgid "Abstain"
+msgstr "Enthaltung"
+
+#: .\assembly\models.py:735
+msgid "Item"
+msgstr "Tagesordnungspunkt"
+
+#: .\assembly\models.py:744 .\assembly\models.py:751
+msgid "Vote"
+msgstr "Wahl"
+
+#: .\assembly\models.py:752 .\templates\assembly\protocol_editor.html:770
+msgid "Votes"
+msgstr "Stimmen"
+
+#: .\assembly\models.py:771
+msgid "This mandate has already voted on this item."
+msgstr "Dieser Mandatar hat bereits über diesen Punkt abgestimmt."
+
+#: .\assembly\views.py:22
+msgid "You don't have permission to edit sessions"
+msgstr "Du hast keine Berechtigung, Sitzungen zu bearbeiten."
+
+#: .\assembly\views.py:83
+msgid "Session is locked. Cannot modify items."
+msgstr ""
+"Die Sitzung ist gesperrt. Tagesordnungspunkte können nicht geändert werden."
+
+#: .\assembly\views.py:125
+msgid "Item saved successfully"
+msgstr "Tagesordnungspunkt erfolgreich gespeichert"
+
+#: .\assembly\views.py:153
+msgid "Session is locked. Cannot delete items."
+msgstr ""
+"Die Sitzung ist gesperrt. Tagesordnungspunkte können nicht gelöscht werden."
+
+#: .\assembly\views.py:171
+#, python-brace-format
+msgid "Item {code} deleted"
+msgstr "Tagesordnungspunkt {code} gelöscht"
+
+#: .\assembly\views.py:191
+msgid "Session is locked. Cannot reorder items."
+msgstr ""
+"Die Sitzung ist gesperrt. Tagesordnungspunkte können nicht neu angeordnet "
+"werden."
+
+#: .\assembly\views.py:202
+msgid "Items reordered successfully"
+msgstr "Tagesordnungspunkte erfolgreich neu angeordnet"
+
+#: .\assembly\views.py:223
+msgid "Session is locked. Cannot insert items."
+msgstr ""
+"Die Sitzung ist gesperrt. Es können keine Tagesordnungspunkte eingefügt "
+"werden."
+
+#: .\assembly\views.py:236
+#, python-brace-format
+msgid "Ready to insert item at position {order}"
+msgstr "Bereit zum Einfügen des TOPs an Position {order}"
+
+#: .\core\middleware.py:84
+#, python-format
+msgid ""
+"A record with this %(field)s already exists. Please use a different value."
+msgstr ""
+"Ein Datensatz mit diesem Namen  %(field)s existiert bereits. Bitte verwende "
+"einen anderen Wert."
+
+#: .\core\middleware.py:88
+msgid ""
+"This record already exists. Please check for duplicates or modify your input."
+msgstr ""
+"Dieser Datensatz existiert bereits. Bitte überprüfe auf Duplikate oder "
+"ändere die Eingabe."
+
+#: .\core\middleware.py:96
+msgid ""
+"This record cannot be deleted or modified because other records depend on "
+"it. Please remove the dependent records first."
+msgstr ""
+"Dieser Datensatz kann nicht gelöscht oder geändert werden, da andere "
+"Datensätze davon abhängig sind. Bitte entferne zuerst die abhängigen "
+"Datensätze."
+
+#: .\core\middleware.py:101
+msgid ""
+"The selected related record does not exist or has been deleted. Please "
+"choose a valid option."
+msgstr ""
+"Der ausgewählte zugehörige Datensatz existiert nicht oder wurde gelöscht. "
+"Bitte wähle eine gültige Option aus."
+
+#: .\core\middleware.py:109
+msgid ""
+"The data you entered violates business rules. Please check that all dates, "
+"amounts, and values are valid."
+msgstr ""
+"Die eingegebenen Daten verstoßen gegen Validierungsregeln. Bitte überprüfe, "
+"ob alle Daten, Beträge und Werte gültig sind."
+
+#: .\core\middleware.py:120
+#, python-format
+msgid "The field '%(field)s' is required and cannot be empty."
+msgstr "Das Feld '%(field)s' ist erforderlich und darf nicht leer sein."
+
+#: .\core\middleware.py:124
+msgid "A required field is missing. Please fill in all required fields."
+msgstr "Ein Pflichtfeld fehlt. Bitte fülle alle Pflichtfelder aus."
+
+#: .\core\middleware.py:130
+msgid ""
+"A database error occurred. Please check your input and try again. If the "
+"problem persists, contact support."
+msgstr ""
+"Ein Datenbankfehler ist aufgetreten. Bitte überprüfe die Eingabe und "
+"versuche es erneut. Wenn das Problem weiterhin besteht, wende dich an den "
+"Support."
+
+#: .\employees\admin.py:226
+msgid "PTO Year Breakdown"
+msgstr "Aufschlüsselung nach Abwesenheitsjahr"
+
+#: .\employees\admin.py:227
+msgid "PTO Years Breakdown"
+msgstr "Aufschlüsselung nach Abwesenheitsjahren"
+
+#: .\employees\admin.py:287
+msgid "Work terms"
+msgstr "Arbeitszeit-Bedingungen"
+
+#: .\employees\admin.py:288
+msgid "PTO terms"
+msgstr "Abwesenheits-Bedingungen"
+
+#: .\employees\admin.py:289
+msgid "Personal data"
+msgstr "Personenbezogene Daten"
+
+#: .\employees\admin.py:290
+msgid "Miscellaneous"
+msgstr "Verschiedenes"
+
+#: .\employees\admin.py:296
+msgid "Saldo"
+msgstr "Saldo"
+
+#: .\employees\admin.py:306 .\employees\admin.py:312 .\employees\models.py:86
+#: .\employees\models.py:279 .\employees\models.py:492 .\finances\models.py:318
+#: .\hankosign\admin.py:142 .\hankosign\admin.py:147 .\hankosign\models.py:192
+#: .\helppages\models.py:38 .\people\admin.py:168 .\people\admin.py:172
+#: .\people\admin.py:852 .\people\admin.py:857 .\people\models.py:85
+#: .\people\models.py:285 .\templates\assembly\term_pdf.html:36
+#: .\templates\employees\document_receipt_pdf.html:47
+#: .\templates\employees\employee_pdf.html:46
+#: .\templates\finances\fiscalyear_pdf.html:36
+#: .\templates\finances\fiscalyears_list_pdf.html:36
+#: .\templates\people\people_list_pdf.html:44
+#: .\templates\portal\includes\stage_progress.html:37
+#: .\templates\portal\includes\stage_progress.html:43
+msgid "Active"
+msgstr "Aktiv"
+
+#: .\employees\admin.py:313 .\hankosign\admin.py:148
+#: .\templates\employees\document_receipt_pdf.html:47
+#: .\templates\employees\employee_pdf.html:46
+#: .\templates\people\people_list_pdf.html:44
+msgid "Inactive"
+msgstr "Inaktiv"
+
+#: .\employees\admin.py:318
+msgid "Daily expected minutes"
+msgstr "Täglich erwartete Arbeitsminuten"
+
+#: .\employees\admin.py:337 .\employees\admin.py:581 .\employees\admin.py:614
+#: .\employees\admin.py:664 .\employees\admin.py:1241
+msgid "Release action is not configured."
+msgstr "Aktion \"Freigeben/Drucken\" nicht konfiguriert"
+
+#: .\employees\admin.py:339
+msgid "Printed employee dossier PDF"
+msgstr "Dienstnehmerakte ausgedruckt"
+
+#: .\employees\admin.py:343
+msgid "Print Employee PDF"
+msgstr "Dienstnehmerakte drucken"
+
+#: .\employees\admin.py:409 .\employees\admin.py:411
+msgid "Required for this document type."
+msgstr "Für diesen Dokumententyp erforderlich."
+
+#: .\employees\admin.py:445
+msgid "Document"
+msgstr "Dokument"
+
+#: .\employees\admin.py:583
+msgid "Printed document receipt PDF"
+msgstr "Dokumentenbeleg ausgedruckt"
+
+#: .\employees\admin.py:606
+msgid "Print document receipt PDF"
+msgstr "Dokumentenbeleg drucken"
+
+#: .\employees\admin.py:618
+msgid "Leave request is only available for AA documents."
+msgstr "Ein Abwesenheitsantrag ist nur für Dokumente vom Typ AA verfügbar."
+
+#: .\employees\admin.py:620
+msgid "Printed leave request receipt PDF"
+msgstr "Abwesenheitsantrag (Beleg) ausgedruckt"
+
+#: .\employees\admin.py:656
+msgid "Print leave request receipt PDF"
+msgstr "Abwesenheitsantrag (Beleg) drucken"
+
+#: .\employees\admin.py:668
+msgid "Sick leave request is only available for KM documents."
+msgstr "Eine Krankmeldung ist nur für Dokumente vom Typ KM verfügbar."
+
+#: .\employees\admin.py:670
+msgid "Printed sick note receipt PDF"
+msgstr "Krankmeldung (Beleg) ausgedruckt"
+
+#: .\employees\admin.py:690
+msgid "Print sick note receipt PDF"
+msgstr "Krankmeldung (Beleg) drucken"
+
+#: .\employees\admin.py:703 .\employees\admin.py:1292
+msgid "Submission action is not configured."
+msgstr "Aktion \"Einreichen\" nicht konfiguriert"
+
+#: .\employees\admin.py:705
+#, python-format
+msgid "Document %(code)s submitted"
+msgstr "Dokument %(code)s eingereicht"
+
+#: .\employees\admin.py:720 .\employees\admin.py:1310 .\finances\admin.py:595
+msgid "Cannot withdraw after approvals."
+msgstr "Nach der Genehmigung kann keine Rücknahme erfolgen."
+
+#: .\employees\admin.py:724 .\employees\admin.py:1314
+msgid "Withdraw action is not configured."
+msgstr "Aktion \"Zurücknehmen\" nicht konfiguriert"
+
+#: .\employees\admin.py:726
+#, python-format
+msgid "Document %(code)s withdrawn"
+msgstr "Dokument %(code)s zurückgenommen"
+
+#: .\employees\admin.py:729 .\employees\admin.py:1319
+msgid "Withdraw submission"
+msgstr "Einreichung zurücknehmen"
+
+#: .\employees\admin.py:741 .\finances\admin.py:619
+msgid "Already approved (WiRef)."
+msgstr "Bereits genehmigt (WiRef)."
+
+#: .\employees\admin.py:745 .\employees\admin.py:1336
+msgid "WiRef approval action is not configured."
+msgstr "Aktion \"Genehmigen (WiRef)\" nicht konfiguriert"
+
+#: .\employees\admin.py:747
+#, python-format
+msgid "Document %(code)s approved (WiRef)"
+msgstr "Dokument %(code)s genehmigt (WiRef)"
+
+#: .\employees\admin.py:749 .\finances\admin.py:627
+msgid "Approved (WiRef)."
+msgstr "Genehmigt (WiRef)."
+
+#: .\employees\admin.py:750 .\employees\admin.py:1341 .\finances\admin.py:628
+#: .\hankosign\utils.py:403
+msgid "Approve (WiRef)"
+msgstr "Genehmigen (WiRef)"
+
+#: .\employees\admin.py:762 .\finances\admin.py:643
+msgid "Already approved (Chair)."
+msgstr "Bereits genehmigt (Vorsitz)."
+
+#: .\employees\admin.py:766 .\employees\admin.py:1358
+msgid "Chair approval action is not configured."
+msgstr "Aktion \"Genehmigen (Vorsitz)\" nicht konfiguriert"
+
+#: .\employees\admin.py:768
+#, python-format
+msgid "Document %(code)s approved (Chair)"
+msgstr "Dokument %(code)s genehmigt (Vorsitz)"
+
+#: .\employees\admin.py:770 .\finances\admin.py:651
+msgid "Approved (Chair)."
+msgstr "Genehmigt (Vorsitz)."
+
+#: .\employees\admin.py:780 .\employees\admin.py:801 .\employees\admin.py:1373
+#: .\employees\admin.py:1395
+msgid "Nothing to reject (not submitted)."
+msgstr "Nichts zurückzuweisen (nicht eingereicht)."
+
+#: .\employees\admin.py:783 .\employees\admin.py:804 .\employees\admin.py:1376
+#: .\employees\admin.py:1398
+msgid "Already final; cannot reject."
+msgstr "Bereits endgültig; kann nicht zurückgewiesen werden."
+
+#: .\employees\admin.py:787 .\employees\admin.py:1380
+msgid "WiRef rejection action is not configured."
+msgstr "Aktion \"Zurückweisen (WiRef)\" nicht konfiguriert"
+
+#: .\employees\admin.py:789
+#, python-format
+msgid "Document %(code)s rejected (WiRef)"
+msgstr "Dokument %(code)s zurückgewiesen (WiRef)"
+
+#: .\employees\admin.py:791
+msgid "Rejected (WiRef)."
+msgstr "Zurückgewiesen (WiRef)."
+
+#: .\employees\admin.py:792 .\employees\admin.py:1385 .\hankosign\utils.py:404
+msgid "Reject (WiRef)"
+msgstr "Zurückweisen (WiRef)"
+
+#: .\employees\admin.py:808 .\employees\admin.py:1402
+msgid "Chair rejection action is not configured."
+msgstr "Aktion \"Zurückweisen (Vorsitz)\" nicht konfiguriert"
+
+#: .\employees\admin.py:810
+#, python-format
+msgid "Document %(code)s rejected (Chair)"
+msgstr "Dokument %(code)s zurückgewiesen (Vorsitz)"
+
+#: .\employees\admin.py:812
+msgid "Rejected (Chair)."
+msgstr "Zurückgewiesen (Vorsitz)"
+
+#: .\employees\admin.py:823
+msgid "State"
+msgstr "Status"
+
+#: .\employees\admin.py:830 .\hankosign\utils.py:376
+msgid "Approved (WiRef)"
+msgstr "Angenommen (WiRef)"
+
+#: .\employees\admin.py:831
+msgid "Approved (Final)"
+msgstr "Angenommen (Endgültig)"
+
+#: .\employees\admin.py:945 .\employees\admin.py:951 .\employees\admin.py:953
+msgid "Work Calendar"
+msgstr "Arbeitskalender"
+
+#: .\employees\admin.py:946 .\employees\admin.py:956 .\employees\admin.py:958
+msgid "Leave Calendar"
+msgstr "Abwesenheitskalender"
+
+#: .\employees\admin.py:1100 .\employees\models.py:774
+#: .\templates\employees\timesheet_pdf.html:110
+msgid "Minutes"
+msgstr "Minuten"
+
+#: .\employees\admin.py:1108 .\templates\admin\employees\work_infobox.html:12
+msgid "Worktime overview"
+msgstr "Arbeitszeitjournal"
+
+#: .\employees\admin.py:1137
+msgid "PTO overview"
+msgstr "Abwesenheitsjournal"
+
+#: .\employees\admin.py:1164
+msgid "Totals preview"
+msgstr "Vorschau der Gesamtwerte"
+
+#: .\employees\admin.py:1243
+msgid "Printed timesheet PDF"
+msgstr "Stundenzettel ausgedruckt"
+
+#: .\employees\admin.py:1277
+msgid "Print Timesheet PDF"
+msgstr "Stundenzettel drucken"
+
+#: .\employees\admin.py:1294
+#, python-format
+msgid "Timesheet %(period)s submitted"
+msgstr "Stundenzettel %(period)s eingereicht"
+
+#: .\employees\admin.py:1296
+msgid "Timesheet submitted."
+msgstr "Stundenzettel eingereicht."
+
+#: .\employees\admin.py:1307
+msgid "This timesheet hasn’t been submitted yet."
+msgstr "Dieser Stundenzettel wurde noch nicht eingereicht."
+
+#: .\employees\admin.py:1316
+#, python-format
+msgid "Timesheet %(period)s withdrawn"
+msgstr "Stundenzettel %(period)s zurückgenommen"
+
+#: .\employees\admin.py:1318
+msgid "Submission withdrawn."
+msgstr "Einreichung zurückgenommen."
+
+#: .\employees\admin.py:1329 .\employees\admin.py:1351
+msgid "Submit first before approving."
+msgstr "Vor der Genehmigung zuerst einreichen."
+
+#: .\employees\admin.py:1332
+msgid "Already approved by WiRef."
+msgstr "Bereits von WiRef genehmigt."
+
+#: .\employees\admin.py:1338 .\employees\admin.py:1360
+#, python-format
+msgid "Timesheet %(period)s approved"
+msgstr "Stundenzettel %(period)s genehmigt"
+
+#: .\employees\admin.py:1340
+msgid "Approved by WiRef."
+msgstr "Genehmigt durch WiRef."
+
+#: .\employees\admin.py:1354
+msgid "Already approved by Chair."
+msgstr "Bereits durch Vorsitz genehmigt."
+
+#: .\employees\admin.py:1362
+msgid "Approved by Chair."
+msgstr "Vom Vorsitz genehmigt."
+
+#: .\employees\admin.py:1382 .\employees\admin.py:1404
+#, python-format
+msgid "Timesheet %(period)s rejected"
+msgstr "Stundenzettel %(period)s zurückgewiesen"
+
+#: .\employees\admin.py:1384
+msgid "Rejected by WiRef."
+msgstr "Von WiRef zurückgewiesen."
+
+#: .\employees\admin.py:1406
+msgid "Rejected by Chair."
+msgstr "Vom Vorsitz zurückgewiesen."
+
+#: .\employees\admin.py:1420
+msgid "Locking is only available after final approval."
+msgstr "Die Sperrung ist erst nach der endgültigen Genehmigung möglich."
+
+#: .\employees\admin.py:1424 .\people\admin.py:438 .\people\admin.py:490
+#: .\people\admin.py:492
+msgid "Lock action is not configured."
+msgstr "Aktion \"Sperren\" nicht konfiguriert"
+
+#: .\employees\admin.py:1426
+#, python-format
+msgid "Timesheet %(period)s locked"
+msgstr "Stundenzettel %(period}s gesperrt"
+
+#: .\employees\admin.py:1428 .\people\admin.py:463
+msgid "Locked."
+msgstr "Gesperrt."
+
+#: .\employees\admin.py:1429 .\hankosign\models.py:33 .\hankosign\utils.py:407
+msgid "Lock"
+msgstr "Sperren"
+
+#: .\employees\admin.py:1438 .\people\admin.py:475
+msgid "Not locked."
+msgstr "Nicht gesperrt"
+
+#: .\employees\admin.py:1442 .\people\admin.py:452 .\people\admin.py:523
+#: .\people\admin.py:525
+msgid "Unlock action is not configured."
+msgstr "Aktion \"Entsperren\" nicht konfiguriert"
+
+#: .\employees\admin.py:1444
+#, python-format
+msgid "Timesheet %(period)s unlocked"
+msgstr "Stundenzettel %(period)s entsperrt"
+
+#: .\employees\admin.py:1446 .\people\admin.py:475
+msgid "Unlocked."
+msgstr "Entsperrt."
+
+#: .\employees\admin.py:1447 .\hankosign\models.py:34 .\hankosign\utils.py:408
+msgid "Unlock"
+msgstr "Entsperren"
+
+#: .\employees\admin.py:1491
+msgid "Basics"
+msgstr "Grundlegendes"
+
+#: .\employees\admin.py:1492 .\employees\models.py:88
+msgid "Rules"
+msgstr "Regeln"
+
+#: .\employees\admin.py:1554 .\employees\models.py:778
+#: .\templates\employees\timesheet_pdf.html:111
+msgid "Comment"
+msgstr "Vermerk"
+
+#: .\employees\models.py:86
+msgid "Use this calendar by default."
+msgstr "Diesen Kalender standardmäßig verwenden."
+
+#: .\employees\models.py:91
+msgid ""
+"One per line. Examples:\n"
+"  01-06 | Epiphany | Heilige Drei Könige\n"
+"  EASTER+39 | Ascension Day | Christi Himmelfahrt\n"
+"  2025-05-09 | Bridge Day | Fenstertag\n"
+msgstr ""
+"One per line. Examples:\n"
+"  01-06 | Epiphany | Heilige Drei Könige\n"
+"  EASTER+39 | Ascension Day | Christi Himmelfahrt\n"
+"  2025-05-09 | Bridge Day | Fenstertag\n"
+
+#: .\employees\models.py:104
+msgid "Holiday calendar"
+msgstr "Feiertagskalender"
+
+#: .\employees\models.py:105
+msgid "Holiday calendars"
+msgstr "Feiertagskalender"
+
+#: .\employees\models.py:125
+msgid ""
+"Another holiday calendar is already active. Deactivate it first or uncheck "
+"this field."
+msgstr ""
+"Ein anderer Feiertagskalender ist bereits aktiv. Deaktiviere diesen zuerst "
+"oder deaktiviere dieses Feld."
+
+#: .\employees\models.py:259 .\finances\models.py:328 .\hankosign\models.py:189
+#: .\people\models.py:413
+msgid "Assignment"
+msgstr "Funktionszuweisung"
+
+#: .\employees\models.py:263
+msgid "Weekly hours"
+msgstr "Wöchentliche Arbeitszeit"
+
+#: .\employees\models.py:266
+msgid "Nominal weekly working hours (e.g. 10.00)."
+msgstr "Nominelle wöchentliche Arbeitszeit (z. B. 10,00)."
+
+#: .\employees\models.py:271
+msgid "Running balance (minutes)"
+msgstr "Laufender Saldo (Minuten)"
+
+#: .\employees\models.py:273
+msgid "Time-account balance across months."
+msgstr "monatsübergreifendes Arbeitszeitkonto"
+
+#: .\employees\models.py:277
+msgid "Employment start (override)"
+msgstr "Dienstantritt (Override)"
+
+#: .\employees\models.py:277
+msgid ""
+"Start of employment. Override in case of misalignment with assigned Role."
+msgstr ""
+"Beginn des Arbeitsverhältnisses. Überschreiben bei Nichtübereinstimmung mit "
+"der zugewiesenen Rolle."
+
+#: .\employees\models.py:278
+msgid "Employment end (override)"
+msgstr "Dienstaustritt (Override)"
+
+#: .\employees\models.py:278
+msgid "End of employment. Override in case of misalignment with assigned Role."
+msgstr ""
+"Beendigung des Arbeitsverhältnisses. Überschreiben bei Nichtübereinstimmung "
+"mit der zugewiesenen Rolle."
+
+#: .\employees\models.py:281
+msgid "Annual leave days (base)"
+msgstr "Jahresurlaubsanspruch (Basis)"
+
+#: .\employees\models.py:281
+msgid "Base days per PTO year (for a 5-day-week; legal standard: 25)"
+msgstr ""
+"Basis-Urlaubstage pro Urlaubsjahr (bei einer 5-Tage-Woche; gesetzlicher "
+"Standard: 25)"
+
+#: .\employees\models.py:282
+msgid "Extra leave days"
+msgstr "Zusätzliche Urlaubstage"
+
+#: .\employees\models.py:282
+msgid "Additional annual days (e.g. disability, agreements)."
+msgstr "Zusätzliche Urlaubstage (z. B. Behinderung, Vereinbarungen)."
+
+#: .\employees\models.py:283
+msgid "PTO reset date override"
+msgstr "Datum des Abwesenheitsjahres-Resets (Override)"
+
+#: .\employees\models.py:283
+msgid ""
+"If empty, PTO year resets on Jan 1. If set, PTO year starts each year on "
+"this month/day."
+msgstr ""
+"Wenn leer, wird das Abwesenheitsjahr am 1. Januar zurückgesetzt. Wenn "
+"festgelegt, beginnt das Abwesenheitsjahr jedes Jahr an diesem Datum."
+
+#: .\employees\models.py:285
+msgid "Social Insurance number"
+msgstr "Sozialversicherungsnummer"
+
+#: .\employees\models.py:285
+msgid "Austrian or international social insurance no."
+msgstr "Österreichische oder internationale Sozialversicherungsnummer"
+
+#: .\employees\models.py:287
+msgid "Date of birth"
+msgstr "Geburtsdatum"
+
+#: .\employees\models.py:297 .\employees\models.py:349
+#: .\employees\models.py:480 .\employees\models.py:595
+msgid "Employee"
+msgstr "Dienstnehmer"
+
+#: .\employees\models.py:298
+msgid "Employees"
+msgstr "Dienstnehmer"
+
+#: .\employees\models.py:322
+msgid "End must be on/after start."
+msgstr "Der Dienstantritt muss nach dem Diensteintritt liegen."
+
+#: .\employees\models.py:350 .\employees\models.py:597 .\finances\admin.py:175
+msgid "Year"
+msgstr "Jahr"
+
+#: .\employees\models.py:351
+msgid "Period start"
+msgstr "Periodenbeginn"
+
+#: .\employees\models.py:352
+msgid "Period end (exclusive)"
+msgstr "Periodenende (exklusiv)"
+
+#: .\employees\models.py:354
+msgid "Entitlement (minutes)"
+msgstr "Anspruch (Minuten)"
+
+#: .\employees\models.py:355
+msgid "Carry-in (minutes)"
+msgstr "Übertrag (Minuten)"
+
+#: .\employees\models.py:356
+msgid "Manual adjust (minutes)"
+msgstr "Handkorrektur (Minuten)"
+
+#: .\employees\models.py:364
+msgid "Employee PTO year"
+msgstr "Abwesenheitsjahr der Mitarbeiter"
+
+#: .\employees\models.py:365
+msgid "Employee PTO years"
+msgstr "Abwesenheitsjahre der Mitarbeiter"
+
+#: .\employees\models.py:385
+#, python-brace-format
+msgid "A PTO year record already exists for this employee in {year}."
+msgstr ""
+"Für diesen Mitarbeiter existiert bereits ein Abwesenheitsjahr-Datensatz für "
+"{year}."
+
+#: .\employees\models.py:473
+msgid "Supplemental Agreement"
+msgstr "Zusatzvereinbarung"
+
+#: .\employees\models.py:474
+msgid "Contract of Employment"
+msgstr "Dienstvertrag"
+
+#: .\employees\models.py:475
+#: .\templates\employees\leaverequest_receipt_pdf.html:11
+#: .\templates\employees\leaverequest_receipt_pdf.html:16
+msgid "Leave Request"
+msgstr "Abwesenheitsantrag"
+
+#: .\employees\models.py:476
+msgid "Sick Note"
+msgstr "Krankmeldung"
+
+#: .\employees\models.py:477
+msgid "Other / Miscellaneous"
+msgstr "Sonstiges / Verschiedenes"
+
+#: .\employees\models.py:482
+msgid "Type of document."
+msgstr "Art des Dokuments."
+
+#: .\employees\models.py:484
+msgid "Title/Subject"
+msgstr "Titel/Betreff"
+
+#: .\employees\models.py:484
+msgid "Title of document (e.g. leave request from ... to)."
+msgstr "Titel des Dokuments (z. B. Urlaubsantrag von ... bis)."
+
+#: .\employees\models.py:485
+msgid "Details / body"
+msgstr "Inhalt"
+
+#: .\employees\models.py:485
+msgid "Detailed description or verbatim of the document."
+msgstr "Detaillierte Beschreibung oder 1:1-Inhalt des Dokuments."
+
+#: .\employees\models.py:488 .\people\admin.py:864
+#: .\templates\employees\timesheet_pdf.html:108
+msgid "Start"
+msgstr "Startdatum"
+
+#: .\employees\models.py:488
+msgid ""
+"Start date (e.g. of the sick note, the leave request). Leave blank if none."
+msgstr ""
+"Startdatum (z. B. der Krankmeldung, des Urlaubsantrags). Leer lassen, wenn "
+"nicht vorhanden."
+
+#: .\employees\models.py:489 .\people\admin.py:879
+#: .\templates\employees\timesheet_pdf.html:109
+msgid "End"
+msgstr "Enddatum"
+
+#: .\employees\models.py:489
+msgid ""
+"Start date (e.g. of the sick note, the leave request). Leave blank if none "
+"or without set end."
+msgstr ""
+"Startdatum (z. B. der Krankmeldung, des Urlaubsantrags). Leer lassen, wenn "
+"kein Datum vorhanden ist oder kein Enddatum festgelegt wurde."
+
+#: .\employees\models.py:492
+msgid "Set if the document is still active."
+msgstr "Das Dokument als aktiv kennzeichnen (wenn zutreffend)."
+
+#: .\employees\models.py:493
+msgid "PDF file"
+msgstr "PDF-Datei"
+
+#: .\employees\models.py:493
+msgid "Optional PDF file (e.g. the contract or agreement)."
+msgstr "Optionale PDF-Datei (z. B. der Vertrag oder die Vereinbarung)."
+
+#: .\employees\models.py:495
+msgid "Relevant third party"
+msgstr "relevanter Drittempfänger"
+
+#: .\employees\models.py:495
+msgid ""
+"Name or identifier of relevant third party (e.g. health insurance, "
+"accounting firm, ...). Used for PDF receipts. Optional."
+msgstr ""
+"Name oder Kennung der betreffenden relevanten Drittempfänger (z. B. "
+"Krankenkasse, Wirtschaftsprüfungsgesellschaft, ...). Wird für PDF-Belege "
+"verwendet. Optional."
+
+#: .\employees\models.py:498
+msgid "Auto-generated."
+msgstr "Automatisch generiert."
+
+#: .\employees\models.py:507
+msgid "Employee Document"
+msgstr "Mitarbeiterdokument"
+
+#: .\employees\models.py:508
+msgid "Document Center"
+msgstr "Dokumentencenter"
+
+#: .\employees\models.py:598
+msgid "Month"
+msgstr "Monat"
+
+#: .\employees\models.py:601
+msgid "Opening balance (minutes)"
+msgstr "Eröffnungssaldo (Minuten)"
+
+#: .\employees\models.py:602
+msgid "Expected minutes"
+msgstr "Erwartete Minuten"
+
+#: .\employees\models.py:603
+msgid "Worked minutes"
+msgstr "Gearbeitete Minuten"
+
+#: .\employees\models.py:604
+msgid "Credit minutes (leave/sick/etc.)"
+msgstr "Gutschrift-Minuten (Urlaub/Krankheit/etc.)"
+
+#: .\employees\models.py:605
+msgid "Closing balance (minutes)"
+msgstr "Schlusssaldo (Minuten)"
+
+#: .\employees\models.py:607 .\finances\models.py:359
+msgid "Signed PDF (optional)"
+msgstr "Signierte PDF-Datei (optional)"
+
+#: .\employees\models.py:617 .\employees\models.py:768
+#: .\templates\employees\timesheet_pdf.html:11
+msgid "Timesheet"
+msgstr "Stundenzettel"
+
+#: .\employees\models.py:618
+msgid "Timesheets"
+msgstr "Stundenzettel"
+
+#: .\employees\models.py:716
+#, python-brace-format
+msgid "A timesheet already exists for this employee in {year}-{month:02d}."
+msgstr ""
+"Für diesen Mitarbeiter existiert bereits ein Stundenzettel in {year}-"
+"{month:02d}."
+
+#: .\employees\models.py:761
+#: .\templates\admin\employees\timesheet_calendar.html:71
+msgid "Work"
+msgstr "Arbeit"
+
+#: .\employees\models.py:762
+msgid "Leave (paid)"
+msgstr "Urlaub (bezahlt)"
+
+#: .\employees\models.py:763
+msgid "Sick (paid)"
+msgstr "Krankenstand (bezahlt)"
+
+#: .\employees\models.py:764
+msgid "Public holiday"
+msgstr "Feiertag"
+
+#: .\employees\models.py:765
+#: .\templates\admin\employees\timesheet_calendar.html:72
+msgid "Other"
+msgstr "Sonstiges"
+
+#: .\employees\models.py:770 .\templates\assembly\protocol_editor.html:523
+#: .\templates\employees\timesheet_pdf.html:106
+#: .\templates\hankosign\specimen_pdf.html:36
+msgid "Date"
+msgstr "Datum"
+
+#: .\employees\models.py:775
+msgid "Start (optional)"
+msgstr "Beginn (optional)"
+
+#: .\employees\models.py:776
+msgid "End (optional)"
+msgstr "Ende (optional)"
+
+#: .\employees\models.py:787
+msgid "Time entry"
+msgstr "Zeiteintrag"
+
+#: .\employees\models.py:788
+msgid "Time entries"
+msgstr "Zeiteinträge"
+
+#: .\employees\models.py:822
+msgid "An identical entry already exists for this date and type."
+msgstr ""
+"Für dieses Datum und diesen Typ existiert bereits ein identischer Eintrag."
+
+#: .\employees\models.py:835
+msgid "Entry date must lie within the sheet’s year and month."
+msgstr ""
+"Das Datum des Zeiteintrags muss innerhalb des Jahres und Monats des "
+"Stundenzettels liegen."
+
+#: .\employees\models.py:841
+msgid "This date is a public holiday. Entering work time would double-count."
+msgstr ""
+"Dieses Datum ist ein Feiertag. Die Eingabe der Arbeitszeit würde doppelt "
+"gezählt werden."
+
+#: .\employees\models.py:851
+msgid "End time must be after start time (same day)."
+msgstr "Die Endzeit muss nach der Startzeit liegen (am selben Tag)."
+
+#: .\employees\models.py:856
+#, python-brace-format
+msgid "Minutes ({mins}) don’t match the time span ({span})."
+msgstr ""
+"Die Minuten ({mins}) stimmen nicht mit der Zeitspanne ({span}) überein."
+
+#: .\employees\models.py:871
+msgid "Expected daily minutes are zero; please enter a value."
+msgstr ""
+"Die erwarteten täglichen Minuten sind null; bitte geben Sie einen Wert ein."
+
+#: .\employees\models.py:873
+msgid "Provide either minutes or a start/end time."
+msgstr "Gib entweder Minuten oder eine Start-/Endzeit an."
+
+#: .\employees\models.py:877
+msgid "Please provide both start and end times or neither."
+msgstr "Gib entweder Start- und Endzeiten an oder gar keine Zeitspanne."
+
+#: .\finances\admin.py:73 .\finances\models.py:217
+msgid "Leave blank to auto-fill (1 year − 1 day)."
+msgstr "Leer lassen, um automatisch auszufüllen (1 Jahr − 1 Tag)."
+
+#: .\finances\admin.py:75
+msgid "Leave blank to auto-generate (WJyy_yy)."
+msgstr "Leer lassen, um automatisch zu generieren (WJyy_yy)."
+
+#: .\finances\admin.py:92
+msgid "Auto-filled from role default. Adjust if needed for this specific plan."
+msgstr ""
+"Automatisch aus der Standardrolle ausgefüllt. Bei Bedarf für diese "
+"Dauerrechnung anpassen."
+
+#: .\finances\admin.py:97 .\finances\admin.py:102
+msgid "Auto-calculated from assignment dates ∩ fiscal year. Adjust if needed."
+msgstr ""
+"Automatisch berechnet anhand der Funktionszuweisungsdaten ∩ Geschäftsjahr. "
+"Bei Bedarf anpassen."
+
+#: .\finances\admin.py:134
+msgid "<strong>Tip:</strong> Use the assignment holder’s name"
+msgstr "<strong>Tipp:</strong> Verwenden Sie den Namen des Auftraggebers."
+
+#: .\finances\admin.py:135
+msgid "Use name"
+msgstr "Name verwenden"
+
+#: .\finances\admin.py:140
+msgid "<strong>Tip:</strong> Default reference"
+msgstr "<strong>Tipp:</strong> Standardreferenz"
+
+#: .\finances\admin.py:141
+msgid "Use “Funktionsgebühr”"
+msgstr "“Funktionsgebühr” verwenden"
+
+#: .\finances\admin.py:167 .\finances\admin.py:169 .\finances\models.py:635
+#: .\finances\models.py:637 .\finances\models.py:639 .\finances\models.py:641
+#: .\finances\models.py:643 .\finances\models.py:645 .\finances\models.py:647
+msgid "Required when leaving Draft."
+msgstr "Erforderlich beim Verlassen des Entwurfs."
+
+#: .\finances\admin.py:251 .\finances\admin.py:924
+msgid "Budget"
+msgstr "Budget"
+
+#: .\finances\admin.py:258 .\finances\admin.py:931
+msgid "Financial parameters set by WiRef."
+msgstr "Von WiRef festgelegte Finanzdaten."
+
+#: .\finances\admin.py:260 .\finances\admin.py:933
+msgid "Payment Window"
+msgstr "Zahlungsfenster"
+
+#: .\finances\admin.py:263 .\finances\admin.py:913 .\finances\admin.py:936
+msgid "Banking"
+msgstr "Bankwesen"
+
+#: .\finances\admin.py:269 .\finances\admin.py:942
+msgid "Payee details completed via portal. Reference text set by admin."
+msgstr ""
+"Empfängerdaten über Portal ausgefüllt. Referenztext vom WiRef festgelegt."
+
+#: .\finances\admin.py:271 .\finances\admin.py:944
+msgid "Submission"
+msgstr "Einreichung"
+
+#: .\finances\admin.py:273 .\finances\admin.py:946
+msgid "Received from payee via public portal."
+msgstr "Vom Zahlungsempfänger über das öffentliche Portal erhalten."
+
+#: .\finances\admin.py:285
+msgid "Window"
+msgstr "Fenster"
+
+#: .\finances\admin.py:291 .\templates\admin\employees\timesheet_totals.html:17
+#: .\templates\finances\paymentplans_list_pdf.html:30
+msgid "Total"
+msgstr "Gesamt"
+
+#: .\finances\admin.py:329 .\templates\admin\finances\window_preview.html:12
+msgid "Resolved window (clamped to FY)"
+msgstr "Aufgelöstes Fenster (an das Wirtschaftsjahr angepasst)"
+
+#: .\finances\admin.py:334 .\finances\admin.py:374 .\finances\admin.py:386
+msgid "— will be shown after saving —"
+msgstr "— wird nach dem Speichern angezeigt —"
+
+#: .\finances\admin.py:351 .\finances\models.py:332
+msgid "Plan code"
+msgstr "Plan-Code"
+
+#: .\finances\admin.py:355
+msgctxt "PaymentPlan admin hint"
+msgid "will be generated after saving"
+msgstr "wird nach dem Speichern generiert"
+
+#: .\finances\admin.py:357
+msgctxt "PaymentPlan admin hint"
+msgid "not available"
+msgstr "nicht verfügbar"
+
+#: .\finances\admin.py:361
+msgid "Role’s default monthly amount (per Statutes)"
+msgstr "standardmäßige Aufwandsentschädigung der Rolle (gemäß Satzung)"
+
+#: .\finances\admin.py:369 .\templates\admin\finances\breakdown_preview.html:12
+msgid "Monthly breakdown (30-day proration)"
+msgstr "Monatliche Aufschlüsselung (30-Tage-Abrechnung)"
+
+#: .\finances\admin.py:383
+msgid "Recommended total ['richtwert']"
+msgstr "Empfohlener Gesamtbetrag [„Richtwert“]"
+
+#: .\finances\admin.py:391
+msgid "Bank reference previews"
+msgstr "Bankreferenz-Vorschau"
+
+#: .\finances\admin.py:570
+msgid "Cannot submit until payee has signed and uploaded the form."
+msgstr ""
+"Die Übermittlung ist erst möglich, wenn der Zahlungsempfänger das Formular "
+"unterschrieben und hochgeladen hat."
+
+#: .\finances\admin.py:576
+#, python-format
+msgid "Payment plan %(code)s submitted"
+msgstr "FuGeb-Dauerrechnung %(code)s eingereicht"
+
+#: .\finances\admin.py:601
+#, python-format
+msgid "Payment plan %(code)s withdrawn"
+msgstr "FuGeb-Dauerrechnung %(code)s zurückgezogen"
+
+#: .\finances\admin.py:623
+msgid "WiRef approval action not configured."
+msgstr "Aktion \"Genehmigen (WiRef)\" nicht konfiguriert"
+
+#: .\finances\admin.py:625
+#, python-format
+msgid "Payment plan %(code)s approved (WiRef)"
+msgstr "FuGeb-Dauerrechnung %(code)s genehmigt (WiRef)"
+
+#: .\finances\admin.py:647
+msgid "Chair approval action not configured."
+msgstr "Aktion \"Genehmigen (Vorsitz)\" nicht konfiguriert"
+
+#: .\finances\admin.py:649
+#, python-format
+msgid "Payment plan %(code)s approved (Chair)"
+msgstr "FuGeb-Dauerrechnung %(code)s genehmigt (Vorsitz)"
+
+#: .\finances\admin.py:665
+msgid "Both approvals required before verification."
+msgstr "Beide Genehmigungen sind vor der Verifizierung erforderlich."
+
+#: .\finances\admin.py:674
+#, python-format
+msgid "Payment plan %(code)s bank-transaction verified (WiRef)"
+msgstr "FuGeb-Dauerrechnung %(code)s als Banküberweisung verifiziert (WiRef)"
+
+#: .\finances\admin.py:676
+msgid "Banking verified. Plan is now ACTIVE."
+msgstr "Zahlungslauf verifiziert. Dauerrechnung ist jetzt AKTIV."
+
+#: .\finances\admin.py:677 .\hankosign\utils.py:413
+msgid "Verify banking"
+msgstr "Zahlungslauf verifizieren"
+
+#: .\finances\admin.py:699
+#, python-format
+msgid ""
+"Payment end date automatically set to %(date)s. You can adjust if needed."
+msgstr ""
+"Das Zahlungsenddatum wird automatisch auf %(date)s gesetzt. Du kannst es bei "
+"Bedarf anpassen."
+
+#: .\finances\admin.py:705
+msgid "Cancel action not configured."
+msgstr "Aktion \"Stornieren\" nicht konfiguriert"
+
+#: .\finances\admin.py:708
+#, python-format
+msgid "Payment plan %(code)s cancelled"
+msgstr "FuGeb-Dauerrechnung %(code)s storniert"
+
+#: .\finances\admin.py:710
+msgid "Plan cancelled."
+msgstr "FuGeb-Dauerrechnung storniert."
+
+#: .\finances\admin.py:711
+msgid "Cancel plan"
+msgstr "FuGeb-Dauerrechnung stornieren"
+
+#: .\finances\admin.py:724
+msgid "Printed payment plan PDF"
+msgstr "FuGeb-Dauerrechnung (Beleg) ausgedruckt"
+
+#: .\finances\admin.py:745
+msgid "Print Payment Plan PDF"
+msgstr "FuGeb-Dauerrechnung (Beleg) drucken"
+
+#: .\finances\admin.py:754
+msgid "Export selected to PDF"
+msgstr "Auswahl als PDF exportieren"
+
+#: .\finances\admin.py:764 .\finances\admin.py:1091
+msgid "Included in bulk PDF export"
+msgstr "Im Massen-PDF-Export enthalten"
+
+#: .\finances\admin.py:791
+msgid ""
+"Draft: please wait for payment plan filing by person, then review if all "
+"fields are present and correct."
+msgstr ""
+"Entwurf: Bitte warte, bis die Person die Dauerrechnung eingereicht hat, und "
+"überprüfe dann, ob alle Felder vorhanden und korrekt sind."
+
+#: .\finances\admin.py:799
+msgid ""
+"⚠️ <strong>Cancelled:</strong> Verify the payment end date is correct, and "
+"ensure all standing orders (Daueraufträge) are cancelled with the bank."
+msgstr ""
+"⚠️ <strong>Storniert:</strong> Verifiziere, ob das Zahlungsenddatum korrekt "
+"ist, und stelle sicher, dass alle Daueraufträge bei der Bank storniert "
+"wurden."
+
+#: .\finances\admin.py:911
+msgid "Define the assignment and fiscal context for this payment plan."
+msgstr ""
+"Lege die Funktionszuweisung und die Finanzdaten für diese FuGeb-"
+"Dauerrechnung fest."
+
+#: .\finances\admin.py:915
+msgid "Optional: Set payment reference text now (default: 'Funktionsgebühr')."
+msgstr ""
+"Optional: Zahlungsreferenz jetzt festlegen (Standard: „Funktionsgebühr“)."
+
+#: .\finances\admin.py:1062
+msgid "Printed fiscal year PDF"
+msgstr "WJ-Übersicht ausgedruckt"
+
+#: .\finances\admin.py:1072
+msgid "Print receipt PDF"
+msgstr "WJ-Übersicht drucken"
+
+#: .\finances\admin.py:1081
+msgid "Print selected as overview PDF"
+msgstr "Auswahl als Übersicht drucken"
+
+#: .\finances\admin.py:1106
+msgid "Set selected as active (and clear others)"
+msgstr "Auswahl als aktiv festlegen (und andere deaktivieren)"
+
+#: .\finances\admin.py:1109
+msgid "You don't have permission to set active."
+msgstr "Du hast keine Berechtigung, den Status auf „aktiv“ zu setzen."
+
+#: .\finances\admin.py:1122
+msgid ""
+"You cannot set a locked fiscal year as active. Deselect locked rows first."
+msgstr ""
+"Du kannst ein gesperrtes WJ nicht als aktiv festlegen. Ändere die Auswahl."
+
+#: .\finances\admin.py:1130
+#, python-format
+msgid "Select exactly one fiscal year to set active (you selected %(n)d)."
+msgstr ""
+"Wähle genau ein Wirtschaftsjahr aus, das du aktivieren möchtest (Du hast "
+"%(n)d ausgewählt)."
+
+#: .\finances\admin.py:1138
+#, python-format
+msgid "%(code)s is already the active fiscal year."
+msgstr "%(code)s ist bereits das aktive Wirtschaftsjahr."
+
+#: .\finances\admin.py:1149
+#, python-format
+msgid "Activated %(code)s as the current fiscal year."
+msgstr "%(code)s als das aktuelle Wirtschaftsjahr aktiviert."
+
+#: .\finances\admin.py:1154
+msgid ""
+"Could not set active due to a database constraint (another year may have "
+"been activated concurrently)."
+msgstr ""
+"Konnte aufgrund einer Datenbankbeschränkung nicht aktiviert werden "
+"(möglicherweise wurde gleichzeitig ein anderes Wirtschaftsjahr aktiviert)."
+
+#: .\finances\admin.py:1185
+msgid "You don't have permission to lock years."
+msgstr "Du hast keine Berechtigung, das Wirtschaftsjahr zu sperren."
+
+#: .\finances\admin.py:1196
+#, python-format
+msgid "Fiscal year %(code)s locked"
+msgstr "Wirtschaftsjahr %(code)s gesperrt"
+
+#: .\finances\admin.py:1198
+msgid "Fiscal year locked."
+msgstr "Wirtschaftsjahr gesperrt."
+
+#: .\finances\admin.py:1199
+msgid "Lock year"
+msgstr "Wirtschaftsjahr sperren"
+
+#: .\finances\admin.py:1210
+msgid "You don't have permission to unlock years."
+msgstr "Du hast keine Berechtigung, Wirtschaftsjahre zu entsperren."
+
+#: .\finances\admin.py:1221
+#, python-format
+msgid "Fiscal year %(code)s unlocked"
+msgstr "Wirtschaftsjahr %(code)s entsperrt"
+
+#: .\finances\admin.py:1223
+msgid "Fiscal year unlocked."
+msgstr "Wirtschaftsjahr entsperrt."
+
+#: .\finances\admin.py:1224
+msgid "Unlock year"
+msgstr "Wirtschaftsjahr entsperren"
+
+#: .\finances\apps.py:13
+msgid "Finances"
+msgstr "Finanzen"
+
+#: .\finances\models.py:208
+msgid "Stored as WJyy_yy (e.g. WJ24_25). English UI shows FYyy_yy."
+msgstr ""
+"Gespeichert als WJyy_yy (z. B. WJ24_25). Die englische Benutzeroberfläche "
+"zeigt FYyy_yy an."
+
+#: .\finances\models.py:220
+msgid "Active (SSP Filing)"
+msgstr "Aktiv (SSP-Einreichung)"
+
+#: .\finances\models.py:229 .\finances\models.py:329
+msgid "Fiscal year"
+msgstr "Wirtschaftsjahr"
+
+#: .\finances\models.py:230
+msgid "Fiscal years"
+msgstr "Wirtschaftsjahre"
+
+#: .\finances\models.py:279
+#, python-format
+msgid "This fiscal year is locked. You cannot change: %(fields)s."
+msgstr ""
+"Dieses Wirtschaftsjahr ist gesperrt. Das Folgende kann nicht geändert "
+"werden: %(fields)s."
+
+#: .\finances\models.py:284
+msgid "Start is required."
+msgstr "Ein Startdatum ist erforderlich."
+
+#: .\finances\models.py:289
+msgid "End must be after start."
+msgstr "Das Enddatum muss nach dem Startdatum geschehen."
+
+#: .\finances\models.py:317 .\templates\portal\includes\stage_progress.html:32
+msgid "Pending"
+msgstr "Ausstehend"
+
+#: .\finances\models.py:319 .\templates\portal\includes\stage_progress.html:35
+msgid "Cancelled"
+msgstr "Storniert"
+
+#: .\finances\models.py:320 .\templates\portal\includes\stage_progress.html:40
+msgid "Finished"
+msgstr "Beendet"
+
+#: .\finances\models.py:332
+msgid "Auto-generated reference (e.g. WJ24_25-00001)."
+msgstr "Automatisch generierte Referenznummer (z. B. WJ24_25-00001)."
+
+#: .\finances\models.py:335
+msgid "Cost center"
+msgstr "Kostenstelle"
+
+#: .\finances\models.py:335
+msgid "Enter a valid 3-digit cost center (KSt)"
+msgstr "Gib eine gültige 3-stellige Kostenstelle (KSt) ein."
+
+#: .\finances\models.py:335
+msgid "Cost center for the payment plan's personnel cost."
+msgstr "Kostenstelle für den Personalaufwand der FuGeb-Dauerrechnung."
+
+#: .\finances\models.py:338
+msgid "Payee name"
+msgstr "Name des Zahlungsempfängers"
+
+#: .\finances\models.py:339 .\templates\finances\paymentplan_pdf.html:86
+msgid "IBAN"
+msgstr "IBAN"
+
+#: .\finances\models.py:339 .\organisation\models.py:56
+msgid "Enter a valid IBAN (e.g. AT.., DE..)."
+msgstr "Gib eine gültige IBAN ein (z. B. AT.., DE..)."
+
+#: .\finances\models.py:339
+msgid "Will only accept IBANs in correct format."
+msgstr "Es werden nur IBANs im korrekten Format akzeptiert."
+
+#: .\finances\models.py:340
+msgid "BIC/SWIFT"
+msgstr "BIC/SWIFT"
+
+#: .\finances\models.py:340 .\organisation\models.py:62
+msgid "Enter a valid BIC (8 or 11 chars)."
+msgstr "Gib einen gültigen BIC (8 oder 11 Zeichen) ein."
+
+#: .\finances\models.py:340
+msgid "Will only accept BIC/SWIFT in correct format."
+msgstr "Es werden nur BIC/SWIFT-Codes im korrekten Format akzeptiert."
+
+#: .\finances\models.py:341
+msgid "Payment reference"
+msgstr "Zahlungsreferenz"
+
+#: .\finances\models.py:341
+msgid "For wire transfer."
+msgstr "Für Überweisungen."
+
+#: .\finances\models.py:342
+msgid "Payee address"
+msgstr "Empfängeradresse"
+
+#: .\finances\models.py:342
+msgid "Format: Street, No., Post code, City."
+msgstr "Format: Straße, Hausnummer, Postleitzahl, Ort."
+
+#: .\finances\models.py:345
+msgid "Pay start (optional)"
+msgstr "Startdatum (optional)"
+
+#: .\finances\models.py:346
+msgid "Pay end (optional)"
+msgstr "Enddatum (optional)"
+
+#: .\finances\models.py:349
+msgid "Monthly amount"
+msgstr "Monatlicher Betrag"
+
+#: .\finances\models.py:349
+msgid "Monthly amount derived from assigned role. Can be edited."
+msgstr ""
+"Monatlicher Betrag, der sich aus der zugewiesenen Funktion errechnet. Kann "
+"bearbeitet werden."
+
+#: .\finances\models.py:350
+msgid "Total amount (override)"
+msgstr "Gesamtbetrag (Ersatzfeld)"
+
+#: .\finances\models.py:350
+msgid ""
+"Total amount derived from auto-calculation ['richtwert']. Can be edited."
+msgstr ""
+"Gesamtbetrag aus automatischer Berechnung [„Richtwert“]. Kann bearbeitet "
+"werden."
+
+#: .\finances\models.py:353
+msgid ""
+"Status of payment plan. Payment plans can only be fully edited if they are "
+"in the DRAFT stage."
+msgstr ""
+"Status der FuGeb-Dauerrechnung. Zahlungspläne können nur vollständig "
+"bearbeitet werden, wenn sie sich im Entwurfsstadium befinden."
+
+#: .\finances\models.py:356
+msgid "Signed by payee on"
+msgstr "Unterzeichnet vom Zahlungsempfänger am"
+
+#: .\finances\models.py:356
+msgid "Date of signature received."
+msgstr "Datum des Eingangs der Unterschrift."
+
+#: .\finances\models.py:359
+msgid ""
+"Upload for the signed payment plan PDFs. Note: Simply re-upload after each "
+"signature."
+msgstr "Upload der unterschriebenen FuGeb-Dauerrechnung (als PDF)."
+
+#: .\finances\models.py:362
+msgid "IP address from which the public portal form was submitted."
+msgstr ""
+"IP-Adresse, von der aus das Formular im öffentlichen Portal übermittelt "
+"wurde."
+
+#: .\finances\models.py:372
+msgid "Payment plan"
+msgstr "FuGeb-Dauerrechnung"
+
+#: .\finances\models.py:373
+msgid "Payment plans"
+msgstr "FuGeb-Dauerrechnungen"
+
+#: .\finances\models.py:576
+msgid ""
+"An open payment plan already exists for this assignment in this fiscal year. "
+"Please edit or delete the existing draft plan first."
+msgstr ""
+"Für diese Funktionszuweisung gibt es bereits eine offene FuGeb-Dauerrechnung "
+"in diesem Wirtschaftsjahr. Bitte bearbeite oder lösche zunächst den "
+"bestehenden Entwurf."
+
+#: .\finances\models.py:581
+msgid ""
+"An open payment plan already exists for this assignment in this fiscal year. "
+"Please edit the existing plan or cancel it via workflow actions."
+msgstr ""
+"Für diese Funktionszuweisung existiert bereits ein offener Zahlungsplan für "
+"dieses Geschäftsjahr. Bitte bearbeite den bestehenden Plan oder stornieren "
+"Sie ihn über Workflow-Aktionen."
+
+#: .\finances\models.py:589
+msgid "You cannot change the fiscal year after creation."
+msgstr ""
+"Das Wirtschaftsjahr kann nach der Erstellung nicht mehr geändert werden."
+
+#: .\finances\models.py:593 .\finances\models.py:704
+msgid "Fiscal year is required."
+msgstr "Das Wirtschaftsjahr ist erforderlich."
+
+#: .\finances\models.py:608
+msgid "Pay start must be within or before the fiscal year end."
+msgstr ""
+"Das Startdatum muss innerhalb oder vor Ablauf des Wirtschaftsjahres erfolgen."
+
+#: .\finances\models.py:610
+msgid "Pay end must be within or after the fiscal year start."
+msgstr ""
+"Das Zahlungsende muss innerhalb oder nach dem Beginn des Wirtschaftsjahres "
+"liegen."
+
+#: .\finances\models.py:614
+msgid "Computed pay window is empty or inverted. Adjust start/end."
+msgstr ""
+"Das berechnete Zahlungsfenster ist leer oder invertiert. Passe das Start- "
+"und Enddatum an."
+
+#: .\finances\models.py:618
+msgid "Monthly amount must be a non-negative number."
+msgstr "Der monatliche Betrag muss eine nicht negative Zahl sein."
+
+#: .\finances\models.py:622 .\organisation\models.py:132
+msgid "IBAN checksum failed."
+msgstr "IBAN-Prüfsumme fehlgeschlagen."
+
+#: .\finances\models.py:630
+msgid "Selected assignment does not overlap the fiscal year."
+msgstr ""
+"Die ausgewählte Funktionszuweisung überschneidet sich nicht mit dem "
+"Wirtschaftsjahr."
+
+#: .\finances\models.py:682
+msgid "Fiscal year is required before code generation."
+msgstr "Das Wirtschaftsjahr muss vor der Codegenerierung angegeben werden."
+
+#: .\hankosign\admin.py:45
+msgid "Definition"
+msgstr "Definition"
+
+#: .\hankosign\admin.py:46
+msgid "Behavior"
+msgstr "Verhalten"
+
+#: .\hankosign\admin.py:73 .\hankosign\models.py:175
+msgid "Pick at least one Action (legacy FK or the list)."
+msgstr "Wähle mindestens eine Aktion aus (Legacy-FK oder die Liste)."
+
+#: .\hankosign\admin.py:75 .\hankosign\models.py:173
+msgid "Use either the legacy FK *or* the list, not both."
+msgstr "Verwende entweder den Legacy-FK *oder* die Liste, nicht beides."
+
+#: .\hankosign\admin.py:99
+msgid "Grant"
+msgstr "Zuteilung"
+
+#: .\hankosign\admin.py:108
+msgid "Actions (effective)"
+msgstr "Aktionen (effektiv)"
+
+#: .\hankosign\admin.py:113
+msgid "Actions (M2M)"
+msgstr "Aktionen (M2M)"
+
+#: .\hankosign\admin.py:155
+msgid "OK"
+msgstr "OK"
+
+#: .\hankosign\admin.py:155
+msgid "NOT OK"
+msgstr "NICHT OK"
+
+#: .\hankosign\admin.py:161
+msgid "User"
+msgstr "Benutzer"
+
+#: .\hankosign\admin.py:201
+msgid "Print Specimen Form"
+msgstr "Unterschriftenprobenformular drucken"
+
+#: .\hankosign\admin.py:217 .\helppages\admin.py:29
+msgid "Target"
+msgstr "Ziel"
+
+#: .\hankosign\admin.py:218 .\hankosign\models.py:67 .\hankosign\models.py:104
+#: .\templates\_includes\_signature_seal.html:34
+#: .\templates\hankosign\_attestation_seal.html:34
+msgid "Action"
+msgstr "Aktion"
+
+#: .\hankosign\admin.py:219 .\templates\_includes\_signature_boxes.html:21
+msgid "Signer"
+msgstr "Unterzeichner"
+
+#: .\hankosign\admin.py:220
+msgid "Result"
+msgstr "Ergebnis"
+
+#: .\hankosign\models.py:28
+msgid "Verify"
+msgstr "Überprüfen"
+
+#: .\hankosign\models.py:29
+msgid "Approve"
+msgstr "Genehmigen"
+
+#: .\hankosign\models.py:30
+msgid "Release/Print"
+msgstr "Freigeben/Drucken"
+
+#: .\hankosign\models.py:36
+msgid "Verb"
+msgstr "Verb"
+
+#: .\hankosign\models.py:38
+msgid "Stage code"
+msgstr "Stage-Code"
+
+#: .\hankosign\models.py:41
+msgid "Optional: e.g. WIREF, CHAIR …"
+msgstr "Optional: z. B. WiRef, Vorsitz … (englisch)"
+
+#: .\hankosign\models.py:44
+msgid "Scope (model)"
+msgstr "Umfang (Modell)"
+
+#: .\hankosign\models.py:48
+msgid "Comment/help"
+msgstr "Kommentar/Hilfe"
+
+#: .\hankosign\models.py:54
+msgid "Repeatable"
+msgstr "Wiederholbar"
+
+#: .\hankosign\models.py:56
+msgid "This action may be performed multiple times on the same object."
+msgstr "Diese Aktion kann mehrmals auf dasselbe Objekt angewendet werden."
+
+#: .\hankosign\models.py:59
+msgid "Require distinct signer"
+msgstr "Unterscheidbarer Unterzeichner erforderlich"
+
+#: .\hankosign\models.py:61
+msgid ""
+"The same person cannot perform multiple gated stages on the same object."
+msgstr ""
+"Dieselbe Person kann nicht mehrere Unterzeichnungen für dasselbe Objekt "
+"durchführen."
+
+#: .\hankosign\models.py:68
+msgid "Actions"
+msgstr "Aktionen"
+
+#: .\hankosign\models.py:94
+msgid "An action with this verb/stage/scope combination already exists."
+msgstr ""
+"Eine Aktion mit dieser Kombination aus Verb, Stufe und Umfang existiert "
+"bereits."
+
+#: .\hankosign\models.py:102 .\people\models.py:220 .\people\models.py:326
+#: .\templates\assembly\composition_pdf.html:27
+#: .\templates\employees\employee_pdf.html:25
+#: .\templates\employees\timesheet_pdf.html:25
+#: .\templates\finances\paymentplan_pdf.html:28
+#: .\templates\finances\paymentplans_list_pdf.html:26
+#: .\templates\hankosign\specimen_pdf.html:28
+#: .\templates\people\person_pdf.html:26
+#: .\templates\portal\payments\plan_list.html:29
+#: .\templates\portal\payments\plan_list.html:281
+#: .\templates\portal\status.html:248
+msgid "Role"
+msgstr "Rolle"
+
+#: .\hankosign\models.py:107
+msgid "Additional actions"
+msgstr "Zusätzliche Aktionen"
+
+#: .\hankosign\models.py:118
+msgid "Policy"
+msgstr "Richtlinie"
+
+#: .\hankosign\models.py:119
+msgid "Policies"
+msgstr "Richtlinien"
+
+#: .\hankosign\models.py:150
+msgid "A policy for this role and action already exists."
+msgstr "Eine Richtlinie für diese Rolle und Aktion existiert bereits."
+
+#: .\hankosign\models.py:193
+msgid "Verified (specimen on file)"
+msgstr "Verifiziert (Unterschriftsprobe hochgeladen)"
+
+#: .\hankosign\models.py:195
+msgid "Printed name (override)"
+msgstr "Gedruckter Name (Ersatzfeld)"
+
+#: .\hankosign\models.py:196
+msgid "Signer secret"
+msgstr "Unterzeichnergeheimnis"
+
+#: .\hankosign\models.py:199
+msgid "Signature specimen (PDF)"
+msgstr "Unterschriftsprobe (PDF)"
+
+#: .\hankosign\models.py:208 .\hankosign\models.py:228
+#: .\templates\_includes\_signature_seal.html:33
+#: .\templates\hankosign\_attestation_seal.html:33
+msgid "Signatory"
+msgstr "Unterzeichner"
+
+#: .\hankosign\models.py:209
+msgid "Signatories"
+msgstr "Unterzeichner"
+
+#: .\hankosign\models.py:249
+msgid "IP address"
+msgstr "IP-Adresse"
+
+#: .\hankosign\models.py:252
+msgid "IP address from which signature was created (for audit/verification)"
+msgstr ""
+"IP-Adresse, von der aus die Signatur erstellt wurde (zu Prüfungs-/"
+"Verifizierungszwecken)"
+
+#: .\hankosign\models.py:257 .\templates\hankosign\specimen_pdf.html:64
+msgid "Signature"
+msgstr "Signatur"
+
+#: .\hankosign\models.py:281
+msgid "Action scope doesn't match signature scope."
+msgstr "Der Aktionsbereich stimmt nicht mit dem Signaturbereich überein."
+
+#: .\hankosign\utils.py:80
+msgid "Unknown action."
+msgstr "Unbekannte Aktion."
+
+#: .\hankosign\utils.py:84
+msgid "No active signatory is linked to your account."
+msgstr "Mit deinem Konto ist kein aktiver Unterzeichner verknüpft."
+
+#: .\hankosign\utils.py:86
+msgid "Your signatory is not verified (specimen missing)."
+msgstr ""
+"Du bist nicht als Unterzeichner verifiziert (Unterschriftenprobe fehlt)."
+
+#: .\hankosign\utils.py:102
+msgid "You are not authorized to perform this action."
+msgstr "Du bist nicht berechtigt, diese Aktion auszuführen."
+
+#: .\hankosign\utils.py:113
+msgid "A different signatory is required for this stage."
+msgstr "Für diesen Schritt ist ein anderer Unterzeichner erforderlich."
+
+#: .\hankosign\utils.py:147
+msgid "This action has already been performed."
+msgstr "Diese Aktion wurde bereits durchgeführt."
+
+#: .\hankosign\utils.py:226
+msgid "HankoSign Workflow Control"
+msgstr "HankoSign-Workflow-Steuerung"
+
+#: .\hankosign\utils.py:372
+msgid "Final"
+msgstr "Endgültig"
+
+#: .\hankosign\utils.py:411
+msgid "Submit (WiRef)"
+msgstr "Einreichen (WiRef)"
+
+#: .\hankosign\utils.py:412
+msgid "Withdraw (WiRef)"
+msgstr "Zurücknehmen (WiRef)"
+
+#: .\hankosign\utils.py:414
+msgid "Cancel/Terminate"
+msgstr "Stornieren"
+
+#: .\hankosign\utils.py:415
+msgid "Print/Release"
+msgstr "Drucken/Freigeben"
+
+#: .\hankosign\utils.py:459
+msgid "(unknown)"
+msgstr "(unbekannt)"
+
+#: .\helppages\admin.py:35
+msgid "Titles"
+msgstr "Titel"
+
+#: .\helppages\admin.py:38
+msgid "Quick Reference (Always Visible)"
+msgstr "Schnellreferenz (immer sichtbar)"
+
+#: .\helppages\admin.py:40
+msgid "Short text explaining status badges, icons, etc."
+msgstr "Kurzer Text zur Erläuterung von Status-Badges, Symbolen usw."
+
+#: .\helppages\admin.py:42
+msgid "Full Help Content (Accordion)"
+msgstr "Vollständiger Hilfe-Inhalt (im Accordeon)"
+
+#: .\helppages\admin.py:44
+msgid "Detailed help text. Use AI to translate between languages!"
+msgstr ""
+"Ausführlicher Hilfetext. Verwende KI, um zwischen Sprachen zu übersetzen!"
+
+#: .\helppages\models.py:18
+msgid "Target (App + Model)"
+msgstr "Ziel (App + Modell)"
+
+#: .\helppages\models.py:22
+msgid "Title (German)"
+msgstr "Titel (Deutsch)"
+
+#: .\helppages\models.py:23
+msgid "Title (English)"
+msgstr "Titel (Englisch)"
+
+#: .\helppages\models.py:26
+msgid "Author"
+msgstr "Autor"
+
+#: .\helppages\models.py:27 .\people\admin.py:320
+#: .\templates\core\home.html:147
+msgid "Contact"
+msgstr "Kontakt"
+
+#: .\helppages\models.py:30
+msgid "Legend (German)"
+msgstr "Legende (Deutsch)"
+
+#: .\helppages\models.py:31
+msgid "Legend (English)"
+msgstr "Legende (Englisch)"
+
+#: .\helppages\models.py:34
+msgid "Help Content (German)"
+msgstr "Hilfe-Inhalte (Deutsch)"
+
+#: .\helppages\models.py:35
+msgid "Help Content (English)"
+msgstr "Hilfe-Inhalte (Englisch)"
+
+#: .\helppages\models.py:39
+msgid "Show Legend"
+msgstr "Legende anzeigen"
+
+#: .\helppages\models.py:48
+msgid "Help Page"
+msgstr "Hilfeseite"
+
+#: .\helppages\models.py:49
+msgid "Help Pages"
+msgstr "Hilfeseiten"
+
+#: .\helppages\models.py:105
+msgid "A help page for this model already exists."
+msgstr "Eine Hilfeseite für dieses Modell existiert bereits."
+
+#: .\organisation\admin.py:43
+msgid "Organisation names"
+msgstr "Organisationsnamen"
+
+#: .\organisation\admin.py:51
+msgid "University names"
+msgstr "Hochschulnamen"
+
+#: .\organisation\admin.py:59
+msgid "Addresses"
+msgstr "Adressen"
+
+#: .\organisation\admin.py:62
+msgid "Banking & tax"
+msgstr "Bankwesen & Steuern"
+
+#: .\organisation\admin.py:73
+msgid "Legal signatories"
+msgstr "Zeichnungsberechtigte"
+
+#: .\organisation\admin.py:83
+msgid "ECTS Self Service Affidavits"
+msgstr "ECTS-Self-Service-Portal-Erklärungen"
+
+#: .\organisation\apps.py:12
+msgid "Organisation"
+msgstr "Organisation"
+
+#: .\organisation\models.py:33
+msgid "Org name (DE, long)"
+msgstr "Name der Organisation (DE, lang)"
+
+#: .\organisation\models.py:34
+msgid "Org name (DE, short)"
+msgstr "Name der Organisation (DE, kurz)"
+
+#: .\organisation\models.py:35
+msgid "Org name (EN, long)"
+msgstr "Name der Organisation (EN, lang)"
+
+#: .\organisation\models.py:36
+msgid "Org name (EN, short)"
+msgstr "Name der Organisation (EN, kurz)"
+
+#: .\organisation\models.py:38
+msgid "University (DE, long)"
+msgstr "Hochschule (DE, lang)"
+
+#: .\organisation\models.py:39
+msgid "University (DE, short)"
+msgstr "Hochschule (DE, kurz)"
+
+#: .\organisation\models.py:40
+msgid "University (EN, long)"
+msgstr "Hochschule (EN, lang)"
+
+#: .\organisation\models.py:41
+msgid "University (EN, short)"
+msgstr "Hochschule (EN, kurz)"
+
+#: .\organisation\models.py:44
+msgid "Organisation address"
+msgstr "Adresse der Organisation"
+
+#: .\organisation\models.py:44
+msgid "Multiline; used in PDFs/letters."
+msgstr "Mehrzeilig; wird in PDFs/Briefen verwendet."
+
+#: .\organisation\models.py:45
+msgid "Bank address"
+msgstr "Bankadresse"
+
+#: .\organisation\models.py:51
+msgid "Bank name"
+msgstr "Bankname"
+
+#: .\organisation\models.py:53
+msgid "Bank IBAN"
+msgstr "Bank-IBAN"
+
+#: .\organisation\models.py:59
+msgid "Bank BIC"
+msgstr "Bank-BIC"
+
+#: .\organisation\models.py:64
+msgid "VAT/Tax ID"
+msgstr "Umsatzsteuer-Identifikationsnummer/Steuer-ID"
+
+#: .\organisation\models.py:68
+msgid "Default reference label"
+msgstr "Standard-Referenzlabel"
+
+#: .\organisation\models.py:71
+msgid "Used as a default in forms/CSV (e.g. \"Rechnung\")."
+msgstr "Wird standardmäßig in Formularen/CSV verwendet (z. B. „Rechnung“)."
+
+#: .\organisation\models.py:82
+msgid "2nd Deputy Chair"
+msgstr "2. stellvertretende*r Vorsitzende*r"
+
+#: .\organisation\models.py:85
+msgid "3rd Deputy Chair"
+msgstr "3. stellvertretende*r Vorsitzende*r"
+
+#: .\organisation\models.py:88
+msgid "Financial Officer (WiRef)"
+msgstr "Wirtschaftsreferent*in (WiRef)"
+
+#: .\organisation\models.py:91
+msgid "Deputy Financial Officer"
+msgstr "Stellvertretende*r Wirtschaftsreferent*in"
+
+#: .\organisation\models.py:94
+msgid "Public filing URL"
+msgstr "SSP-URL"
+
+#: .\organisation\models.py:94
+msgid "Do not change without permission."
+msgstr "Ohne Genehmigung nicht ändern."
+
+#: .\organisation\models.py:98
+msgid "ECTS Affidavit 1 (Initial Submission)"
+msgstr "ECTS-Erklärung 1 (Antragseröffnung)"
+
+#: .\organisation\models.py:100
+msgid "Affidavit text shown when student submits course list"
+msgstr ""
+"Eidesstattliche Erklärung, die angezeigt wird, wenn der Student seine LV-"
+"Liste einreicht"
+
+#: .\organisation\models.py:104
+msgid "ECTS Affidavit 2 (Form Upload)"
+msgstr "ECTS-Erklärung 2 (Formular-Upload)"
+
+#: .\organisation\models.py:106
+msgid "Affidavit text shown when student uploads signed form"
+msgstr ""
+"Text der eidesstattlichen Erklärung, der angezeigt wird, wenn der Student "
+"das unterschriebene Formular hochlädt"
+
+#: .\organisation\models.py:111
+msgid "Payment Plan Disclaimer"
+msgstr "Haftungsausschluss zur FuGeb-Dauerrechnung"
+
+#: .\organisation\models.py:113
+msgid ""
+"Disclaimer text shown when person completes payment plan banking details"
+msgstr ""
+"Haftungsausschluss, der angezeigt wird, wenn eine Person die Bankdaten für "
+"die FuGeb-Dauerrechnung angibt"
+
+#: .\organisation\models.py:119 .\organisation\models.py:120
+msgid "Master data"
+msgstr "Stammdaten"
+
+#: .\people\admin.py:152
+msgid "Has active assignment"
+msgstr "Hat aktive Funktionszuweisung"
+
+#: .\people\admin.py:172 .\people\admin.py:858
+msgid "Ended"
+msgstr "Beendet"
+
+#: .\people\admin.py:195 .\people\admin.py:794
+msgid "Dates"
+msgstr "Daten"
+
+#: .\people\admin.py:198 .\people\admin.py:797 .\people\models.py:291
+msgid "Reasons"
+msgstr "Gründe"
+
+#: .\people\admin.py:201 .\people\admin.py:800
+msgid "Election Details"
+msgstr "Wahldetails"
+
+#: .\people\admin.py:221 .\people\admin.py:919
+msgid "— save first to see signatures —"
+msgstr "— zuerst speichern, um Signaturen anzuzeigen —"
+
+#: .\people\admin.py:253 .\people\admin.py:894
+msgid "Election reference"
+msgstr "Wahlreferenz"
+
+#: .\people\admin.py:323
+msgid "University"
+msgstr "Hochschule"
+
+#: .\people\admin.py:326 .\people\models.py:71
+msgid "Account"
+msgstr "UniHanko-Account"
+
+#: .\people\admin.py:329 .\portal\forms.py:253
+#: .\templates\people\person_action_code_notice_pdf.html:11
+msgid "Personal Access Code"
+msgstr "Personal Access Code"
+
+#: .\people\admin.py:343
+msgid "MatNo"
+msgstr "MatNr"
+
+#: .\people\admin.py:347
+msgid "Django Account"
+msgstr "UniHanko-Account"
+
+#: .\people\admin.py:382
+msgid "Active roles"
+msgstr "Aktive Rollen"
+
+#: .\people\admin.py:403
+msgid "E-Mail"
+msgstr "E-Mail"
+
+#: .\people\admin.py:439
+msgid "Personnel record locked"
+msgstr "Personalakte gesperrt"
+
+#: .\people\admin.py:453
+msgid "Personnel record unlocked"
+msgstr "Personalakte entsperrt"
+
+#: .\people\admin.py:466
+msgid "Lock record"
+msgstr "Personalakte sperren"
+
+#: .\people\admin.py:478
+msgid "Unlock record"
+msgstr "Personalakte entsperren"
+
+#: .\people\admin.py:482
+msgid "Lock selected"
+msgstr "Auswahl sperren"
+
+#: .\people\admin.py:485 .\people\admin.py:518
+msgid "No rows selected."
+msgstr "Keine Zeilen ausgewählt."
+
+#: .\people\admin.py:500
+msgid "Personnel record locked (bulk)"
+msgstr "Personalakte gesperrt (Massenbearbeitung)"
+
+#: .\people\admin.py:508
+#, python-format
+msgid "locked %(n)d"
+msgstr "gesperrt %(n)d"
+
+#: .\people\admin.py:509
+#, python-format
+msgid "already locked %(n)d"
+msgstr "bereits gesperrt %(n)d"
+
+#: .\people\admin.py:510 .\people\admin.py:543
+#, python-format
+msgid "failed %(n)d"
+msgstr "fehlgeschlagen %(n)d"
+
+#: .\people\admin.py:515
+msgid "Unlock selected"
+msgstr "Auswahl entsperren"
+
+#: .\people\admin.py:533
+msgid "Personnel record unlocked (bulk)"
+msgstr "Personalakte entsperrt (Massenbearbeitung)"
+
+#: .\people\admin.py:541
+#, python-format
+msgid "unlocked %(n)d"
+msgstr "entsperrt %(n)d"
+
+#: .\people\admin.py:542
+#, python-format
+msgid "already unlocked %(n)d"
+msgstr "bereits entsperrt %(n)d"
+
+#: .\people\admin.py:553
+msgid "Printed personnel dossier PDF"
+msgstr "Personalakt ausgedruckt"
+
+#: .\people\admin.py:566
+msgid "Print Personnel Record PDF"
+msgstr "Personalakte drucken"
+
+#: .\people\admin.py:573 .\people\admin.py:968
+msgid "Managers only."
+msgstr "Nur für Manager."
+
+#: .\people\admin.py:579
+msgid "Printed PAC info PDF"
+msgstr "PAC-Information ausgedruckt"
+
+#: .\people\admin.py:586
+msgid "Print Personal Access Code Info PDF (ext.)"
+msgstr "PAC-Information drucken"
+
+#: .\people\admin.py:590
+msgid "Print selected as roster PDF"
+msgstr "Auswahl als Verzeichnis drucken"
+
+#: .\people\admin.py:597
+msgid "Included in roster PDF export"
+msgstr "In der Übersichts-PDF enthalten"
+
+#: .\people\admin.py:610
+msgid "You don’t have permission to regenerate access codes."
+msgstr "Du hast keine Berechtigung, Zugangscodes neu zu generieren."
+
+#: .\people\admin.py:616
+msgid "Regenerated access code"
+msgstr "PAC neu generiert"
+
+#: .\people\admin.py:618
+#, python-format
+msgid "New access code generated: %(code)s"
+msgstr "Neuer PAC generiert: %(code)s"
+
+#: .\people\admin.py:619
+msgid ""
+"Regenerate the access code for this person? The old code will stop working."
+msgstr ""
+"Den Zugangscode (PAC) für diese Person neu generieren? Der alte Code wird "
+"dann nicht mehr funktionieren."
+
+#: .\people\admin.py:621
+msgid "Regenerate access code"
+msgstr "Zugangscode neu generieren"
+
+#: .\people\admin.py:689
+msgid "Type & Flags"
+msgstr "Art & Kennzeichnungen"
+
+#: .\people\admin.py:692
+msgid "Defaults"
+msgstr "Standardwerte"
+
+#: .\people\admin.py:703 .\people\models.py:209
+msgid "Role type"
+msgstr "Rollentyp"
+
+#: .\people\admin.py:742
+msgid "Name (localized)"
+msgstr "Name (lokalisiert)"
+
+#: .\people\admin.py:872
+msgid "start date"
+msgstr "Startdatum"
+
+#: .\people\admin.py:887
+msgid "end date"
+msgstr "Enddatum"
+
+#: .\people\admin.py:930
+msgid "Offboard selected (end today, set default reason if empty)"
+msgstr "Auswahl offboarden (endet heute; Standardaustrittsgrund, wenn leer)"
+
+#: .\people\admin.py:939
+msgid "Cannot offboard: default end reason O01 is missing. Seed reasons first."
+msgstr "Offboarding nicht möglich: Standard-Endgrund O01 fehlt."
+
+#: .\people\admin.py:954
+#, python-format
+msgid "Ended %(n)d active assignment(s)."
+msgstr "%(n)d aktive Funktionszuweisung(en) beendet."
+
+#: .\people\admin.py:979 .\people\admin.py:1000 .\people\admin.py:1041
+#: .\people\admin.py:1062
+#, python-format
+msgid "Printed %(what)s"
+msgstr "%(what)s ausgedruckt"
+
+#: .\people\admin.py:988
+msgid "Print certifcate (non-conf.) PDF"
+msgstr "Bestellungsurkunde (SB, SoFe) drucken"
+
+#: .\people\admin.py:1009
+msgid "Print certificate (ad interim) PDF"
+msgstr "Bestellungsurkunde (interim) drucken"
+
+#: .\people\admin.py:1025
+msgid "Only department-head assignments can have a confirmation certificate."
+msgstr "Nur Referent*innen-Zuweisungen können eine Bestellungsurkunde haben."
+
+#: .\people\admin.py:1035
+msgid ""
+"Set a confirmation date (and reference, if applicable) before printing the "
+"confirmation certificate."
+msgstr ""
+"Lege vor dem Drucken der Bestellungsurkunde ein Bestätigungsdatum (und "
+"gegebenenfalls eine Referenz) fest."
+
+#: .\people\admin.py:1051
+msgid "Print certificate (post-conf.) PDF"
+msgstr "Bestellungsurkunde (Anwahl) drucken"
+
+#: .\people\admin.py:1071
+msgid "Print resignation PDF"
+msgstr "Rücktrittsurkunde drucken"
+
+#: .\people\admin.py:1140
+msgid "This person is locked; you can’t add or modify assignments."
+msgstr ""
+"Diese Person ist gesperrt; Du kannst keine Funktionszuweisungen hinzufügen "
+"oder ändern."
+
+#: .\people\apps.py:13
+msgid "Personnel"
+msgstr "Personal"
+
+#: .\people\models.py:21
+msgid "Male"
+msgstr "Männlich"
+
+#: .\people\models.py:22
+msgid "Female"
+msgstr "Weiblich"
+
+#: .\people\models.py:23
+msgid "Diverse"
+msgstr "Divers"
+
+#: .\people\models.py:24
+msgid "Not specified"
+msgstr "Keine Angabe"
+
+#: .\people\models.py:28 .\templates\_includes\_person_info_section.html:43
+msgid "UUID"
+msgstr "UUID"
+
+#: .\people\models.py:32
+msgid "Stable system identifier."
+msgstr "Stabile Systemkennung."
+
+#: .\people\models.py:34
+msgid "First name"
+msgstr "Vorname(n)"
+
+#: .\people\models.py:35
+msgid "Last name"
+msgstr "Nachname"
+
+#: .\people\models.py:37 .\templates\_includes\_person_info_section.html:25
+#: .\templates\people\people_list_pdf.html:25
+#: .\templates\people\person_action_code_notice_pdf.html:28
+msgid "Email"
+msgstr "E-Mail"
+
+#: .\people\models.py:38
+msgid "Student email"
+msgstr "Studenten-E-Mail"
+
+#: .\people\models.py:42
+msgid "Matriculation number"
+msgstr "Matrikelnummer"
+
+#: .\people\models.py:49
+msgid "Use 's' + 10 digits (FH) or up to 10 digits (federal)."
+msgstr ""
+"Verwende „s“ + 10 Ziffern (FH) oder bis zu 10 Ziffern (Bundes-"
+"Matrikelnummer)."
+
+#: .\people\models.py:52
+msgid "Example FH: s2210562023 — federal: 52103904"
+msgstr "Beispiel FH: s2210562023 – Bundesnummer: 52103904"
+
+#: .\people\models.py:56 .\templates\_includes\_person_info_section.html:20
+msgid "Gender"
+msgstr "Gender"
+
+#: .\people\models.py:72
+msgid "Link to a Django user account (optional)."
+msgstr "Verbindung zu einem UniHanko-Benutzerkonto (optional)."
+
+#: .\people\models.py:77
+msgid "Personal access code"
+msgstr "Personal Access Code"
+
+#: .\people\models.py:81
+msgid ""
+"To be shared with personnel for certain public filing systems (FuGeb etc.)."
+msgstr ""
+"Zur Weitergabe an Funktionäre für bestimmte öffentliche Plattformen (FuGeb "
+"usw.)."
+
+#: .\people\models.py:96
+msgid "People"
+msgstr "Personal"
+
+#: .\people\models.py:139
+msgid "This matriculation number is already assigned to another person."
+msgstr "Diese Matrikelnummer ist bereits einer anderen Person zugewiesen."
+
+#: .\people\models.py:178
+msgid "Could not generate a unique access code. Please try again."
+msgstr ""
+"Es konnte kein eindeutiger Zugangscode generiert werden. Bitte versuche es "
+"erneut."
+
+#: .\people\models.py:192
+msgid "Department head (Referent:in)"
+msgstr "Referent*in"
+
+#: .\people\models.py:193
+msgid "Department clerk (Sachbearbeiter:in)"
+msgstr "Sachbearbeiter*in"
+
+#: .\people\models.py:194
+msgid "Other / miscellaneous"
+msgstr "Sonstiges / Verschiedenes"
+
+#: .\people\models.py:198
+msgid "Short form"
+msgstr "Kurzform"
+
+#: .\people\models.py:203
+msgid "Format: no digits, max. 30 characters, e.g. WiRef"
+msgstr "Format: keine Ziffern, max. 30 Zeichen, z. B. WiRef"
+
+#: .\people\models.py:205
+msgid "Role short-form"
+msgstr "Kurzform Rolle"
+
+#: .\people\models.py:207
+msgid "ECTS cap"
+msgstr "ECTS-Obergrenze"
+
+#: .\people\models.py:207
+msgid ""
+"The nominal reimbursible ECTS amount assigned to the role re: MOU with the "
+"academic board"
+msgstr ""
+"Der nominale erstattungsfähige ECTS-Betrag, der der Rolle zugewiesen ist re: "
+"Vereinbarung mit dem Kollegium"
+
+#: .\people\models.py:208
+msgid "Elected position"
+msgstr "Wahlamt"
+
+#: .\people\models.py:208
+msgid "Whether this role is elected via an election authority re: HSG 2014"
+msgstr "Ob diese Rolle über eine Wahlbehörde gewählt wird, siehe HSG 2014."
+
+#: .\people\models.py:209
+msgid "Type of role within the (legal) personnel structure."
+msgstr "Art der Rolle innerhalb der Funktionsstruktur."
+
+#: .\people\models.py:210
+msgid "Configuration note"
+msgstr "Konfigurationsvermerk"
+
+#: .\people\models.py:211
+msgid "Reimbursed via stipend"
+msgstr "erhält Aufwandsentschädigung"
+
+#: .\people\models.py:211
+msgid "Whether this role is ordinarily reimbursed via stipend [FuGeb]"
+msgstr ""
+"Ob diese Rolle in der Regel durch eine Aufwandsentschädigung vergütet wird "
+"[FuGeb]"
+
+#: .\people\models.py:212
+msgid "System role"
+msgstr "System-Rolle"
+
+#: .\people\models.py:212
+msgid ""
+"Internal/admin role. Ignores stipend/ECTS expectations and is treated "
+"separately in policies."
+msgstr ""
+"Interne/administrative Rolle. Ignoriert Stipendien-/ECTS-Konfigurationen und "
+"wird in Richtlinien separat behandelt."
+
+#: .\people\models.py:213
+msgid "Default monthly stipend"
+msgstr "monatliche Aufwandsentschädigung"
+
+#: .\people\models.py:213
+msgid "default monthly pay (if eligible) per Statutes"
+msgstr "Aufwandsentschädigung (sofern anspruchsberechtigt) gemäß Satzung"
+
+#: .\people\models.py:221
+msgid "Roles"
+msgstr "Rollen"
+
+#: .\people\models.py:234
+msgid "Other/System"
+msgstr "Sonstiges/System"
+
+#: .\people\models.py:253
+msgid "System roles must use “Other” kind."
+msgstr "System-Rollen müssen den Typ „Sonstige“ verwenden."
+
+#: .\people\models.py:258
+msgid "System roles cannot be stipend-reimbursed."
+msgstr "Systemrollen können nicht ECTS-erstattet werden."
+
+#: .\people\models.py:260
+msgid "Leave default monthly amount empty for system roles."
+msgstr "Lasse den Standard-Monatsbetrag für Systemrollen leer."
+
+#: .\people\models.py:262
+msgid "ECTS cap must be 0 for system roles."
+msgstr "Die ECTS-Obergrenze muss für Systemrollen 0 betragen."
+
+#: .\people\models.py:276
+msgid "Stable code like I01, O01, C99 OR X99 (to be reserved for 'Other')."
+msgstr "Stabiler Code wie I01, O01, C99 oder X99 (für „Sonstiges” reserviert)."
+
+#: .\people\models.py:280
+msgid "Use I## / O## / C## or X99 for Other."
+msgstr "Verwende I## / O## / C## oder X99 für Sonstiges."
+
+#: .\people\models.py:283
+msgid "German label/name for the reason given (e.g. Eintritt, Austritt, ...)."
+msgstr ""
+"Deutsche Bezeichnung/Bezeichnung für den angegebenen Grund (z. B. Eintritt, "
+"Austritt, ...)."
+
+#: .\people\models.py:284
+msgid "Name (EN)"
+msgstr "Name (EN)"
+
+#: .\people\models.py:284
+msgid "Optional English label/name for the reason given."
+msgstr "Optionaler englischer Begriff/Name für den angegebenen Grund."
+
+#: .\people\models.py:290
+msgid "Reason"
+msgstr "Grund"
+
+#: .\people\models.py:334
+msgid "Effective start"
+msgstr "Effektives Startdatum"
+
+#: .\people\models.py:335
+msgid "Effective end"
+msgstr "Wirkdatum (Ende)"
+
+#: .\people\models.py:340
+msgid "Start reason"
+msgstr "Eintrittsgrund"
+
+#: .\people\models.py:341
+msgid "Why this assignment started (e.g. Eintritt)."
+msgstr "Warum diese Funktionszuweisung begonnen wurde (z. B. Eintritt)."
+
+#: .\people\models.py:345
+msgid "End reason"
+msgstr "Austrittsgrund"
+
+#: .\people\models.py:346
+msgid ""
+"Why this assignment ended (e.g. Austritt). Required when an end date is set."
+msgstr ""
+"Warum diese Funktionszuweisung beendet wurde (z. B. Austritt). Erforderlich, "
+"wenn ein Enddatum festgelegt ist."
+
+#: .\people\models.py:350
+msgid "Confirmation date"
+msgstr "Anwahl-Datum"
+
+#: .\people\models.py:352
+msgid "Date of assembly confirmation (if applicable)"
+msgstr "Datum der Anwahl durch die HV (falls zutreffend)"
+
+#: .\people\models.py:359
+msgid "Elected via"
+msgstr "Anwahl via"
+
+#: .\people\models.py:360
+msgid "Assembly session item that confirmed this appointment"
+msgstr "TOP der Sitzung mit dieser Personalwahl"
+
+#: .\people\models.py:414
+msgid "Assignments"
+msgstr "Funktionszuweisungen"
+
+#: .\people\models.py:441
+msgid ""
+"An assignment for this person in this role with this start date already "
+"exists. Please adjust the start date or edit the existing assignment."
+msgstr ""
+"Für diese Person in dieser Rolle mit diesem Startdatum existiert bereits "
+"eine Funktionszuweisung. Bitte passe das Startdatum an oder bearbeite die "
+"bestehende Zuweisung."
+
+#: .\people\models.py:461 .\people\models.py:462
+msgid "Confirmation isn't used for system roles."
+msgstr "Das Bestätigungsdatum wird nicht für Systemrollen verwendet."
+
+#: .\people\models.py:468 .\people\models.py:469
+msgid "Use start/end only for system roles (no effective dates)."
+msgstr "Verwende Start/Ende nur für Systemrollen (keine Effektiv-Daten)."
+
+#: .\people\models.py:475
+msgid "Pick a start reason (I##) or X99 (Other)."
+msgstr "Wähle einen Startgrund (I##) oder X99 (Sonstiges)."
+
+#: .\people\models.py:481
+msgid "Pick an end reason (O##) or X99 (Other)."
+msgstr "Wähle einen Beendigungsgrund (O##) oder X99 (Sonstiges)."
+
+#: .\people\models.py:485
+msgid "Reason is required when an end date is set."
+msgstr "Bei der Festlegung eines Enddatums ist ein Grund erforderlich."
+
+#: .\people\models.py:487
+msgid "Remove end reason unless you set an end date."
+msgstr ""
+"Entferne den Beendigungsgrund, es sei denn, du hast ein Enddatum festgelegt."
+
+#: .\people\models.py:494
+msgid "Start and end reason cannot be the same (except X99)."
+msgstr "Start- und Endgrund dürfen nicht identisch sein (außer X99)."
+
+#: .\people\models.py:499
+msgid "Provide a confirmation date when using assembly election."
+msgstr "Gib bei der Verwendung der Personalwahl ein Bestätigungsdatum an."
+
+#: .\portal\forms.py:27 .\portal\views.py:111
+#: .\templates\people\person_action_code_notice_pdf.html:36
+msgid "Access Code"
+msgstr "Zugangscode"
+
+#: .\portal\forms.py:30
+msgid "Enter semester code or reference code"
+msgstr "Gib deinen Semester-Code oder Referenzcode ein"
+
+#: .\portal\forms.py:33
+msgid ""
+"Enter your semester access code (e.g., forest-mountain-23) for new filing, "
+"or your reference code (e.g., WS24-MUEL-1234) to check status"
+msgstr ""
+"Gib deinen Semester-Zugangscode (z. B. forest-mountain-23) für einen neuen "
+"Antrag oder einen Referenzcode (z. B. WS24-MUEL-1234) ein, um den "
+"Antragsstatus zu überprüfen oder den Antrag zu vervollständigen."
+
+#: .\portal\forms.py:36 .\portal\forms.py:261
+msgid "Security Check"
+msgstr "Sicherheitsüberprüfung"
+
+#: .\portal\forms.py:54
+msgid "This reference code is not for the selected semester."
+msgstr "Dieser Referenzcode gilt nicht für das ausgewählte Semester."
+
+#: .\portal\forms.py:69
+msgid "Invalid access code. Please check and try again."
+msgstr "Ungültiger Zugangscode. Bitte überprüfe ihn und versuche es erneut."
+
+#: .\portal\forms.py:73
+msgid "Invalid access code format."
+msgstr "Ungültiges Zugangscode-Format."
+
+#: .\portal\forms.py:88
+msgid "e.g., LV101"
+msgstr "z. B. LV101"
+
+#: .\portal\forms.py:98
+msgid "e.g., Advanced Mathematics"
+msgstr "z. B. Höhere Mathematik"
+
+#: .\portal\forms.py:111
+msgid "e.g., 3, 5.5, 7"
+msgstr "z. B. 3; 5,5; 7"
+
+#: .\portal\forms.py:115
+msgid "Enter whole numbers (e.g., 5) or half values (e.g., 5.5)"
+msgstr "Gib ganze (z. B. 5) oder halbe Werte (z. B. 5,5) ein."
+
+#: .\portal\forms.py:136
+msgid "Please provide either a course code or course name."
+msgstr "Bitte gib entweder einen LV-Code oder einen LV-Namen an."
+
+#: .\portal\forms.py:142
+msgid "Please provide ECTS amount for this course."
+msgstr "Bitte gib die Anzahl der ECTS-Punkte für diese LV an."
+
+#: .\portal\forms.py:162
+msgid "Your Role"
+msgstr "Deine Funktion"
+
+#: .\portal\forms.py:164
+msgid "Select your role..."
+msgstr "Bitte wähle deine Funktion aus..."
+
+#: .\portal\forms.py:166
+msgid "Select the role under which you are claiming ECTS"
+msgstr ""
+"Wählen die Rolle aus, unter du die ECTS-Anrechnung beantragen möchtest."
+
+#: .\portal\forms.py:170
+msgid "Notes (Optional)"
+msgstr "Anmerkungen (optional)"
+
+#: .\portal\forms.py:174
+msgid "Any additional information..."
+msgstr "Weitere Informationen..."
+
+#: .\portal\forms.py:177
+msgid "Optional notes about your request"
+msgstr "Optionale Anmerkungen zu deinem Antrag"
+
+#: .\portal\forms.py:181 .\portal\forms.py:233
+msgid "I confirm"
+msgstr "Ich bestätige"
+
+#: .\portal\forms.py:184 .\portal\forms.py:236
+msgid "You must confirm the affidavit to proceed."
+msgstr "Du musst die eidesstattliche Erklärung bestätigen, um fortzufahren."
+
+#: .\portal\forms.py:224 .\portal\forms.py:328
+msgid "Signed PDF Form"
+msgstr "Unterschriebenes PDF-Formular"
+
+#: .\portal\forms.py:225
+msgid "Upload your signed form (PDF, max 20MB)"
+msgstr "Lade dein unterschriebenes Formular hoch (PDF, max. 20 MB)"
+
+#: .\portal\forms.py:256
+msgid "e.g., ABCD-EFGH"
+msgstr "z. B. ABCD-EFGH"
+
+#: .\portal\forms.py:259
+msgid "Enter your personal access code (provided by administration)"
+msgstr "Gib deinen Personal Access Code ein (vom ÖH-Team bereitgestellt)."
+
+#: .\portal\forms.py:278
+msgid "Invalid personal access code. Please check and try again."
+msgstr ""
+"Ungültiger Personal Access Code. Bitte überprüfe ihn und versuche es erneut."
+
+#: .\portal\forms.py:289
+msgid "Full name on bank account"
+msgstr "Vollständiger Name auf dem Bankkonto"
+
+#: .\portal\forms.py:290
+msgid "AT12 3456 7890 1234 5678"
+msgstr "AT12 3456 7890 1234 5678"
+
+#: .\portal\forms.py:291
+msgid "RZOOAT2L"
+msgstr "RZOOAT2L"
+
+#: .\portal\forms.py:292
+msgid ""
+"Street, Number\n"
+"Postal Code, City\n"
+"Country"
+msgstr ""
+"Straße, Hausnummer\n"
+"Postleitzahl, Ort\n"
+"Land"
+
+#: .\portal\forms.py:296
+msgid "Name of the account holder"
+msgstr "Name des Kontoinhabers"
+
+#: .\portal\forms.py:297
+msgid "International Bank Account Number"
+msgstr "Internationale Bankkontonummer"
+
+#: .\portal\forms.py:298
+msgid "Bank Identifier Code (SWIFT)"
+msgstr "Bankleitzahl (SWIFT)"
+
+#: .\portal\forms.py:299
+msgid "Full postal address of account holder"
+msgstr "Vollständige Postanschrift des Kontoinhabers"
+
+#: .\portal\forms.py:305
+msgid "Please enter a valid Austrian IBAN (AT followed by 18 digits)"
+msgstr "Bitte gib eine gültige IBAN ein (z.B. AT gefolgt von 18 Ziffern)."
+
+#: .\portal\forms.py:311
+msgid "BIC must be 8 or 11 characters long"
+msgstr "BIC muss 8 oder 11 Zeichen lang sein."
+
+#: .\portal\forms.py:317
+msgid "An address is required"
+msgstr "Eine Adresse ist erforderlich."
+
+#: .\portal\forms.py:319
+msgid "Please provide a complete address"
+msgstr "Bitte gib eine vollständige Adresse an."
+
+#: .\portal\forms.py:329
+msgid "Upload your signed payment plan form (PDF, max 20MB)"
+msgstr "Lade deine unterschriebene FuGeb-Dauerrechnung hoch (PDF, max. 20 MB)"
+
+#: .\portal\forms.py:337
+msgid "Date of Signature"
+msgstr "Datum der Unterschrift"
+
+#: .\portal\forms.py:338
+msgid "Date when you signed the form"
+msgstr "Datum, an dem du das Formular unterschrieben hast"
+
+#: .\portal\utils.py:19
+#, python-format
+msgid "File size exceeds %(size)dMB. Please upload a smaller file."
+msgstr ""
+"Die Dateigröße überschreitet %(size)d MB. Bitte lade eine kleinere Datei "
+"hoch."
+
+#: .\portal\utils.py:24
+msgid "Only PDF files are allowed."
+msgstr "Es sind nur PDF-Dateien zulässig."
+
+#: .\portal\utils.py:32
+msgid "PDF contains embedded files, not allowed for security."
+msgstr ""
+"Die PDF enthält eingebettete Dateien, die aus Sicherheitsgründen nicht "
+"zulässig sind."
+
+#: .\portal\utils.py:37
+msgid "PDF contains JavaScript, not allowed for security."
+msgstr ""
+"Die PDF enthält JavaScript, das aus Sicherheitsgründen nicht zulässig ist."
+
+#: .\portal\utils.py:42
+msgid "Invalid or corrupted PDF file."
+msgstr "Ungültige oder beschädigte PDF-Datei."
+
+#: .\portal\utils.py:46
+msgid "Unable to validate PDF file."
+msgstr "PDF-Datei kann nicht validiert werden."
+
+#: .\portal\views.py:52 .\templates\core\home.html:84
+#: .\templates\portal\base.html:25
+msgid "Self Service Portal"
+msgstr "Self Service Portal"
+
+#: .\portal\views.py:77
+#, python-format
+msgid "Reference code not found: %(ref)s"
+msgstr "Referenzcode nicht gefunden: %(ref)s"
+
+#: .\portal\views.py:81 .\templates\portal\home.html:18
+#: .\templates\portal\semester_list.html:12
+msgid "ECTS Reimbursement Center"
+msgstr "ECTS-Anrechnungs-Center"
+
+#: .\portal\views.py:93
+msgid "Filing is not currently open for this semester."
+msgstr "Die Anrechnung für dieses Semester ist derzeit nicht möglich."
+
+#: .\portal\views.py:128
+msgid "Please enter the access code first."
+msgstr "Bitte gib zuerst den Zugangscode ein."
+
+#: .\portal\views.py:132
+msgid "Filing period has ended for this semester."
+msgstr "Die Einreichfrist für dieses Semester ist abgelaufen."
+
+#: .\portal\views.py:154
+#, python-format
+msgid "You already have a request for this semester (%(ref)s)."
+msgstr "Du hast bereits einen Antrag für dieses Semester gestellt (%(ref)s)."
+
+#: .\portal\views.py:174
+msgid "Please add at least one course."
+msgstr "Bitte füge mindestens eine Lehrveranstaltung hinzu."
+
+#: .\portal\views.py:181 .\portal\views.py:227 .\portal\views.py:260
+#: .\templates\portal\semester_list.html:32
+msgid "File Request"
+msgstr "Antrag einreichen"
+
+#: .\portal\views.py:212
+#, python-format
+msgid ""
+"A request was already submitted for this semester (%(ref)s). Showing your "
+"existing request."
+msgstr ""
+"Für dieses Semester wurde bereits ein Antrag eingereicht (%(ref)s). Anzeige "
+"deines bestehenden Antrags."
+
+#: .\portal\views.py:219
+msgid "An error occurred while submitting your request. Please try again."
+msgstr ""
+"Beim Senden deines Antrags ist ein Fehler aufgetreten. Bitte versuche es "
+"erneut."
+
+#: .\portal\views.py:238
+#, python-format
+msgid "✅ Request filed successfully! Your reference code is: %(ref)s"
+msgstr "✅ Antrag erfolgreich eingereicht! Dein Referenzcode lautet: %(ref)s"
+
+#: .\portal\views.py:288
+msgid ""
+"🎉 Form uploaded successfully! Your request is now being processed by our "
+"team."
+msgstr ""
+"🎉 Formular erfolgreich hochgeladen! Dein Antrag wird nun von unserem Team "
+"bearbeitet."
+
+#: .\portal\views.py:311
+msgid "Reimbursement Request Status"
+msgstr "Status des Anrechnungsantrags"
+
+#: .\portal\views.py:357
+msgid "Payment Plan Center"
+msgstr "FuGeb-Dauerrechnungs-Center"
+
+#: .\portal\views.py:380
+msgid "Access Payment Plans"
+msgstr "Zugang zu FuGeb-Dauerrechnungen"
+
+#: .\portal\views.py:397
+msgid "Please enter your access code first."
+msgstr "Bitte gib zuerst deinen Personal Access Code ein."
+
+#: .\portal\views.py:434
+#, python-format
+msgid ""
+"✅ Banking details saved for %(code)s! Now please: 1️⃣ Review terms below, 2️⃣ "
+"Download & sign the PDF, 3️⃣ Upload the signed form to complete."
+msgstr ""
+"✅ Bankdaten gespeichert für %(code)s! Als Nächstes: 1️⃣ Lies dir die "
+"folgenden Bedingungen durch, 2️⃣ Lade das PDF herunter und unterschreibe es, 3️⃣ "
+"Lade das unterschriebene Formular hoch, um den Vorgang abzuschließen."
+
+#: .\portal\views.py:457
+#, python-format
+msgid ""
+"🎉 Payment plan %(code)s completed successfully! Your form has been uploaded "
+"and is now being processed."
+msgstr ""
+"🎉 FuGeb-Dauerrechnungsantrag %(code)s erfolgreich abgeschlossen! Dein "
+"Formular wurde hochgeladen und wird nun bearbeitet."
+
+#: .\portal\views.py:489 .\templates\portal\payments\plan_list.html:12
+msgid "Your Payment Plans"
+msgstr "Deine FuGeb-Dauerrechnungen"
+
+#: .\templates\403.html:7 .\templates\403.html:324
+msgid "Access Denied"
+msgstr "Zugriff verweigert"
+
+#: .\templates\403.html:325
+msgid "Not allowed here..."
+msgstr "Hier nicht erlaubt..."
+
+#: .\templates\403.html:327
+msgid ""
+"You don't have permission to access this resource. Contact an administrator "
+"if you believe this is an error."
+msgstr ""
+"Du hast keine Berechtigung, auf diese Ressource zuzugreifen. Wende dich an "
+"einen Administrator, wenn du glaubst, dass es sich um einen Fehler handelt."
+
+#: .\templates\403.html:333 .\templates\404.html:333 .\templates\500.html:333
+#: .\templates\error_constraint.html:260
+msgid "Go Back"
+msgstr "Zurück"
+
+#: .\templates\403.html:334 .\templates\404.html:334 .\templates\500.html:334
+#: .\templates\core\home.html:81
+msgid "Back Office"
+msgstr "Back Office"
+
+#: .\templates\404.html:7 .\templates\404.html:324
+msgid "Page Not Found"
+msgstr "Seite nicht gefunden"
+
+#: .\templates\404.html:325
+msgid "Where did it go...?"
+msgstr "Wo ist es hin...?"
+
+#: .\templates\404.html:327
+msgid "The page you're looking for doesn't exist or has been moved."
+msgstr "Die gesuchte Seite existiert nicht oder wurde verschoben."
+
+#: .\templates\500.html:7 .\templates\500.html:324
+msgid "Server Error"
+msgstr "Server-Fehler"
+
+#: .\templates\500.html:325
+msgid "Uh oh..."
+msgstr "Uh oh..."
+
+#: .\templates\500.html:327
+msgid ""
+"Something went wrong on our end. The error has been logged and we'll look "
+"into it."
+msgstr ""
+"Auf unserer Seite ist ein Fehler aufgetreten. Der Fehler wurde protokolliert "
+"und wir werden ihn untersuchen."
+
+#: .\templates\_includes\_banking_information.html:12
+msgid "Bankverbindung der"
+msgstr "Bankverbindung der"
+
+#: .\templates\_includes\_date_period.html:21
+msgid "ongoing"
+msgstr "laufend"
+
+#: .\templates\_includes\_disclaimer.html:12
+msgid "Important notice"
+msgstr "Wichtiger Hinweis"
+
+#: .\templates\_includes\_disclaimer.html:14
+msgid ""
+"This document is confidential and intended solely for the named recipient. "
+"Any review, distribution or use by others is prohibited."
+msgstr ""
+"Dieses Dokument ist vertraulich und ausschließlich für den genannten "
+"Empfänger bestimmt. Die Einsichtnahme, Weitergabe oder Verwendung durch "
+"andere Personen ist untersagt."
+
+#: .\templates\_includes\_person_info_section.html:12
+msgid "Person Information"
+msgstr "Personeninformation"
+
+#: .\templates\_includes\_person_info_section.html:31
+msgid "Student Email"
+msgstr "Studenten-E-Mail"
+
+#: .\templates\_includes\_person_info_section.html:37
+msgid "Matriculation No."
+msgstr "Matrikelnummer"
+
+#: .\templates\_includes\_signature_boxes.html:12
+msgid "Qualified Signatures"
+msgstr "Qualifizierte Signaturen"
+
+#: .\templates\_includes\_signature_boxes.html:18
+msgid "Place electronic signature here"
+msgstr "Elektronische Unterschrift hier einfügen"
+
+#: .\templates\_includes\_signature_seal.html:23
+msgid ""
+"\n"
+"                HankoSign Attestation Seal\n"
+"            "
+msgstr ""
+"\n"
+"HankoSign Beglaubigungssiegel\n"
+"            "
+
+#: .\templates\_includes\_signature_seal.html:35
+#: .\templates\hankosign\_attestation_seal.html:35
+msgid "When"
+msgstr "Wann"
+
+#: .\templates\_includes\_signature_seal.html:36
+#: .\templates\hankosign\_attestation_seal.html:36
+msgid "ID"
+msgstr "ID"
+
+#: .\templates\_includes\_signature_seal.html:57
+#: .\templates\hankosign\_attestation_seal.html:57
+msgid "No workflow signatures recorded for this document."
+msgstr "Für dieses Dokument wurden keine Workflow-Signaturen aufgezeichnet."
+
+#: .\templates\_includes\_signature_seal.html:62
+#: .\templates\hankosign\_attestation_seal.html:62
+msgid ""
+"Generated by the HankoSign Attestation Service. The entries above record who "
+"performed each workflow action, when it occurred, and a unique signature ID. "
+"This seal serves operational and audit purposes; it is <strong>not</strong> "
+"a qualified electronic signature under eIDAS. Where a qualified signature is "
+"required, refer to the legally signed version of this document."
+msgstr ""
+"Erstellt vom HankoSign-Beglaubigungsdienst. Die oben aufgeführten Einträge "
+"dokumentieren, wer welche Workflow-Aktion wann durchgeführt hat, und "
+"enthalten eine eindeutige Signatur-ID. Dieses Siegel dient operativen und "
+"Prüfungszwecken; es handelt sich <strong>nicht</strong> um eine "
+"qualifizierte elektronische Signatur gemäß eIDAS. Wenn eine qualifizierte "
+"Signatur erforderlich ist, beziehen Sie sich bitte auf die rechtsgültig "
+"unterzeichnete Version dieses Dokuments."
+
+#: .\templates\academia\inboxrequest_form_pdf.html:11
+msgid "ECTS Reimbursement Request"
+msgstr "ECTS-Anrechnungsantrag"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:16
+msgid "ECTS Reimbursement Request Form"
+msgstr "ECTS-Anrechnungsantragsformular"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:20
+msgid "Request Details"
+msgstr "Antragsdetails"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:36
+msgid "Submission Date"
+msgstr "Einreichungsdatum"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:48
+msgid "Course List"
+msgstr "LV-Liste"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:67
+msgid "No courses listed"
+msgstr "Keine LVen aufgeführt"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:80
+msgid "Eligibility"
+msgstr "Anspruch"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:90
+msgid "Max"
+msgstr "Max"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:90
+msgid "ECTS/semester"
+msgstr "ECTS/Semester"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:94
+msgid "No eligible roles found"
+msgstr "Keine anspruchsberechtigten Funktionen gefunden"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:103
+msgid "Affidavits"
+msgstr "Eidesstattliche Erklärungen"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:106
+msgid "Initial Submission Affidavit"
+msgstr "Erste eidesstattliche Erklärung"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:109
+#: .\templates\academia\inboxrequest_form_pdf.html:122
+msgid "Confirmed"
+msgstr "Bestätigt"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:113
+#: .\templates\academia\inboxrequest_form_pdf.html:126
+msgid "Not confirmed"
+msgstr "Nicht bestätigt"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:119
+msgid "Form Upload Affidavit"
+msgstr "Eidesstattliche Erklärung für den Dokumenten-Upload"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:139
+msgid "File"
+msgstr "Datei"
+
+#: .\templates\academia\inboxrequest_form_pdf.html:143
+msgid "Upload Date"
+msgstr "Upload-Datum"
+
+#: .\templates\academia_audit\audit_semester_pdf.html:11
+msgid "ECTS Audit Report"
+msgstr "ECTS-Anrechnungsaudit"
+
+#: .\templates\academia_audit\audit_semester_pdf.html:16
+msgid "ECTS Reimbursement Audit"
+msgstr "ECTS-Anrechnungsaudit"
+
+#: .\templates\academia_audit\audit_semester_pdf.html:20
+msgid "Semester Details"
+msgstr "Semesterdetails"
+
+#: .\templates\academia_audit\audit_semester_pdf.html:40
+msgid "Generated"
+msgstr "Generiert"
+
+#: .\templates\academia_audit\audit_semester_pdf.html:48
+msgid "Audit Summary"
+msgstr "Audit-Zusammenfassung"
+
+#: .\templates\academia_audit\audit_semester_pdf.html:53
+msgid "Student Name"
+msgstr "Name des Studenten"
+
+#: .\templates\academia_audit\audit_semester_pdf.html:54
+msgid "Role(s)"
+msgstr "Funktion(en)"
+
+#: .\templates\academia_audit\audit_semester_pdf.html:57
+msgid "Reimbursed"
+msgstr "Angerechnet"
+
+#: .\templates\academia_audit\audit_semester_pdf.html:58
+#: .\templates\admin\employees\pto_infobox.html:44
+#: .\templates\employees\timesheet_pdf.html:93
+msgid "Remaining"
+msgstr "Verbleibend"
+
+#: .\templates\academia_audit\audit_semester_pdf.html:77
+msgid "No audit entries found"
+msgstr "Keine Audit-Einträge gefunden"
+
+#: .\templates\academia_audit\audit_semester_pdf.html:86
+msgid "Detailed Breakdown"
+msgstr "Detaillierte Aufschlüsselung"
+
+#: .\templates\academia_audit\audit_semester_pdf.html:108
+msgid "Adjustment Applied"
+msgstr "Angewandte Anpassung"
+
+#: .\templates\academia_audit\audit_semester_pdf.html:118
+msgid "Reimbursement Requests"
+msgstr "Anrechnungsanträge"
+
+#: .\templates\academia_audit\audit_semester_pdf.html:122
+#: .\templates\finances\paymentplan_pdf.html:94
+msgid "Reference"
+msgstr "Referenz"
+
+#: .\templates\admin\employees\pto_infobox.html:12
+msgid "PTO overview for year"
+msgstr "Abwesenheitsübersicht für das Jahr"
+
+#: .\templates\admin\employees\pto_infobox.html:15
+msgid "Daily nominal value"
+msgstr "Nominaltag"
+
+#: .\templates\admin\employees\pto_infobox.html:20
+msgid "Total yearly entitlement"
+msgstr "Gesamtjahresanspruch"
+
+#: .\templates\admin\employees\pto_infobox.html:25
+msgid "Carry-in (last year)"
+msgstr "Mitnahme (Vorjahr)"
+
+#: .\templates\admin\employees\pto_infobox.html:30
+msgid "Manual adjust (correction)"
+msgstr "Manuelle Korrektur"
+
+#: .\templates\admin\employees\pto_infobox.html:37
+msgid "Taken (to date)"
+msgstr "Verbraucht (bis heute)"
+
+#: .\templates\admin\employees\pto_infobox.html:51
+msgid "Carry-over from last year"
+msgstr "Übertrag (Vorjahr)"
+
+#: .\templates\admin\employees\pto_infobox.html:54
+msgid "Overspent by"
+msgstr "Überschritten um"
+
+#: .\templates\admin\employees\timesheet_calendar.html:34
+msgid "Add entry"
+msgstr "Eintrag hinzufügen"
+
+#: .\templates\admin\employees\timesheet_calendar.html:36
+msgid "No entry"
+msgstr "Kein Eintrag"
+
+#: .\templates\admin\employees\timesheet_calendar.html:47
+msgid "Edit entry"
+msgstr "Eintrag bearbeiten"
+
+#: .\templates\admin\employees\timesheet_calendar.html:58
+msgid "Delete entry"
+msgstr "Eintrag löschen"
+
+#: .\templates\admin\employees\timesheet_calendar.html:73
+#: .\templates\admin\employees\timesheet_calendar.html:77
+msgid "Holiday"
+msgstr "Feiertag"
+
+#: .\templates\admin\employees\timesheet_calendar.html:75
+msgid "Leave"
+msgstr "Abwesenheit"
+
+#: .\templates\admin\employees\timesheet_calendar.html:76
+msgid "Sick"
+msgstr "Krankenstand"
+
+#: .\templates\admin\employees\timesheet_calendar.html:87
+msgid "Delete this time entry?"
+msgstr "Diesen Eintrag löschen?"
+
+#: .\templates\admin\employees\timesheet_calendar.html:124
+#: .\templates\admin\employees\timesheet_calendar.html:128
+msgid "Failed to delete entry. Please try again."
+msgstr "Der Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut."
+
+#: .\templates\admin\employees\timesheet_totals.html:14
+msgid "Totals"
+msgstr "Summen"
+
+#: .\templates\admin\employees\timesheet_totals.html:18
+msgid "Expected"
+msgstr "Erwartet"
+
+#: .\templates\admin\employees\work_infobox.html:15
+msgid "Expected (Mon–Fri; holidays accounted for)"
+msgstr "Erwartet (Mo–Fr; Feiertage berücksichtigt)"
+
+#: .\templates\admin\employees\work_infobox.html:20
+#: .\templates\employees\timesheet_pdf.html:53
+msgid "Worked"
+msgstr "Gearbeitet"
+
+#: .\templates\admin\employees\work_infobox.html:25
+msgid "Credits (leave/sick/etc.)"
+msgstr "Guthaben (Urlaub/Krankheit/etc.)"
+
+#: .\templates\admin\employees\work_infobox.html:30
+msgid "Total (worked + credits)"
+msgstr "Gesamt (Gearbeitet + Guthaben)"
+
+#: .\templates\admin\employees\work_infobox.html:35
+msgid "Delta (total − expected)"
+msgstr "Delta (Gesamt – Erwartet)"
+
+#: .\templates\admin\employees\work_infobox.html:44
+msgid "Opening saldo"
+msgstr "Eröffnungssaldo"
+
+#: .\templates\admin\employees\work_infobox.html:48
+msgid "Closing saldo"
+msgstr "Schlusssaldo"
+
+#: .\templates\admin\employees\work_infobox.html:53
+msgid "Behind expected by"
+msgstr "Erwartet unterschritten um"
+
+#: .\templates\admin\employees\work_infobox.html:55
+msgid "Ahead of expected by"
+msgstr "Erwartet überschritten um"
+
+#: .\templates\admin\employees\work_infobox.html:59
+msgid "Locked (submitted/approved)"
+msgstr "Gesperrt (eingereicht/genehmigt)"
+
+#: .\templates\admin\finances\bank_reference_preview.html:12
+msgid "Bank reference (full)"
+msgstr "Bankreferenz (vollständig)"
+
+#: .\templates\admin\finances\bank_reference_preview.html:16
+msgid ""
+"Format: {reference} – {payee name} – {cost center}. Updated after saving. "
+"Used for exports."
+msgstr ""
+"Format: {reference} – {payee name} – {cost center}. Wird nach dem Speichern "
+"aktualisiert. Wird für Exporte verwendet."
+
+#: .\templates\admin\finances\bank_reference_preview.html:22
+msgid "Bank reference (≤140)"
+msgstr "Bankreferenz (≤140)"
+
+#: .\templates\admin\finances\bank_reference_preview.html:26
+msgid ""
+"Max 140 chars. Falls back to initials if needed; truncates the left part. "
+"Updated after saving."
+msgstr ""
+"Maximal 140 Zeichen. Bei Bedarf wird auf Initialen zurückgegriffen; der "
+"linke Teil wird abgeschnitten. Wird nach dem Speichern aktualisiert."
+
+#: .\templates\admin\finances\breakdown_preview.html:21
+msgid "No coverage in this fiscal year."
+msgstr "Keine Deckung in diesem Wirtschaftsjahr"
+
+#: .\templates\admin\finances\paymentplan\change_list_object_tools.html:14
+msgid "Add payment plan to"
+msgstr "Zahlungsplan hinzufügen zu"
+
+#: .\templates\admin\finances\paymentplan\change_list_object_tools.html:16
+msgid "Add"
+msgstr "Hinzufügen"
+
+#: .\templates\admin\finances\window_preview.html:16
+msgid "No overlap with fiscal year."
+msgstr "Keine Überschneidung mit dem Wirtschaftsjahr."
+
+#: .\templates\admin\finances\window_preview.html:21
+msgid "Effective invoice (plan) window:"
+msgstr "effektives Dauerrechnungsfenster"
+
+#: .\templates\admin\finances\window_preview.html:27
+msgid "FY bounds:"
+msgstr "Wirtschaftjsahresgrenzen:"
+
+#: .\templates\admin\people\_date_reason_cell.html:12
+msgid "Effective"
+msgstr "effektiv"
+
+#: .\templates\admin\people\_date_reason_cell.html:12
+msgid "Recorded"
+msgstr "aufgezeichnet"
+
+#: .\templates\admin\people\_date_reason_cell.html:15
+msgid "eff."
+msgstr "effektiv"
+
+#: .\templates\admin\people\_role_kind.html:11
+msgid "System role:"
+msgstr "System-Rolle"
+
+#: .\templates\assembly\composition_pdf.html:11
+msgid "Board Composition"
+msgstr "HV-Zusammensetzung"
+
+#: .\templates\assembly\composition_pdf.html:16
+msgid "HV Board Composition"
+msgstr "HV-Zusammensetzung"
+
+#: .\templates\assembly\composition_pdf.html:28
+msgid "Officer Role"
+msgstr "Stellung"
+
+#: .\templates\assembly\composition_pdf.html:30
+msgid "Backup"
+msgstr "Ersatzperson"
+
+#: .\templates\assembly\protocol\session_pdf.html:11
+msgid "Session Protocol"
+msgstr "Sitzungsprotokoll"
+
+#: .\templates\assembly\protocol_editor.html:500
+#: .\templates\assembly\protocol_editor.html:733
+msgid "Read Only"
+msgstr "Nur-Lesen"
+
+#: .\templates\assembly\protocol_editor.html:503
+msgid "Back to Admin"
+msgstr "zurück zum Back Office"
+
+#: .\templates\assembly\protocol_editor.html:515
+msgid "Select a session..."
+msgstr "Wähle eine Sitzung aus..."
+
+#: .\templates\assembly\protocol_editor.html:530
+#: .\templates\assembly\protocol_editor.html:538
+msgid "None recorded"
+msgstr "Keine aufgezeichnet"
+
+#: .\templates\assembly\protocol_editor.html:543
+msgid "Other Attendees"
+msgstr "sonstige Teilnehmer"
+
+#: .\templates\assembly\protocol_editor.html:547
+msgid "To edit attendees and other session details, use the admin interface."
+msgstr ""
+"Um Teilnehmer und andere Sitzungsdetails zu bearbeiten, verwende die Admin-"
+"Oberfläche."
+
+#: .\templates\assembly\protocol_editor.html:552
+msgid "Session Locked"
+msgstr "Sitzung gesperrt"
+
+#: .\templates\assembly\protocol_editor.html:554
+msgid ""
+"This session has been submitted for approval and can no longer be edited in "
+"PROTOKOL-KUN. You can still view all items and add annotations. Use the "
+"admin interface to withdraw or manage the workflow."
+msgstr ""
+"Diese Sitzung wurde zur Genehmigung eingereicht und kann in PROTOKOL-KUN "
+"nicht mehr bearbeitet werden. Du kannst weiterhin alle Elemente anzeigen und "
+"Sachverhalte (Kommentare) hinzufügen. Verwende die Admin-Oberfläche, um den "
+"Workflow zurückzuziehen oder zu verwalten."
+
+#: .\templates\assembly\protocol_editor.html:568
+msgid "Add New Item"
+msgstr "Neuen TOP hinzufügen"
+
+#: .\templates\assembly\protocol_editor.html:569
+msgid "Editing Item"
+msgstr "TOP bearbeiten"
+
+#: .\templates\assembly\protocol_editor.html:581
+msgid "Select kind..."
+msgstr "Typ auswählen"
+
+#: .\templates\assembly\protocol_editor.html:626
+msgid "None"
+msgstr "Keine"
+
+#: .\templates\assembly\protocol_editor.html:627
+msgid "Counted"
+msgstr "Stimmenzählung"
+
+#: .\templates\assembly\protocol_editor.html:628
+msgid "Named"
+msgstr "Namentliche Abstimmung"
+
+#: .\templates\assembly\protocol_editor.html:660
+#: .\templates\assembly\protocol_editor.html:780
+msgid "Named Votes"
+msgstr "Namentliche Abstimmung durch"
+
+#: .\templates\assembly\protocol_editor.html:680
+msgid "Not voted"
+msgstr "Nicht abgestimmt"
+
+#: .\templates\assembly\protocol_editor.html:683
+msgid "Abstention"
+msgstr "Enthaltung"
+
+#: .\templates\assembly\protocol_editor.html:690
+msgid ""
+"No attendees recorded for this session. Add attendees in the admin first "
+"before using named voting."
+msgstr ""
+"Für diese Sitzung wurden keine Teilnehmer (Mandatare) erfasst. Füge zunächst "
+"Teilnehmer im Admin-Bereich hinzu, bevor du die namentliche Abstimmung "
+"verwendest."
+
+#: .\templates\assembly\protocol_editor.html:711
+msgid "Internal only"
+msgstr "nur intern"
+
+#: .\templates\assembly\protocol_editor.html:717
+msgid "Save Item"
+msgstr "TOP speichern"
+
+#: .\templates\assembly\protocol_editor.html:718
+msgid "Update Item"
+msgstr "TOP aktualisieren"
+
+#: .\templates\assembly\protocol_editor.html:720
+msgid "Clear Form"
+msgstr "Formular zurücksetzen"
+
+#: .\templates\assembly\protocol_editor.html:721
+#: .\templates\portal\status.html:387
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: .\templates\assembly\protocol_editor.html:731
+msgid "Protocol Items"
+msgstr "Tagesordnungspunkte"
+
+#: .\templates\assembly\protocol_editor.html:749
+msgid "EDIT"
+msgstr "Bearbeiten"
+
+#: .\templates\assembly\protocol_editor.html:752
+msgid "DELETE"
+msgstr "Löschen"
+
+#: .\templates\assembly\protocol_editor.html:771 .\templates\core\home.html:153
+#: .\templates\portal\base.html:92
+msgid "for"
+msgstr "Dafür"
+
+#: .\templates\assembly\protocol_editor.html:772
+msgid "against"
+msgstr "Dagegen"
+
+#: .\templates\assembly\protocol_editor.html:773
+msgid "abstentions"
+msgstr "Enthaltungen"
+
+#: .\templates\assembly\protocol_editor.html:785
+msgid "No votes recorded"
+msgstr "keine Wahlaufzeichnungen"
+
+#: .\templates\assembly\protocol_editor.html:814
+msgid "No annotations yet."
+msgstr "Noch keine Sachverhalte"
+
+#: .\templates\assembly\protocol_editor.html:822
+msgid "Add annotation..."
+msgstr "Sachverhalt hinzufügen..."
+
+#: .\templates\assembly\protocol_editor.html:827
+msgid "SAVE"
+msgstr "Speichern"
+
+#: .\templates\assembly\protocol_editor.html:837
+msgid "Add item here"
+msgstr "TOP hier einfügen"
+
+#: .\templates\assembly\protocol_editor.html:844
+msgid "No items yet."
+msgstr "Noch keine TOPs"
+
+#: .\templates\assembly\protocol_editor.html:850
+msgid "Add first item"
+msgstr "Ersten TOP hinzufügen"
+
+#: .\templates\assembly\term_pdf.html:11
+msgid "Assembly Term"
+msgstr "Wahlperiode"
+
+#: .\templates\assembly\term_pdf.html:16
+msgid "Assembly Term Overview"
+msgstr "Übersicht zur Wahlperiode"
+
+#: .\templates\assembly\term_pdf.html:19
+msgid "Term Details"
+msgstr "Details"
+
+#: .\templates\assembly\term_pdf.html:36
+#: .\templates\finances\fiscalyear_pdf.html:36
+#: .\templates\finances\fiscalyears_list_pdf.html:36
+msgid "Closed"
+msgstr "Gesperrt"
+
+#: .\templates\core\home.html:14
+msgid "ÖH FH OÖ Management System"
+msgstr "Verwaltungssystem der ÖH FH OÖ"
+
+#: .\templates\core\home.html:75
+msgid "UAS Upper Austria"
+msgstr "Hochschülerinnen- und Hochschülerschaft der FH OÖ"
+
+#: .\templates\core\home.html:76
+msgid "Students' Union Management System"
+msgstr "ÖH-Verwaltungssystem"
+
+#: .\templates\core\home.html:145
+msgid "About"
+msgstr "Über"
+
+#: .\templates\core\home.html:146
+msgid "Privacy"
+msgstr "Datenschutz"
+
+#: .\templates\core\home.html:151 .\templates\portal\base.html:90
+msgid "Built with"
+msgstr "Entwickelt mit"
+
+#: .\templates\core\home.html:151 .\templates\helppages\help_widget.html:34
+#: .\templates\portal\base.html:90
+msgid "by"
+msgstr "von"
+
+#: .\templates\core\home.html:156 .\templates\portal\base.html:93
+msgid "All rights reserved"
+msgstr "Alle Rechte vorbehalten"
+
+#: .\templates\core\home.html:166
+msgid "About UniHanko"
+msgstr "Über UniHanko"
+
+#: .\templates\core\home.html:178
+msgid "Privacy & Legal"
+msgstr "Datenschutz & Rechtliches"
+
+#: .\templates\core\home.html:190
+msgid "Contact Us"
+msgstr "Kontaktiere uns"
+
+#: .\templates\employees\document_receipt_pdf.html:11
+#: .\templates\employees\document_receipt_pdf.html:16
+msgid "Employment Document Receipt"
+msgstr "Beleg für das Dienstnehmerdokument"
+
+#: .\templates\employees\document_receipt_pdf.html:22
+msgid "Document Details"
+msgstr "Dokumentendetails"
+
+#: .\templates\employees\document_receipt_pdf.html:41
+msgid "Relevant Third Party"
+msgstr "relevanter Drittempfänger"
+
+#: .\templates\employees\document_receipt_pdf.html:55
+#: .\templates\portal\status.html:59 .\templates\portal\status.html:61
+#: .\templates\portal\status.html:396
+msgid "Details"
+msgstr "Details"
+
+#: .\templates\employees\employee_pdf.html:11
+#: .\templates\employees\employee_pdf.html:16
+msgid "Employee Dossier"
+msgstr "Dienstnehmerakte"
+
+#: .\templates\employees\employee_pdf.html:21
+#: .\templates\employees\timesheet_pdf.html:21
+msgid "Employment Details"
+msgstr "Details Dienstverhältnis"
+
+#: .\templates\employees\employee_pdf.html:29
+#: .\templates\finances\paymentplan_pdf.html:32
+#: .\templates\hankosign\specimen_pdf.html:32
+msgid "Assignment Period"
+msgstr "Zeitraum der Funktionszuweisung"
+
+#: .\templates\employees\employee_pdf.html:33
+#: .\templates\employees\timesheet_pdf.html:33
+msgid "Weekly Hours"
+msgstr "Wochenarbeitszeit"
+
+#: .\templates\employees\employee_pdf.html:37
+#: .\templates\employees\leaverequest_receipt_pdf.html:38
+msgid "Daily Expected"
+msgstr "Erwartet (täglich)"
+
+#: .\templates\employees\employee_pdf.html:41
+msgid "Time Balance"
+msgstr "Zeitguthaben"
+
+#: .\templates\employees\employee_pdf.html:54
+msgid "Personal Data"
+msgstr "Personenbezogene Daten"
+
+#: .\templates\employees\employee_pdf.html:59
+msgid "Insurance Number"
+msgstr "Sozialversicherungsnummer"
+
+#: .\templates\employees\employee_pdf.html:65
+msgid "Date of Birth"
+msgstr "Geburtsdatum"
+
+#: .\templates\employees\leaverequest_receipt_pdf.html:22
+msgid "Leave Period"
+msgstr "Urlaubszeitraum"
+
+#: .\templates\employees\leaverequest_receipt_pdf.html:34
+#: .\templates\employees\sicknote_receipt_pdf.html:34
+msgid "Weekdays (inclusive)"
+msgstr "Wochentage (einschließlich)"
+
+#: .\templates\employees\leaverequest_receipt_pdf.html:35
+#: .\templates\employees\sicknote_receipt_pdf.html:35
+msgid "days"
+msgstr "Tage"
+
+#: .\templates\employees\leaverequest_receipt_pdf.html:42
+msgid "Total Leave Amount"
+msgstr "Gesamturlaub"
+
+#: .\templates\employees\sicknote_receipt_pdf.html:11
+msgid "Sick Leave Note"
+msgstr "Krankmeldung"
+
+#: .\templates\employees\sicknote_receipt_pdf.html:16
+msgid "Sick Leave Certificate"
+msgstr "Arbeitsunfähigkeitsbeleg"
+
+#: .\templates\employees\sicknote_receipt_pdf.html:22
+msgid "Sick Leave Period"
+msgstr "Zeitraum der Arbeitsunfähigkeit"
+
+#: .\templates\employees\sicknote_receipt_pdf.html:43
+msgid "Medical Notes"
+msgstr "Vermerke"
+
+#: .\templates\employees\timesheet_pdf.html:16
+msgid "Work Journal"
+msgstr "Arbeitsjournal"
+
+#: .\templates\employees\timesheet_pdf.html:41
+msgid "Time Summary"
+msgstr "Zeitübersicht"
+
+#: .\templates\employees\timesheet_pdf.html:45
+msgid "Opening Balance"
+msgstr "Eröffnungssaldo"
+
+#: .\templates\employees\timesheet_pdf.html:49
+msgid "Expected (Month)"
+msgstr "Erwartet (Monat)"
+
+#: .\templates\employees\timesheet_pdf.html:57
+msgid "Credit/Debit"
+msgstr "Plus/Minus"
+
+#: .\templates\employees\timesheet_pdf.html:61
+msgid "Closing Balance"
+msgstr "Schlusssaldo"
+
+#: .\templates\employees\timesheet_pdf.html:69
+msgid "Leave Summary"
+msgstr "Zusammenfassung Jahresurlaub"
+
+#: .\templates\employees\timesheet_pdf.html:77
+msgid "Entitlement"
+msgstr "Anspruch"
+
+#: .\templates\employees\timesheet_pdf.html:81
+msgid "Carried Forward"
+msgstr "Vortrag"
+
+#: .\templates\employees\timesheet_pdf.html:85
+msgid "Manual Adjustment"
+msgstr "Korrektur"
+
+#: .\templates\employees\timesheet_pdf.html:89
+msgid "Taken"
+msgstr "Verwendet"
+
+#: .\templates\employees\timesheet_pdf.html:101
+msgid "Time Entries"
+msgstr "Zeiteinträge"
+
+#: .\templates\employees\timesheet_pdf.html:126
+msgid "No entries"
+msgstr "Keine Einträge"
+
+#: .\templates\error_constraint.html:4 .\templates\error_constraint.html:14
+msgid "DB Error"
+msgstr "Datenbankfehler"
+
+#: .\templates\error_constraint.html:4
+msgid "Django site admin"
+msgstr "Django-Website-Admin"
+
+#: .\templates\error_constraint.html:7
+msgid "Django administration"
+msgstr "Django-Administration"
+
+#: .\templates\error_constraint.html:12 .\templates\portal\base.html:33
+msgid "Home"
+msgstr "Home"
+
+#: .\templates\error_constraint.html:219
+msgid "Database Constraint Error"
+msgstr "Datenbank-Einschränkungsfehler"
+
+#: .\templates\error_constraint.html:221
+msgid "DUPLICATE"
+msgstr "DUPLIKAT"
+
+#: .\templates\error_constraint.html:222
+msgid "DEPENDENCY"
+msgstr "ABHÄNGIGKEIT"
+
+#: .\templates\error_constraint.html:223
+msgid "VALIDATION"
+msgstr "VALIDIERUNG"
+
+#: .\templates\error_constraint.html:224
+msgid "REQUIRED FIELD"
+msgstr "PFLICHTFELD"
+
+#: .\templates\error_constraint.html:225
+msgid "DATABASE"
+msgstr "DATENBANK"
+
+#: .\templates\error_constraint.html:236
+msgid "What to do"
+msgstr "Was tun?"
+
+#: .\templates\error_constraint.html:239
+msgid "Check if record exists"
+msgstr "Überprüfe, ob der Datensatz vorhanden ist."
+
+#: .\templates\error_constraint.html:240
+msgid "Modify unique fields"
+msgstr "Ändere einzigartige Felder"
+
+#: .\templates\error_constraint.html:242
+msgid "Verify related record exists"
+msgstr "Überprüfe, ob ein verbundener Datensatz vorhanden ist."
+
+#: .\templates\error_constraint.html:243
+msgid "Remove dependencies first"
+msgstr "Entferne zuerst etwaige Abhängigkeiten."
+
+#: .\templates\error_constraint.html:245
+msgid "Check date order"
+msgstr "Überprüfe die Reihenfolge von Daten"
+
+#: .\templates\error_constraint.html:246
+msgid "Verify all values"
+msgstr "Überprüfe alle Eingabewerte"
+
+#: .\templates\error_constraint.html:248
+msgid "Fill required fields (*)"
+msgstr "Befülle alle Pflichtfelder (*)"
+
+#: .\templates\error_constraint.html:249
+msgid "Check selections"
+msgstr "Überprüfe deine Auswahl"
+
+#: .\templates\error_constraint.html:251
+msgid "Review your input"
+msgstr "Überprüfe deine Eingabe"
+
+#: .\templates\error_constraint.html:252
+msgid "Contact support"
+msgstr "Kontaktiere den Support"
+
+#: .\templates\error_constraint.html:263
+msgid "Go Home"
+msgstr "Zur Startseite"
+
+#: .\templates\error_constraint.html:269
+msgid "Technical Details (Administrators)"
+msgstr "Technische Details (Administratoren)"
+
+#: .\templates\finances\fiscalyear_pdf.html:11
+#: .\templates\finances\paymentplan_pdf.html:50
+#: .\templates\portal\payments\plan_list.html:289
+msgid "Fiscal Year"
+msgstr "Wirtschaftsjahr"
+
+#: .\templates\finances\fiscalyear_pdf.html:16
+msgid "Fiscal Year Status"
+msgstr "Status des Wirtschaftsjahrs"
+
+#: .\templates\finances\fiscalyear_pdf.html:19
+msgid "Fiscal Year Details"
+msgstr "Details zum Wirtschaftsjahr"
+
+#: .\templates\finances\fiscalyears_list_pdf.html:11
+#: .\templates\finances\fiscalyears_list_pdf.html:16
+msgid "Fiscal Years Overview"
+msgstr "Übersicht über das Wirtschaftsjahr"
+
+#: .\templates\finances\fiscalyears_list_pdf.html:19
+msgid "All Fiscal Years"
+msgstr "Alle Wirtschaftsjahre"
+
+#: .\templates\finances\paymentplan_pdf.html:11
+msgid "Payment Plan"
+msgstr "FuGeb-Dauerrechnung"
+
+#: .\templates\finances\paymentplan_pdf.html:16
+msgid "Payment Plan Receipt"
+msgstr "FuGeb-Dauerrechnung (Beleg)"
+
+#: .\templates\finances\paymentplan_pdf.html:37
+msgid "Confirmation Reference"
+msgstr "Bestätigungsreferenz"
+
+#: .\templates\finances\paymentplan_pdf.html:46
+msgid "Payment Details"
+msgstr "Zahlungsdetails"
+
+#: .\templates\finances\paymentplan_pdf.html:54
+msgid "Payment Period"
+msgstr "Zahlungsfenster"
+
+#: .\templates\finances\paymentplan_pdf.html:58
+msgid "Monthly Amount"
+msgstr "Monatlicher Betrag"
+
+#: .\templates\finances\paymentplan_pdf.html:62
+msgid "Total Amount"
+msgstr "Gesamtbetrag"
+
+#: .\templates\finances\paymentplan_pdf.html:66
+msgid "Cost Center"
+msgstr "Kostenstelle"
+
+#: .\templates\finances\paymentplan_pdf.html:74
+msgid "Banking Details"
+msgstr "Bankverbindung"
+
+#: .\templates\finances\paymentplan_pdf.html:78
+msgid "Payee Name"
+msgstr "Name des Zahlungsempfängers"
+
+#: .\templates\finances\paymentplan_pdf.html:82
+msgid "Address"
+msgstr "Adresse"
+
+#: .\templates\finances\paymentplan_pdf.html:90
+msgid "BIC"
+msgstr "BIC"
+
+#: .\templates\finances\paymentplans_list_pdf.html:11
+#: .\templates\finances\paymentplans_list_pdf.html:16
+msgid "Payment Plans Overview"
+msgstr "Übersicht über FuGeb-Dauerrechnungen"
+
+#: .\templates\finances\paymentplans_list_pdf.html:19
+msgid "Selected Payment Plans"
+msgstr "Ausgewählte FuGeb-Dauerrechnungen"
+
+#: .\templates\finances\paymentplans_list_pdf.html:27
+msgid "FY"
+msgstr "WJ"
+
+#: .\templates\finances\paymentplans_list_pdf.html:29
+msgid "Monthly"
+msgstr "Monatlich"
+
+#: .\templates\flatpages\default.html:22
+msgid "Back to Portal"
+msgstr "Zurück zum Portal"
+
+#: .\templates\hankosign\_attestation_seal.html:23
+msgid ""
+"\n"
+"          HankoSign Attestation Seal\n"
+"        "
+msgstr ""
+"\n"
+"HankoSign Beglaubigungssiegel"
+
+#: .\templates\hankosign\specimen_pdf.html:12
+msgid "Signature Specimen"
+msgstr "Unterschriftsprobe"
+
+#: .\templates\hankosign\specimen_pdf.html:17
+msgid "Signature Specimen Form"
+msgstr "Unterschriftsprobenformular"
+
+#: .\templates\hankosign\specimen_pdf.html:20
+msgid "Signatory Information"
+msgstr "Informationen zum Unterzeichner"
+
+#: .\templates\hankosign\specimen_pdf.html:44
+msgid "Attestation"
+msgstr "Eidesstattliche Erklärung"
+
+#: .\templates\hankosign\specimen_pdf.html:47
+msgid ""
+"\n"
+"            I hereby provide a clear and legible specimen of my handwritten "
+"signature.\n"
+"            I attest that any and all digital HankoSign actions within "
+"UniHanko bearing my signatory\n"
+"            credentials are made by me, with my explicit consent, and may be "
+"traced back to me as the\n"
+"            authorized signatory for the above role.\n"
+"            "
+msgstr ""
+"\n"
+"Hiermit lege ich ein klares und lesbares Muster meiner handschriftlichen "
+"Unterschrift vor.\n"
+"Ich bestätige, dass alle digitalen HankoSign-Aktionen innerhalb von "
+"UniHanko, die meine Unterschriftsberechtigung tragen,\n"
+"von mir mit meiner ausdrücklichen Zustimmung vorgenommen wurden und auf mich "
+"als\n"
+"bevollmächtigten Unterzeichner für die oben genannte Funktion zurückgeführt "
+"werden können.\n"
+"            "
+
+#: .\templates\hankosign\specimen_pdf.html:55
+msgid ""
+"\n"
+"            I understand that this signature specimen will be retained for "
+"verification purposes\n"
+"            and may be used to validate the authenticity of digital "
+"signatures associated with my account.\n"
+"            "
+msgstr ""
+"\n"
+"Ich verstehe, dass dieses Signaturmuster zu Überprüfungszwecken aufbewahrt "
+"wird\n"
+"und zur Validierung der Echtheit digitaler Signaturen in Verbindung mit "
+"meinem Konto verwendet werden kann.\n"
+"            "
+
+#: .\templates\hankosign\specimen_pdf.html:68
+msgid "Please sign clearly within this box:"
+msgstr "Bitte unterschreibe deutlich lesbar in diesem Feld:"
+
+#: .\templates\hankosign\specimen_pdf.html:73
+msgid "Place, Date"
+msgstr "Ort, Datum"
+
+#: .\templates\hankosign\specimen_pdf.html:77
+msgid "Printed Name"
+msgstr "Gedruckter Name"
+
+#: .\templates\helppages\help_widget.html:16
+msgid "Legend"
+msgstr "Legende"
+
+#: .\templates\helppages\help_widget.html:51
+msgid "Questions?"
+msgstr "Fragen?"
+
+#: .\templates\maintenance.html:7
+msgid "Maintenance Mode"
+msgstr "Wartungsmodus"
+
+#: .\templates\maintenance.html:256
+msgid "Maintenance"
+msgstr "Wartung"
+
+#: .\templates\maintenance.html:257
+msgid "System Lockdown Mode"
+msgstr "System-Sperrmodus"
+
+#: .\templates\maintenance.html:258
+msgid "Sharpening the hanko..."
+msgstr "Das Hanko wird gespitzt..."
+
+#: .\templates\maintenance.html:260
+msgid ""
+"UniHanko is currently undergoing scheduled maintenance. We'll be back online "
+"shortly with improvements and updates."
+msgstr ""
+"UniHanko wird derzeit planmäßig gewartet. Wir sind in Kürze mit "
+"Verbesserungen und Updates wieder online."
+
+#: .\templates\maintenance.html:263
+msgid "Expected return: Soon™"
+msgstr "Erwartete Rückkehr: Bald™"
+
+#: .\templates\pages\_about.inc.html:9
+msgid ""
+"UniHanko is a back-office and services platform for the students’ union."
+msgstr "UniHanko ist eine Backoffice- und Serviceplattform für die ÖH."
+
+#: .\templates\pages\_contact.inc.html:9
+msgid "Get in touch with the students’ union office."
+msgstr "Wende dich an das Büro der ÖH."
+
+#: .\templates\pages\_privacy.inc.html:9
+msgid "This is a placeholder privacy/legal note."
+msgstr "Dies ist ein Platzhalter für Datenschutz-/Rechtshinweise."
+
+#: .\templates\pages\_privacy.inc.html:10
+msgid ""
+"We keep logs for operational security and do not sell any personal data."
+msgstr ""
+"Wir führen Protokolle zur Gewährleistung der Betriebssicherheit und "
+"verkaufen keine personenbezogenen Daten."
+
+#: .\templates\pdf\base.html:437
+msgid "printed by:"
+msgstr "Gedruckt von:"
+
+#: .\templates\pdf\certificate_base.html:401
+msgid "Adresse"
+msgstr "Adresse"
+
+#: .\templates\pdf\certificate_base.html:401
+msgid "Zentralstelle im Büro Linz"
+msgstr "Zentralstelle im Büro Linz"
+
+#: .\templates\pdf\protocol_base.html:331
+msgid "Beginn"
+msgstr "Beginn"
+
+#: .\templates\pdf\protocol_base.html:335
+msgid "Ort"
+msgstr "Ort"
+
+#: .\templates\pdf\protocol_base.html:339
+msgid "Abhaltungsart"
+msgstr "Abhaltungsart"
+
+#: .\templates\pdf\protocol_base.html:348
+msgid "Ww Gruppe"
+msgstr "Ww Gruppe"
+
+#: .\templates\pdf\protocol_base.html:349
+#: .\templates\pdf\protocol_base.html:454
+msgid "Mandatar*in"
+msgstr "Mandatar*in"
+
+#: .\templates\pdf\protocol_base.html:350
+msgid "Funktion"
+msgstr "Funktion"
+
+#: .\templates\pdf\protocol_base.html:351
+msgid "Stimmübertragung"
+msgstr "Stimmübertragung"
+
+#: .\templates\pdf\protocol_base.html:393
+msgid "Weitere Anwesende"
+msgstr "Weitere Anwesende"
+
+#: .\templates\pdf\protocol_base.html:421
+#: .\templates\pdf\protocol_base.html:489
+msgid "Gegenstand"
+msgstr "Gegenstand"
+
+#: .\templates\pdf\protocol_base.html:428
+msgid "Diskussion"
+msgstr "Diskussion"
+
+#: .\templates\pdf\protocol_base.html:437
+#: .\templates\pdf\protocol_base.html:505
+msgid "Dafür"
+msgstr "Dafür"
+
+#: .\templates\pdf\protocol_base.html:441
+#: .\templates\pdf\protocol_base.html:509
+msgid "Dagegen"
+msgstr "Dagegen"
+
+#: .\templates\pdf\protocol_base.html:445
+#: .\templates\pdf\protocol_base.html:513
+msgid "Enthaltungen"
+msgstr "Enthaltungen"
+
+#: .\templates\pdf\protocol_base.html:455
+msgid "Stimme"
+msgstr "Stimme"
+
+#: .\templates\pdf\protocol_base.html:471
+msgid "ANGENOMMEN"
+msgstr "ANGENOMMEN"
+
+#: .\templates\pdf\protocol_base.html:473
+msgid "ABGELEHNT"
+msgstr "ABGELEHNT"
+
+#: .\templates\pdf\protocol_base.html:481
+msgid "Beschluss"
+msgstr "Beschluss"
+
+#: .\templates\pdf\protocol_base.html:496
+msgid "Gewählt"
+msgstr "Gewählt"
+
+#: .\templates\pdf\protocol_base.html:520
+msgid "GEWÄHLT"
+msgstr "GEWÄHLT"
+
+#: .\templates\pdf\protocol_base.html:522
+msgid "NICHT GEWÄHLT"
+msgstr "NICHT GEWÄHLT"
+
+#: .\templates\pdf\protocol_base.html:530
+msgid "Anmerkung"
+msgstr "Anmerkung"
+
+#: .\templates\people\people_list_pdf.html:11
+#: .\templates\people\people_list_pdf.html:16
+msgid "Personnel Roster"
+msgstr "Personalverzeichnis"
+
+#: .\templates\people\people_list_pdf.html:19
+msgid "Selected Personnel"
+msgstr "Ausgewähltes Personal"
+
+#: .\templates\people\people_list_pdf.html:26
+msgid "Matric No."
+msgstr "Matrikelnummer"
+
+#: .\templates\people\people_list_pdf.html:27
+msgid "Active Roles"
+msgstr "Aktive Funktionszuweisungen"
+
+#: .\templates\people\person_action_code_notice_pdf.html:16
+msgid "Personal Access Code Notice"
+msgstr "Information zum Personal Access Code"
+
+#: .\templates\people\person_action_code_notice_pdf.html:17
+msgid "Confidential — For recipient only"
+msgstr "Vertraulich – Nur für den Empfänger"
+
+#: .\templates\people\person_action_code_notice_pdf.html:20
+msgid "Recipient"
+msgstr "Empfänger"
+
+#: .\templates\people\person_action_code_notice_pdf.html:42
+msgid ""
+"This code allows you to access your personal data and perform certain "
+"actions. Keep it confidential and do not share it with others."
+msgstr ""
+"Mit diesem Code kannst du auf deine persönlichen Daten zugreifen und "
+"bestimmte Aktionen durchführen. Behandle ihn vertraulich und gib ihn nicht "
+"an Andere weiter."
+
+#: .\templates\people\person_pdf.html:11 .\templates\people\person_pdf.html:16
+msgid "Personnel Record"
+msgstr "Personalakte"
+
+#: .\templates\people\person_pdf.html:21
+msgid "Role Assignments"
+msgstr "Funktionszuweisungen"
+
+#: .\templates\people\person_pdf.html:28
+msgid "Start Reason"
+msgstr "Eintrittsgrund"
+
+#: .\templates\people\person_pdf.html:29
+msgid "End Reason"
+msgstr "Austrittsgrund"
+
+#: .\templates\people\person_pdf.html:42
+msgid "No assignments"
+msgstr "keine Funktionszuweisungen"
+
+#: .\templates\people\person_pdf.html:52
+msgid "Record notes"
+msgstr "Vermerke"
+
+#: .\templates\portal\access_login.html:12
+msgid "Access Your ECTS Reimbursement"
+msgstr "Zugriff auf deine ECTS-Anrechnung"
+
+#: .\templates\portal\access_login.html:22
+msgid "Enter Semester Access Code or Reference Code"
+msgstr "Semester-Zugangscode oder Referenzcode eingeben"
+
+#: .\templates\portal\access_login.html:24
+msgid ""
+"Enter your semester access code to file a new request, or your reference "
+"code to check the status of an existing request."
+msgstr ""
+"Gib den Semester-Zugangscode ein, um einen neuen Antrag zu stellen, oder "
+"deinen Referenzcode, um den Status eines bestehenden Antrags zu überprüfen."
+
+#: .\templates\portal\access_login.html:70
+msgid "Continue"
+msgstr "Weiter"
+
+#: .\templates\portal\access_login.html:71
+#: .\templates\portal\payments\access.html:74
+msgid "Back"
+msgstr "Zurück"
+
+#: .\templates\portal\access_login.html:77
+msgid "About the Code Types"
+msgstr "Über die Codearten"
+
+#: .\templates\portal\access_login.html:79
+msgid "Semester Access Code"
+msgstr "Semester-Zugangscode"
+
+#: .\templates\portal\access_login.html:81
+msgid "Format: word-word-## (e.g., mountain-forest-42)"
+msgstr "Format: Wort-Wort-## (z. B. mountain-forest-42)"
+
+#: .\templates\portal\access_login.html:82
+msgid "Use this to file a new ECTS request."
+msgstr ""
+"Verwende diesen Code, um einen neuen ECTS-Anrechnungsantrag zu stellen."
+
+#: .\templates\portal\access_login.html:88
+msgid "Format: SSSS-LLLL-#### (e.g., WS24-MUEL-1234)"
+msgstr "Format: SSSS-LLLL-#### (z. B. WS24-MUEL-1234)"
+
+#: .\templates\portal\access_login.html:89
+msgid "Use this to check the status of an existing request."
+msgstr ""
+"Verwende diesen Code, um den Status deines bestehenden Antrags zu überprüfen."
+
+#: .\templates\portal\file_request.html:12
+msgid "File ECTS Request"
+msgstr "ECTS-Anrechnungsantrag einreichen"
+
+#: .\templates\portal\file_request.html:17
+#: .\templates\portal\semester_list.html:27
+msgid "Filing Period"
+msgstr "Einreichungsfrist"
+
+#: .\templates\portal\file_request.html:28
+msgid "Select Your Role"
+msgstr "Wähle deine Funktion aus"
+
+#: .\templates\portal\file_request.html:61
+msgid "Add Your Courses"
+msgstr "Füge deine Lehrveranstaltungen hinzu"
+
+#: .\templates\portal\file_request.html:65
+msgid ""
+"Add up to 6 courses. Each course needs a code OR name, plus ECTS amount."
+msgstr ""
+"Füge bis zu 6 Lehrveranstaltungen hinzu. Jede LV benötigt einen Code ODER "
+"einen Namen sowie die Anzahl der ECTS-Punkte."
+
+#: .\templates\portal\file_request.html:105
+msgid "Confirmation"
+msgstr "Bestätigung"
+
+#: .\templates\portal\file_request.html:110
+msgid "Affidavit"
+msgstr "Eidesstattliche Erklärung"
+
+#: .\templates\portal\file_request.html:118 .\templates\portal\status.html:189
+msgid "I confirm the above statement"
+msgstr "Ich bestätige die obige Aussage."
+
+#: .\templates\portal\file_request.html:133
+msgid "Submit Request"
+msgstr "Antrag einreichen"
+
+#: .\templates\portal\file_request.html:138
+msgid ""
+"After submitting, you'll receive a reference code. Use it to download your "
+"form, get signatures, and upload the signed version."
+msgstr ""
+"Nach dem Einreichen erhältst du einen Referenzcode. Verwende diesen, um dein "
+"Formular herunterzuladen und um die unterschriebene Version hochzuladen."
+
+#: .\templates\portal\file_request.html:145 .\templates\portal\status.html:347
+msgid "Back to the ECTS Reimbursement Center"
+msgstr "Zurück zum ECTS-Anrechnungs-Center"
+
+#: .\templates\portal\home.html:12
+msgid "Main Menu"
+msgstr "Hauptmenü"
+
+#: .\templates\portal\home.html:21
+msgid ""
+"File ECTS reimbursement requests for courses you're planning on "
+"substituting. Submit your information, download the form, and re-upload it "
+"after collecting the necessary signatures."
+msgstr ""
+"Reiche ECTS-Anrechnungssanträge für Kurse ein, die du ersetzen möchtest. Gib "
+"die Daten ein, lade das Formular herunter und lade es nach Einholung der "
+"erforderlichen Unterschriften erneut hoch."
+
+#: .\templates\portal\home.html:24
+msgid "File your Reimbursement"
+msgstr "Reiche deine Anrechnung ein"
+
+#: .\templates\portal\home.html:31 .\templates\portal\payments\fy_list.html:12
+msgid "Payment Plans Center"
+msgstr "FuGeb-Dauerrechnungs-Center"
+
+#: .\templates\portal\home.html:34
+msgid ""
+"Complete your payment plan banking details to receive your representation "
+"allowance. Enter your personal access code, submit your information, "
+"download, sign and re-upload the form."
+msgstr ""
+"Gib deine Bankverbindung für die FuGeb-Dauerrechnung an, um deine "
+"Aufwandsentschädigung zu erhalten. Gib deinen Personal Access Code ein, "
+"übermittle deine Daten, lade das Formular herunter, unterschreibe es und "
+"lade es erneut hoch."
+
+#: .\templates\portal\home.html:37
+msgid "Manage your Plans"
+msgstr "Deine Dauerrechnungen verwalten"
+
+#: .\templates\portal\home.html:44
+msgid "Need help? Contact the administration office at: "
+msgstr "Benötigst du  Hilfe? Wende dich an das ÖH-Team unter:"
+
+#: .\templates\portal\payments\access.html:12
+msgid "Manage Payment Plans"
+msgstr "FuGeb-Dauerrechnungen verwalten"
+
+#: .\templates\portal\payments\access.html:17
+#: .\templates\portal\payments\fy_list.html:32
+msgid "From"
+msgstr "von"
+
+#: .\templates\portal\payments\access.html:17
+#: .\templates\portal\payments\fy_list.html:32
+msgid "To"
+msgstr "bis"
+
+#: .\templates\portal\payments\access.html:22
+msgid "Enter Your Personal Access Code"
+msgstr "Gib deinen Personal Access Code ein"
+
+#: .\templates\portal\payments\access.html:25
+msgid ""
+"Your personal access code (PAC) was provided to you by the ÖH team. Enter it "
+"below to access your payment plans for this fiscal year."
+msgstr ""
+"Dein Personal Access Code (PAC) wurde dir vom ÖH-Team zur Verfügung "
+"gestellt. Gib ihn unten ein, um Zugriff auf deine FuGeb-Dauerrechnungen für "
+"dieses Wirtschaftsjahr zu erhalten."
+
+#: .\templates\portal\payments\access.html:69
+msgid "Manage Plans"
+msgstr "Dauerrechnungen verwalten"
+
+#: .\templates\portal\payments\fy_list.html:15
+msgid "Manage Your Payment Plans"
+msgstr "Deine Dauerrechnungen verwalten"
+
+#: .\templates\portal\payments\fy_list.html:17
+msgid "Select a fiscal year to access your payment plans"
+msgstr ""
+"Wähle ein Wirtschaftsjahr aus, um auf deine Dauerrechnungen zugreifen zu "
+"können"
+
+#: .\templates\portal\payments\fy_list.html:37
+msgid "Login with PAC"
+msgstr "Mit dem PAC einloggen"
+
+#: .\templates\portal\payments\fy_list.html:47
+msgid "No active fiscal years available at this time."
+msgstr "Aktuell sind keine Wirtschaftsjahre zur Einreichung verfügbar."
+
+#: .\templates\portal\payments\fy_list.html:53
+#: .\templates\portal\semester_list.html:75
+msgid "Back to the SSP"
+msgstr "Zurück zum SSP"
+
+#: .\templates\portal\payments\plan_list.html:17
+#: .\templates\portal\status.html:17
+msgid "Hi"
+msgstr "Hi"
+
+#: .\templates\portal\payments\plan_list.html:33
+#: .\templates\portal\payments\plan_list.html:285
+msgid "Monthly Allowance"
+msgstr "monatliche Aufwandsentschädigung"
+
+#: .\templates\portal\payments\plan_list.html:37
+#: .\templates\portal\status.html:36
+msgid "Internal Process Stage"
+msgstr "Interner Bearbeitungsstatus"
+
+#: .\templates\portal\payments\plan_list.html:47
+#: .\templates\portal\payments\plan_list.html:49
+msgid "Complete your plan"
+msgstr "Deine Dauerrechnung vervollständigen"
+
+#: .\templates\portal\payments\plan_list.html:48
+#: .\templates\portal\status.html:53
+msgid "Cancel completion"
+msgstr "Vervollständigen abbrechen"
+
+#: .\templates\portal\payments\plan_list.html:54
+msgid "Download Receipt"
+msgstr "Beleg herunterladen"
+
+#: .\templates\portal\payments\plan_list.html:55
+#: .\templates\portal\status.html:45
+msgid "Receipt"
+msgstr "Beleg"
+
+#: .\templates\portal\payments\plan_list.html:60
+#: .\templates\portal\status.html:60 .\templates\portal\status.html:388
+msgid "Close"
+msgstr "Schließen"
+
+#: .\templates\portal\payments\plan_list.html:76
+msgid "Banking Information Provided"
+msgstr "Bankdaten bereitgestellt"
+
+#: .\templates\portal\payments\plan_list.html:81
+msgid "Terms Reviewed & Form Downloaded"
+msgstr "Bedingungen überprüft & Formular heruntergeladen"
+
+#: .\templates\portal\payments\plan_list.html:86
+msgid "Form Uploaded"
+msgstr "Formular hochgeladen"
+
+#: .\templates\portal\payments\plan_list.html:94
+msgid "Banking Details Complete"
+msgstr "Bankdaten vollständig"
+
+#: .\templates\portal\payments\plan_list.html:96
+msgid "Banking Details Required"
+msgstr "Bankdaten erforderlich"
+
+#: .\templates\portal\payments\plan_list.html:149
+msgid "Save & Continue"
+msgstr "Speichern & fortfahren"
+
+#: .\templates\portal\payments\plan_list.html:154
+msgid "After saving, review terms and upload your signed form below."
+msgstr ""
+"Überprüfe nach dem Speichern die Bedingungen und lade dein unterschriebenes "
+"Formular unten hoch."
+
+#: .\templates\portal\payments\plan_list.html:169
+msgid "Payment Plan Terms & Conditions"
+msgstr "Bedingungen zur FuGeb-Dauerrechnung"
+
+#: .\templates\portal\payments\plan_list.html:178
+msgid "Please confirm you agree to the payment plan terms and conditions."
+msgstr ""
+"Bitte bestätige, dass du mit den Bedingungen zur Dauerrechnung einverstanden "
+"bist."
+
+#: .\templates\portal\payments\plan_list.html:186
+msgid "I acknowledge and agree to the terms and conditions above"
+msgstr "Ich bestätige und stimme den oben genannten Bedingungen zu."
+
+#: .\templates\portal\payments\plan_list.html:196
+msgid "Download & Upload Area"
+msgstr "Download- & Uploadbereich"
+
+#: .\templates\portal\payments\plan_list.html:199
+#: .\templates\portal\status.html:152
+msgid ""
+"Click the 'Download My Blank Form' button to download your pre-filled PDF"
+msgstr ""
+"Klicke auf die Schaltfläche „Mein Formular herunterladen“, um dein "
+"vorausgefülltes PDF herunterzuladen."
+
+#: .\templates\portal\payments\plan_list.html:200
+msgid "You sign the same form (handwritten or electronically)"
+msgstr ""
+"Du unterschreibst dasselbe Formular (handschriftlich oder elektronisch)"
+
+#: .\templates\portal\payments\plan_list.html:201
+msgid "Upload your signed form via the 'Choose file' dialogue"
+msgstr ""
+"Lade dein unterschriebenes Formular über den Dialog „Datei auswählen“ hoch."
+
+#: .\templates\portal\payments\plan_list.html:202
+#: .\templates\portal\status.html:176
+msgid "Don't forget to press the 'Submit My Signed Form' button!"
+msgstr ""
+"Vergiss nicht, auf die Schaltfläche „Mein unterschriebenes Formular "
+"einreichen“ zu klicken!"
+
+#: .\templates\portal\payments\plan_list.html:209
+#: .\templates\portal\status.html:160
+msgid "Download My Blank Form"
+msgstr "Mein Formular herunterladen"
+
+#: .\templates\portal\payments\plan_list.html:246
+#: .\templates\portal\status.html:213
+msgid "Submit My Signed Form"
+msgstr "Mein unterschriebenes Formular einreichen"
+
+#: .\templates\portal\payments\plan_list.html:257
+msgid "Upload Complete"
+msgstr "Upload abgeschlossen"
+
+#: .\templates\portal\payments\plan_list.html:260
+msgid "Your signed form has been uploaded successfully."
+msgstr "Dein unterschriebenes Formular wurde erfolgreich hochgeladen."
+
+#: .\templates\portal\payments\plan_list.html:261
+#: .\templates\portal\payments\plan_list.html:294
+msgid "Signed on"
+msgstr "Unterschrieben am"
+
+#: .\templates\portal\payments\plan_list.html:278
+msgid "Plan Details"
+msgstr "Dauerrechnungs-Details"
+
+#: .\templates\portal\payments\plan_list.html:303
+#: .\templates\portal\status.html:305
+msgid "Documents"
+msgstr "Dokumente"
+
+#: .\templates\portal\payments\plan_list.html:306
+msgid "Download Payment Plan PDF"
+msgstr "Dauerrechnung herunterladen"
+
+#: .\templates\portal\payments\plan_list.html:318
+msgid "No payment plans found for this fiscal year."
+msgstr "Für dieses Wirtschaftsjahr wurden keine Zahlungspläne gefunden."
+
+#: .\templates\portal\payments\plan_list.html:325
+msgid "Back to the Payment Plans Center"
+msgstr "Zurück zum Dauerrechnungs-Center"
+
+#: .\templates\portal\semester_list.html:15
+msgid "File a New Reimbursement Request"
+msgstr "Einen neuen Anrechnungsantrag erstellen"
+
+#: .\templates\portal\semester_list.html:17
+msgid "Select a semester below to file a new ECTS reimbursement request"
+msgstr ""
+"Wähle unten ein Semester aus, um einen neuen Antrag auf ECTS-Anrechnung zu "
+"stellen."
+
+#: .\templates\portal\semester_list.html:40
+msgid "No open filing periods at this time."
+msgstr "Derzeit gibt es keine offenen Einreichfenster."
+
+#: .\templates\portal\semester_list.html:46
+msgid "Check My Reimbursement Request Status"
+msgstr "Den Status meines Anrechnungsantrags überprüfen"
+
+#: .\templates\portal\semester_list.html:48
+msgid ""
+"Already filed? Enter your reference code to check your request's status and "
+"upload missing documents."
+msgstr ""
+"Bereits eingereicht? Gib deinen Referenzcode ein, um den Status deines "
+"Antrags zu überprüfen und fehlende Dokumente hochzuladen."
+
+#: .\templates\portal\semester_list.html:58
+msgid "e.g., WS24-MUEL-1234"
+msgstr "z.B.: WS24-MUEL-1234"
+
+#: .\templates\portal\semester_list.html:61
+msgid "Format: SSSS-LLLL-####"
+msgstr "Format: SSSS-LLLL-####"
+
+#: .\templates\portal\semester_list.html:67
+msgid "Check Status"
+msgstr "Status prüfen"
+
+#: .\templates\portal\status.html:12
+msgid "ECTS Reimbursement Request Status"
+msgstr "Status des ECTS-Anrechnungsantrags"
+
+#: .\templates\portal\status.html:28
+msgid "Your Role with the ÖH"
+msgstr "Deine Funktion in der ÖH"
+
+#: .\templates\portal\status.html:32
+msgid "ECTS to be reimbursed"
+msgstr "anzurechnende ECTS"
+
+#: .\templates\portal\status.html:52 .\templates\portal\status.html:54
+msgid "Complete your request"
+msgstr "Deinen Antrag vervollständigen"
+
+#: .\templates\portal\status.html:65
+msgid ""
+"The role you selected to be reimbursed for; usually the one with the highest "
+"ECTS. Note: The final audit will correctly calculate all roles."
+msgstr ""
+"Die Funktion, die du zur Anrechnung wählst; in der Regel die Funktion mit "
+"den höchsten ECTS. Anmerkung: das abschließende Audit verrechnet alle deine "
+"Funktionen."
+
+#: .\templates\portal\status.html:66
+msgid "The sum of the ECTS of all courses you selected for reimbursement."
+msgstr ""
+"Die Summe der ECTS aller Lehrveranstaltungen, die du anrechnen lassen "
+"möchtest."
+
+#: .\templates\portal\status.html:78
+msgid "Courses Filed"
+msgstr "Lehrveranstaltungen angegeben"
+
+#: .\templates\portal\status.html:83
+msgid "Form Signed & Uploaded"
+msgstr "Antragsformular unterschrieben & hochgeladen"
+
+#: .\templates\portal\status.html:88
+msgid "Processed by ÖH Staff"
+msgstr "Durch das ÖH-Team bearbeitet"
+
+#: .\templates\portal\status.html:95
+msgid "ECTS Reimbursement Request Summary"
+msgstr "Zusammenfassung des ECTS-Anrechnungsantrags"
+
+#: .\templates\portal\status.html:101 .\templates\portal\status.html:252
+msgid "Filed"
+msgstr "Eingereicht"
+
+#: .\templates\portal\status.html:104
+msgid "Courses to be reimbursed"
+msgstr "Anzurechnende LVen"
+
+#: .\templates\portal\status.html:121 .\templates\portal\status.html:285
+msgid "Your Total ECTS of Reimburseable Courses"
+msgstr "Gesamt-ECTS der anzurechnenden LVen"
+
+#: .\templates\portal\status.html:125 .\templates\portal\status.html:289
+msgid "Your ECTS Role Entitlement"
+msgstr "Dein ECTS-Anspruch"
+
+#: .\templates\portal\status.html:129
+msgid "Election Semester Adjustment"
+msgstr "mögliche Anpassung für eine Wahlperiode"
+
+#: .\templates\portal\status.html:133 .\templates\portal\status.html:297
+msgid "Your Max ECTS Entitlement"
+msgstr "Dein maximaler ECTS-Anspruch"
+
+#: .\templates\portal\status.html:140
+msgid "Your Request Note"
+msgstr "Deine Antragsnotiz"
+
+#: .\templates\portal\status.html:149
+msgid "Download Area"
+msgstr "Download-Bereich"
+
+#: .\templates\portal\status.html:153
+msgid ""
+"Make sure both you and your lecturer sign the same form (handwritten or "
+"electronically)"
+msgstr ""
+"Stelle sicher, dass sowohl Du als auch Dein Lehrveranstaltungsleiter "
+"dasselbe Formular unterschreiben (handschriftlich oder elektronisch)."
+
+#: .\templates\portal\status.html:154
+msgid ""
+"Return later with your reference code to upload the twice-signed form in the "
+"Upload Area"
+msgstr ""
+"Komm später mit deinem Referenzcode zurück, um das doppelt unterschriebene "
+"Formular im Upload-Bereich hochzuladen."
+
+#: .\templates\portal\status.html:169
+msgid "Upload Area"
+msgstr "Upload-Bereich"
+
+#: .\templates\portal\status.html:172
+msgid ""
+"Make sure your form is signed by both you and your lecturer (handwritten or "
+"electronically)"
+msgstr ""
+"Stelle sicher, dass Dein Formular sowohl von Dir als auch von Deinem "
+"Lehrveranstaltungsleiter unterschrieben ist (handschriftlich oder "
+"elektronisch)."
+
+#: .\templates\portal\status.html:173
+msgid "Make sure your file is a PDF file, we don't accept image files"
+msgstr ""
+"Stelle sicher, dass deine Datei eine PDF ist. Wir akzeptieren keine "
+"Bilddateien."
+
+#: .\templates\portal\status.html:174
+msgid ""
+"Read and confirm the upload declaration by checking the 'I confirm...' "
+"checkbox"
+msgstr ""
+"Lese die Upload-Erklärung und bestätige diese, indem du das Kontrollkästchen "
+"„Ich bestätige ...“ aktivierst."
+
+#: .\templates\portal\status.html:175
+msgid "Upload your twice signed form via the 'Choose file' dialogue"
+msgstr ""
+"Lade dein doppelt unterschriebenes Formular über den Dialog „Datei "
+"auswählen” hoch."
+
+#: .\templates\portal\status.html:181
+msgid "Upload Declaration"
+msgstr "Upload-Erklärung"
+
+#: .\templates\portal\status.html:200
+msgid "Signed Reimbursement Request PDF"
+msgstr "Unterzeichneter Anrechnungsantrag als PDF"
+
+#: .\templates\portal\status.html:207
+msgid "PDF only; make sure all signatures are present (max 20MB)"
+msgstr ""
+"Nur PDF; stelle sicher, dass alle Unterschriften vorhanden sind (max. 20 MB)"
+
+#: .\templates\portal\status.html:221
+msgid "Signed Form Uploaded Successfully"
+msgstr "Unterzeichnetes Formular erfolgreich hochgeladen"
+
+#: .\templates\portal\status.html:224
+msgid "Your signed form has been uploaded and is being processed by our team."
+msgstr ""
+"Dein unterschriebenes Formular wurde hochgeladen und wird derzeit von "
+"unserem Team bearbeitet."
+
+#: .\templates\portal\status.html:225
+msgid "Uploaded"
+msgstr "Hochgeladen"
+
+#: .\templates\portal\status.html:241
+msgid "ECTS Reimbursement Request Information"
+msgstr "Informationen zum ECTS-Anrechnungsantrag"
+
+#: .\templates\portal\status.html:257
+msgid "Form Submitted"
+msgstr "Formular eingereicht"
+
+#: .\templates\portal\status.html:266
+msgid "Your Course Details"
+msgstr "Deine LV-Details"
+
+#: .\templates\portal\status.html:293
+msgid "Semester Adjustment"
+msgstr "Wahlperiodenanpassung"
+
+#: .\templates\portal\status.html:309
+msgid "Download My Request Form"
+msgstr "Mein Antragsformular herunterladen"
+
+#: .\templates\portal\status.html:314
+msgid "View My Signed Form"
+msgstr "Mein unterschriebenes Formular einsehen"
+
+#: .\templates\portal\status.html:327
+msgid "Your Reference Code"
+msgstr "Dein Referenzcode"
+
+#: .\templates\portal\status.html:337
+msgid "Copy"
+msgstr "Kopieren"
+
+#: .\templates\portal\status.html:341
+msgid "Save this code to check your request status or upload documents later."
+msgstr ""
+"Speichere diesen Code um später deinen Antragsstatus einsehen oder Dokumente "
+"hochladen zu können."
+
+#: .\templates\portal\status.html:364
+msgid "Copied!"
+msgstr "Kopiert!"
+
+#: .\templates\portal\status.html:395
+msgid "Complete"
+msgstr "Vollständig"
+
+#: .\templates\simple_history\object_history.html:40
+msgid ""
+"Choose a date from the list below to revert to a previous version of this "
+"object."
+msgstr ""
+"Wähle ein Datum aus der folgenden Liste aus, um zu einer früheren Version "
+"dieses Objekts zurückzukehren."
+
+#: .\templates\simple_history\object_history.html:48
+msgid "This object doesn't have a change history."
+msgstr "Dieses Objekt verfügt über keine Change-Historie."

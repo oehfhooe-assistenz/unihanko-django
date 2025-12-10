@@ -36,3 +36,5 @@ config/fixtures/people.yaml
 config/fixtures/assignments.yaml
 config/fixtures/orginfo.yaml
 config/fixtures/access.yaml
+
+config/settings_rosetta.py

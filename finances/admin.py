@@ -742,7 +742,7 @@ class PaymentPlanAdmin(
             request,
             f"FGEB-BELEG_{obj.plan_code}_{rsname}_{lname}-{date_str}.pdf"
         )
-    print_paymentplan.label = "🖨️ " + _("Print PDF")
+    print_paymentplan.label = "🖨️ " + _("Print Payment Plan PDF")
     print_paymentplan.attrs = {
         "class": "btn btn-block btn-info",
         "style": "margin-bottom: 1rem;",

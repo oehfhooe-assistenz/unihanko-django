@@ -45,4 +45,5 @@ if settings.DEBUG:
         path('test/500/', TemplateView.as_view(template_name='500.html')),
         path('test/403/', TemplateView.as_view(template_name='403.html')),
         path('test/maintenance/', TemplateView.as_view(template_name='maintenance.html')),
+        path('rosetta/', include('rosetta.urls')),
     ]

@@ -221,6 +221,7 @@ INSTALLED_APPS = [
     'captcha',
     'django_admin_inline_paginator_plus',
     'axes',
+    'rosetta',
 
     'core',
     'annotations',
@@ -380,10 +381,12 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 LANGUAGES = [
-    ("en-gb", "English"),
-    ("de-at", "Deutsch"),
+    ("en", "English"),
+    ("de", "Deutsch"),
 ]
 LOCALE_PATHS = [BASE_DIR / "locale"]
+if DEBUG:
+    from .settings_rosetta import DEEPL_AUTH_KEY, ROSETTA_ENABLE_TRANSLATION_SUGGESTIONS
 
 # markdown configuration
 MARKDOWNX_MARKDOWN_EXTENSIONS = [
