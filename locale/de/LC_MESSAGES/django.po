@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-10 22:25+0100\n"
-"PO-Revision-Date: 2025-12-10 22:21+0000\n"
+"POT-Creation-Date: 2025-12-11 21:30+0100\n"
+"PO-Revision-Date: 2025-12-11 21:31+0000\n"
 "Last-Translator:   <admin@mail.com>\n"
 "Language-Team: \n"
 "Language: de\n"
@@ -41,7 +41,8 @@ msgstr ""
 #: .\academia\admin.py:113
 msgid "Auto-generated on first save in format: SEMESTER-NAME-####"
 msgstr ""
-"Wird beim ersten Speichern automatisch im Format SEMESTER-NAME-#### generiert"
+"Wird beim ersten Speichern automatisch im Format SEMESTER-NAME-#### "
+"generiert"
 
 #: .\academia\admin.py:117
 msgid "Timestamp when student confirmed initial submission affidavit"
@@ -251,7 +252,8 @@ msgstr "überschritten"
 
 #: .\academia\admin.py:618
 msgid "Cannot verify: No form uploaded yet"
-msgstr "Kann nicht verifiziert werden: Es wurde noch kein Formular hochgeladen"
+msgstr ""
+"Kann nicht verifiziert werden: Es wurde noch kein Formular hochgeladen"
 
 #: .\academia\admin.py:621 .\portal\views.py:234
 msgid "Warning: "
@@ -306,7 +308,7 @@ msgstr "Antragsformular drucken"
 
 #: .\academia\apps.py:13
 msgid "Academia Inbox"
-msgstr "Academia Inbox"
+msgstr "Academia (Eingang)"
 
 #: .\academia\models.py:106 .\assembly\models.py:89 .\assembly\models.py:144
 #: .\assembly\models.py:332 .\employees\models.py:498 .\finances\models.py:204
@@ -353,7 +355,8 @@ msgstr "Startdatum Einreichung"
 
 #: .\academia\models.py:132
 msgid "When public filing platform opens for new requests"
-msgstr "Datum, zu dem die öffentliche Plattform für neue Anträge geöffnet wird"
+msgstr ""
+"Datum, zu dem die öffentliche Plattform für neue Anträge geöffnet wird"
 
 #: .\academia\models.py:136
 msgid "Filing End"
@@ -523,7 +526,8 @@ msgstr ""
 "Wenn der Student das Formular hochgeladen und die eidesstattliche Erklärung "
 "bestätigt hat"
 
-#: .\academia\models.py:330 .\templates\academia\inboxrequest_form_pdf.html:135
+#: .\academia\models.py:330
+#: .\templates\academia\inboxrequest_form_pdf.html:135
 msgid "Uploaded Form"
 msgstr "Hochgeladenes Formular"
 
@@ -538,11 +542,11 @@ msgstr "Formular-Upload am"
 
 #: .\academia\models.py:356 .\academia\models.py:470
 msgid "Inbox Request"
-msgstr "Inbox Request"
+msgstr "Antrag (Eingang)"
 
 #: .\academia\models.py:357 .\academia_audit\models.py:151
 msgid "Inbox Requests"
-msgstr "Inbox Requests"
+msgstr "Anträge (Eingang)"
 
 #: .\academia\models.py:395
 msgid "Could not generate unique reference code after 100 attempts"
@@ -697,8 +701,8 @@ msgid ""
 "Audit synchronized: %(created)d created, %(updated)d updated, %(skipped)d "
 "skipped (manually checked)."
 msgstr ""
-"Audit synchronisiert:%(created)d  erstellt,%(updated)d  aktualisiert,"
-"%(skipped)d  übersprungen (bereits manuell überprüft)."
+"Audit synchronisiert:%(created)d  erstellt,%(updated)d  "
+"aktualisiert,%(skipped)d  übersprungen (bereits manuell überprüft)."
 
 #: .\academia_audit\admin.py:397
 msgid "Synchronize Audit Entries"
@@ -821,7 +825,7 @@ msgstr "Berechnungsdetails"
 
 #: .\academia_audit\apps.py:13
 msgid "Academia Audit"
-msgstr "Academia Audit"
+msgstr "Academia (Audit)"
 
 #: .\academia_audit\models.py:23
 #, python-format
@@ -931,8 +935,8 @@ msgid ""
 "Timestamp when this entry was manually reviewed/edited. Protects from "
 "synchronize overwrites."
 msgstr ""
-"Zeitstempel, wann dieser Eintrag manuell überprüft/bearbeitet wurde. Schützt "
-"vor Überschreibungen durch die Synchronisierung."
+"Zeitstempel, wann dieser Eintrag manuell überprüft/bearbeitet wurde. Schützt"
+" vor Überschreibungen durch die Synchronisierung."
 
 #: .\academia_audit\models.py:205
 msgid "Optional notes for manual adjustments or corrections"
@@ -971,11 +975,11 @@ msgstr "Erstellt von"
 #: .\annotations\admin.py:124 .\annotations\models.py:62
 #: .\assembly\models.py:104 .\assembly\models.py:179 .\assembly\models.py:269
 #: .\assembly\models.py:390 .\assembly\models.py:639 .\assembly\models.py:748
-#: .\employees\models.py:98 .\employees\models.py:291 .\employees\models.py:358
-#: .\employees\models.py:500 .\employees\models.py:610
-#: .\employees\models.py:780 .\finances\models.py:222 .\hankosign\models.py:50
-#: .\hankosign\models.py:112 .\hankosign\models.py:202 .\people\models.py:87
-#: .\people\models.py:369
+#: .\employees\models.py:98 .\employees\models.py:291
+#: .\employees\models.py:358 .\employees\models.py:500
+#: .\employees\models.py:610 .\employees\models.py:780
+#: .\finances\models.py:222 .\hankosign\models.py:50 .\hankosign\models.py:112
+#: .\hankosign\models.py:202 .\people\models.py:87 .\people\models.py:369
 msgid "Created at"
 msgstr "Erstellt am"
 
@@ -1042,13 +1046,13 @@ msgid "User who created this annotation (null for system annotations)"
 msgstr ""
 "Benutzer, der diesen Sachverhalt erstellt hat (null für Systemanmerkungen)"
 
-#: .\annotations\models.py:63 .\assembly\models.py:105 .\assembly\models.py:180
-#: .\assembly\models.py:270 .\assembly\models.py:391 .\assembly\models.py:640
-#: .\employees\models.py:99 .\employees\models.py:292 .\employees\models.py:359
-#: .\employees\models.py:501 .\employees\models.py:611
-#: .\employees\models.py:781 .\finances\models.py:223 .\hankosign\models.py:51
-#: .\hankosign\models.py:113 .\hankosign\models.py:203 .\people\models.py:88
-#: .\people\models.py:370
+#: .\annotations\models.py:63 .\assembly\models.py:105
+#: .\assembly\models.py:180 .\assembly\models.py:270 .\assembly\models.py:391
+#: .\assembly\models.py:640 .\employees\models.py:99 .\employees\models.py:292
+#: .\employees\models.py:359 .\employees\models.py:501
+#: .\employees\models.py:611 .\employees\models.py:781
+#: .\finances\models.py:223 .\hankosign\models.py:51 .\hankosign\models.py:113
+#: .\hankosign\models.py:203 .\people\models.py:88 .\people\models.py:370
 msgid "Updated at"
 msgstr "Aktualisiert am"
 
@@ -1309,7 +1313,8 @@ msgid "Only election items can generate dispatch documents."
 msgstr "Nur Personalwahlen können Entsendungsbelege generieren."
 
 #: .\assembly\admin.py:835
-msgid "No person elected or temporary placeholders - cannot generate document."
+msgid ""
+"No person elected or temporary placeholders - cannot generate document."
 msgstr ""
 "Keine gewählte Person oder vorübergehende Platzhalter – kann kein Dokument "
 "erstellen."
@@ -1325,6 +1330,11 @@ msgstr "i.V. ÖH FH OÖ"
 #: .\assembly\admin.py:863
 msgid "Print Dispatch Document"
 msgstr "Entsendungsbeleg drucken"
+
+#: .\assembly\apps.py:12
+#| msgid "Assembly Term"
+msgid "Assembly"
+msgstr "HV"
 
 #: .\assembly\forms.py:43
 msgid "Item title"
@@ -1865,7 +1875,8 @@ msgstr ""
 
 #: .\core\middleware.py:88
 msgid ""
-"This record already exists. Please check for duplicates or modify your input."
+"This record already exists. Please check for duplicates or modify your "
+"input."
 msgstr ""
 "Dieser Datensatz existiert bereits. Bitte überprüfe auf Duplikate oder "
 "ändere die Eingabe."
@@ -1942,11 +1953,12 @@ msgid "Saldo"
 msgstr "Saldo"
 
 #: .\employees\admin.py:306 .\employees\admin.py:312 .\employees\models.py:86
-#: .\employees\models.py:279 .\employees\models.py:492 .\finances\models.py:318
-#: .\hankosign\admin.py:142 .\hankosign\admin.py:147 .\hankosign\models.py:192
-#: .\helppages\models.py:38 .\people\admin.py:168 .\people\admin.py:172
-#: .\people\admin.py:852 .\people\admin.py:857 .\people\models.py:85
-#: .\people\models.py:285 .\templates\assembly\term_pdf.html:36
+#: .\employees\models.py:279 .\employees\models.py:492
+#: .\finances\models.py:318 .\hankosign\admin.py:142 .\hankosign\admin.py:147
+#: .\hankosign\models.py:192 .\helppages\models.py:38 .\people\admin.py:168
+#: .\people\admin.py:172 .\people\admin.py:852 .\people\admin.py:857
+#: .\people\models.py:85 .\people\models.py:285
+#: .\templates\assembly\term_pdf.html:36
 #: .\templates\employees\document_receipt_pdf.html:47
 #: .\templates\employees\employee_pdf.html:46
 #: .\templates\finances\fiscalyear_pdf.html:36
@@ -2243,7 +2255,7 @@ msgstr "Aktion \"Sperren\" nicht konfiguriert"
 #: .\employees\admin.py:1426
 #, python-format
 msgid "Timesheet %(period)s locked"
-msgstr "Stundenzettel %(period}s gesperrt"
+msgstr "Stundenzettel %(period)s gesperrt"
 
 #: .\employees\admin.py:1428 .\people\admin.py:463
 msgid "Locked."
@@ -2288,6 +2300,10 @@ msgstr "Regeln"
 msgid "Comment"
 msgstr "Vermerk"
 
+#: .\employees\apps.py:12 .\employees\models.py:298
+msgid "Employees"
+msgstr "Dienstnehmer"
+
 #: .\employees\models.py:86
 msgid "Use this calendar by default."
 msgstr "Diesen Kalender standardmäßig verwenden."
@@ -2320,8 +2336,8 @@ msgstr ""
 "Ein anderer Feiertagskalender ist bereits aktiv. Deaktiviere diesen zuerst "
 "oder deaktiviere dieses Feld."
 
-#: .\employees\models.py:259 .\finances\models.py:328 .\hankosign\models.py:189
-#: .\people\models.py:413
+#: .\employees\models.py:259 .\finances\models.py:328
+#: .\hankosign\models.py:189 .\people\models.py:413
 msgid "Assignment"
 msgstr "Funktionszuweisung"
 
@@ -2357,7 +2373,8 @@ msgid "Employment end (override)"
 msgstr "Dienstaustritt (Override)"
 
 #: .\employees\models.py:278
-msgid "End of employment. Override in case of misalignment with assigned Role."
+msgid ""
+"End of employment. Override in case of misalignment with assigned Role."
 msgstr ""
 "Beendigung des Arbeitsverhältnisses. Überschreiben bei Nichtübereinstimmung "
 "mit der zugewiesenen Rolle."
@@ -2407,10 +2424,6 @@ msgstr "Geburtsdatum"
 #: .\employees\models.py:297 .\employees\models.py:349
 #: .\employees\models.py:480 .\employees\models.py:595
 msgid "Employee"
-msgstr "Dienstnehmer"
-
-#: .\employees\models.py:298
-msgid "Employees"
 msgstr "Dienstnehmer"
 
 #: .\employees\models.py:322
@@ -2601,8 +2614,8 @@ msgstr "Stundenzettel"
 #, python-brace-format
 msgid "A timesheet already exists for this employee in {year}-{month:02d}."
 msgstr ""
-"Für diesen Mitarbeiter existiert bereits ein Stundenzettel in {year}-"
-"{month:02d}."
+"Für diesen Mitarbeiter existiert bereits ein Stundenzettel in "
+"{year}-{month:02d}."
 
 #: .\employees\models.py:761
 #: .\templates\admin\employees\timesheet_calendar.html:71
@@ -2697,7 +2710,8 @@ msgid "Leave blank to auto-generate (WJyy_yy)."
 msgstr "Leer lassen, um automatisch zu generieren (WJyy_yy)."
 
 #: .\finances\admin.py:92
-msgid "Auto-filled from role default. Adjust if needed for this specific plan."
+msgid ""
+"Auto-filled from role default. Adjust if needed for this specific plan."
 msgstr ""
 "Automatisch aus der Standardrolle ausgefüllt. Bei Bedarf für diese "
 "Dauerrechnung anpassen."
@@ -2763,7 +2777,8 @@ msgstr "Vom Zahlungsempfänger über das öffentliche Portal erhalten."
 msgid "Window"
 msgstr "Fenster"
 
-#: .\finances\admin.py:291 .\templates\admin\employees\timesheet_totals.html:17
+#: .\finances\admin.py:291
+#: .\templates\admin\employees\timesheet_totals.html:17
 #: .\templates\finances\paymentplans_list_pdf.html:30
 msgid "Total"
 msgstr "Gesamt"
@@ -2794,7 +2809,8 @@ msgstr "nicht verfügbar"
 msgid "Role’s default monthly amount (per Statutes)"
 msgstr "standardmäßige Aufwandsentschädigung der Rolle (gemäß Satzung)"
 
-#: .\finances\admin.py:369 .\templates\admin\finances\breakdown_preview.html:12
+#: .\finances\admin.py:369
+#: .\templates\admin\finances\breakdown_preview.html:12
 msgid "Monthly breakdown (30-day proration)"
 msgstr "Monatliche Aufschlüsselung (30-Tage-Abrechnung)"
 
@@ -2862,8 +2878,8 @@ msgstr "Zahlungslauf verifizieren"
 msgid ""
 "Payment end date automatically set to %(date)s. You can adjust if needed."
 msgstr ""
-"Das Zahlungsenddatum wird automatisch auf %(date)s gesetzt. Du kannst es bei "
-"Bedarf anpassen."
+"Das Zahlungsenddatum wird automatisch auf %(date)s gesetzt. Du kannst es bei"
+" Bedarf anpassen."
 
 #: .\finances\admin.py:705
 msgid "Cancel action not configured."
@@ -3011,7 +3027,7 @@ msgstr "Wirtschaftsjahr entsperrt."
 msgid "Unlock year"
 msgstr "Wirtschaftsjahr entsperren"
 
-#: .\finances\apps.py:13
+#: .\finances\apps.py:12
 msgid "Finances"
 msgstr "Finanzen"
 
@@ -3187,21 +3203,21 @@ msgstr "FuGeb-Dauerrechnungen"
 
 #: .\finances\models.py:576
 msgid ""
-"An open payment plan already exists for this assignment in this fiscal year. "
-"Please edit or delete the existing draft plan first."
+"An open payment plan already exists for this assignment in this fiscal year."
+" Please edit or delete the existing draft plan first."
 msgstr ""
-"Für diese Funktionszuweisung gibt es bereits eine offene FuGeb-Dauerrechnung "
-"in diesem Wirtschaftsjahr. Bitte bearbeite oder lösche zunächst den "
+"Für diese Funktionszuweisung gibt es bereits eine offene FuGeb-Dauerrechnung"
+" in diesem Wirtschaftsjahr. Bitte bearbeite oder lösche zunächst den "
 "bestehenden Entwurf."
 
 #: .\finances\models.py:581
 msgid ""
-"An open payment plan already exists for this assignment in this fiscal year. "
-"Please edit the existing plan or cancel it via workflow actions."
+"An open payment plan already exists for this assignment in this fiscal year."
+" Please edit the existing plan or cancel it via workflow actions."
 msgstr ""
-"Für diese Funktionszuweisung existiert bereits ein offener Zahlungsplan für "
-"dieses Geschäftsjahr. Bitte bearbeite den bestehenden Plan oder stornieren "
-"Sie ihn über Workflow-Aktionen."
+"Für diese Funktionszuweisung existiert bereits eine offene Dauerrechnung für "
+"dieses Wirtschaftsjahr. Bitte bearbeite die bestehende Dauerrechnung oder storniere "
+"sie über Workflow-Aktionen."
 
 #: .\finances\models.py:589
 msgid "You cannot change the fiscal year after creation."
@@ -3215,7 +3231,8 @@ msgstr "Das Wirtschaftsjahr ist erforderlich."
 #: .\finances\models.py:608
 msgid "Pay start must be within or before the fiscal year end."
 msgstr ""
-"Das Startdatum muss innerhalb oder vor Ablauf des Wirtschaftsjahres erfolgen."
+"Das Startdatum muss innerhalb oder vor Ablauf des Wirtschaftsjahres "
+"erfolgen."
 
 #: .\finances\models.py:610
 msgid "Pay end must be within or after the fiscal year start."
@@ -3308,6 +3325,10 @@ msgstr "Unterzeichner"
 #: .\hankosign\admin.py:220
 msgid "Result"
 msgstr "Ergebnis"
+
+#: .\hankosign\apps.py:12
+msgid "HankoSign"
+msgstr "HankoSign"
 
 #: .\hankosign\models.py:28
 msgid "Verify"
@@ -3433,8 +3454,8 @@ msgstr "IP-Adresse"
 #: .\hankosign\models.py:252
 msgid "IP address from which signature was created (for audit/verification)"
 msgstr ""
-"IP-Adresse, von der aus die Signatur erstellt wurde (zu Prüfungs-/"
-"Verifizierungszwecken)"
+"IP-Adresse, von der aus die Signatur erstellt wurde (zu "
+"Prüfungs-/Verifizierungszwecken)"
 
 #: .\hankosign\models.py:257 .\templates\hankosign\specimen_pdf.html:64
 msgid "Signature"
@@ -3925,7 +3946,8 @@ msgid "Offboard selected (end today, set default reason if empty)"
 msgstr "Auswahl offboarden (endet heute; Standardaustrittsgrund, wenn leer)"
 
 #: .\people\admin.py:939
-msgid "Cannot offboard: default end reason O01 is missing. Seed reasons first."
+msgid ""
+"Cannot offboard: default end reason O01 is missing. Seed reasons first."
 msgstr "Offboarding nicht möglich: Standard-Endgrund O01 fehlt."
 
 #: .\people\admin.py:954
@@ -4099,8 +4121,8 @@ msgid ""
 "The nominal reimbursible ECTS amount assigned to the role re: MOU with the "
 "academic board"
 msgstr ""
-"Der nominale erstattungsfähige ECTS-Betrag, der der Rolle zugewiesen ist re: "
-"Vereinbarung mit dem Kollegium"
+"Der nominale erstattungsfähige ECTS-Betrag, der der Rolle zugewiesen ist re:"
+" Vereinbarung mit dem Kollegium"
 
 #: .\people\models.py:208
 msgid "Elected position"
@@ -4137,8 +4159,8 @@ msgid ""
 "Internal/admin role. Ignores stipend/ECTS expectations and is treated "
 "separately in policies."
 msgstr ""
-"Interne/administrative Rolle. Ignoriert Stipendien-/ECTS-Konfigurationen und "
-"wird in Richtlinien separat behandelt."
+"Interne/administrative Rolle. Ignoriert Stipendien-/ECTS-Konfigurationen und"
+" wird in Richtlinien separat behandelt."
 
 #: .\people\models.py:213
 msgid "Default monthly stipend"
@@ -4174,7 +4196,8 @@ msgstr "Die ECTS-Obergrenze muss für Systemrollen 0 betragen."
 
 #: .\people\models.py:276
 msgid "Stable code like I01, O01, C99 OR X99 (to be reserved for 'Other')."
-msgstr "Stabiler Code wie I01, O01, C99 oder X99 (für „Sonstiges” reserviert)."
+msgstr ""
+"Stabiler Code wie I01, O01, C99 oder X99 (für „Sonstiges” reserviert)."
 
 #: .\people\models.py:280
 msgid "Use I## / O## / C## or X99 for Other."
@@ -4222,8 +4245,8 @@ msgstr "Austrittsgrund"
 msgid ""
 "Why this assignment ended (e.g. Austritt). Required when an end date is set."
 msgstr ""
-"Warum diese Funktionszuweisung beendet wurde (z. B. Austritt). Erforderlich, "
-"wenn ein Enddatum festgelegt ist."
+"Warum diese Funktionszuweisung beendet wurde (z. B. Austritt). Erforderlich,"
+" wenn ein Enddatum festgelegt ist."
 
 #: .\people\models.py:350
 msgid "Confirmation date"
@@ -4583,12 +4606,12 @@ msgstr "Bitte gib zuerst deinen Personal Access Code ein."
 #: .\portal\views.py:434
 #, python-format
 msgid ""
-"✅ Banking details saved for %(code)s! Now please: 1️⃣ Review terms below, 2️⃣ "
-"Download & sign the PDF, 3️⃣ Upload the signed form to complete."
+"✅ Banking details saved for %(code)s! Now please: 1️⃣ Review terms below, "
+"2️⃣ Download & sign the PDF, 3️⃣ Upload the signed form to complete."
 msgstr ""
 "✅ Bankdaten gespeichert für %(code)s! Als Nächstes: 1️⃣ Lies dir die "
-"folgenden Bedingungen durch, 2️⃣ Lade das PDF herunter und unterschreibe es, 3️⃣ "
-"Lade das unterschriebene Formular hoch, um den Vorgang abzuschließen."
+"folgenden Bedingungen durch, 2️⃣ Lade das PDF herunter und unterschreibe es,"
+" 3️⃣ Lade das unterschriebene Formular hoch, um den Vorgang abzuschließen."
 
 #: .\portal\views.py:457
 #, python-format
@@ -4654,8 +4677,8 @@ msgid ""
 "Something went wrong on our end. The error has been logged and we'll look "
 "into it."
 msgstr ""
-"Auf unserer Seite ist ein Fehler aufgetreten. Der Fehler wurde protokolliert "
-"und wir werden ihn untersuchen."
+"Auf unserer Seite ist ein Fehler aufgetreten. Der Fehler wurde protokolliert"
+" und wir werden ihn untersuchen."
 
 #: .\templates\_includes\_banking_information.html:12
 msgid "Bankverbindung der"
@@ -4726,11 +4749,12 @@ msgstr "Für dieses Dokument wurden keine Workflow-Signaturen aufgezeichnet."
 #: .\templates\_includes\_signature_seal.html:62
 #: .\templates\hankosign\_attestation_seal.html:62
 msgid ""
-"Generated by the HankoSign Attestation Service. The entries above record who "
-"performed each workflow action, when it occurred, and a unique signature ID. "
-"This seal serves operational and audit purposes; it is <strong>not</strong> "
-"a qualified electronic signature under eIDAS. Where a qualified signature is "
-"required, refer to the legally signed version of this document."
+"Generated by the HankoSign Attestation Service. The entries above record who"
+" performed each workflow action, when it occurred, and a unique signature "
+"ID. This seal serves operational and audit purposes; it is "
+"<strong>not</strong> a qualified electronic signature under eIDAS. Where a "
+"qualified signature is required, refer to the legally signed version of this"
+" document."
 msgstr ""
 "Erstellt vom HankoSign-Beglaubigungsdienst. Die oben aufgeführten Einträge "
 "dokumentieren, wer welche Workflow-Aktion wann durchgeführt hat, und "
@@ -5018,11 +5042,11 @@ msgstr "Keine Deckung in diesem Wirtschaftsjahr"
 
 #: .\templates\admin\finances\paymentplan\change_list_object_tools.html:14
 msgid "Add payment plan to"
-msgstr "Zahlungsplan hinzufügen zu"
+msgstr "Dauerrechnung anlegen in"
 
 #: .\templates\admin\finances\paymentplan\change_list_object_tools.html:16
 msgid "Add"
-msgstr "Hinzufügen"
+msgstr "Anlegen"
 
 #: .\templates\admin\finances\window_preview.html:16
 msgid "No overlap with fiscal year."
@@ -5111,9 +5135,9 @@ msgid ""
 "admin interface to withdraw or manage the workflow."
 msgstr ""
 "Diese Sitzung wurde zur Genehmigung eingereicht und kann in PROTOKOL-KUN "
-"nicht mehr bearbeitet werden. Du kannst weiterhin alle Elemente anzeigen und "
-"Sachverhalte (Kommentare) hinzufügen. Verwende die Admin-Oberfläche, um den "
-"Workflow zurückzuziehen oder zu verwalten."
+"nicht mehr bearbeitet werden. Du kannst weiterhin alle Elemente anzeigen und"
+" Sachverhalte (Kommentare) hinzufügen. Verwende die Admin-Oberfläche, um den"
+" Workflow zurückzuziehen oder zu verwalten."
 
 #: .\templates\assembly\protocol_editor.html:568
 msgid "Add New Item"
@@ -5157,8 +5181,8 @@ msgid ""
 "No attendees recorded for this session. Add attendees in the admin first "
 "before using named voting."
 msgstr ""
-"Für diese Sitzung wurden keine Teilnehmer (Mandatare) erfasst. Füge zunächst "
-"Teilnehmer im Admin-Bereich hinzu, bevor du die namentliche Abstimmung "
+"Für diese Sitzung wurden keine Teilnehmer (Mandatare) erfasst. Füge zunächst"
+" Teilnehmer im Admin-Bereich hinzu, bevor du die namentliche Abstimmung "
 "verwendest."
 
 #: .\templates\assembly\protocol_editor.html:711
@@ -5194,8 +5218,7 @@ msgstr "Bearbeiten"
 msgid "DELETE"
 msgstr "Löschen"
 
-#: .\templates\assembly\protocol_editor.html:771 .\templates\core\home.html:153
-#: .\templates\portal\base.html:92
+#: .\templates\assembly\protocol_editor.html:771
 msgid "for"
 msgstr "Dafür"
 
@@ -5281,6 +5304,10 @@ msgstr "Entwickelt mit"
 #: .\templates\portal\base.html:90
 msgid "by"
 msgstr "von"
+
+#: .\templates\core\home.html:153 .\templates\portal\base.html:92
+msgid "for the"
+msgstr "für die"
 
 #: .\templates\core\home.html:156 .\templates\portal\base.html:93
 msgid "All rights reserved"
@@ -5657,40 +5684,29 @@ msgstr "Eidesstattliche Erklärung"
 #: .\templates\hankosign\specimen_pdf.html:47
 msgid ""
 "\n"
-"            I hereby provide a clear and legible specimen of my handwritten "
-"signature.\n"
-"            I attest that any and all digital HankoSign actions within "
-"UniHanko bearing my signatory\n"
-"            credentials are made by me, with my explicit consent, and may be "
-"traced back to me as the\n"
+"            I hereby provide a clear and legible specimen of my handwritten signature.\n"
+"            I attest that any and all digital HankoSign actions within UniHanko bearing my signatory\n"
+"            credentials are made by me, with my explicit consent, and may be traced back to me as the\n"
 "            authorized signatory for the above role.\n"
 "            "
 msgstr ""
 "\n"
-"Hiermit lege ich ein klares und lesbares Muster meiner handschriftlichen "
-"Unterschrift vor.\n"
-"Ich bestätige, dass alle digitalen HankoSign-Aktionen innerhalb von "
-"UniHanko, die meine Unterschriftsberechtigung tragen,\n"
-"von mir mit meiner ausdrücklichen Zustimmung vorgenommen wurden und auf mich "
-"als\n"
-"bevollmächtigten Unterzeichner für die oben genannte Funktion zurückgeführt "
-"werden können.\n"
+"Hiermit lege ich ein klares und lesbares Muster meiner handschriftlichen Unterschrift vor.\n"
+"Ich bestätige, dass alle digitalen HankoSign-Aktionen innerhalb von UniHanko, die meine Unterschriftsberechtigung tragen,\n"
+"von mir mit meiner ausdrücklichen Zustimmung vorgenommen wurden und auf mich als\n"
+"bevollmächtigten Unterzeichner für die oben genannte Funktion zurückgeführt werden können.\n"
 "            "
 
 #: .\templates\hankosign\specimen_pdf.html:55
 msgid ""
 "\n"
-"            I understand that this signature specimen will be retained for "
-"verification purposes\n"
-"            and may be used to validate the authenticity of digital "
-"signatures associated with my account.\n"
+"            I understand that this signature specimen will be retained for verification purposes\n"
+"            and may be used to validate the authenticity of digital signatures associated with my account.\n"
 "            "
 msgstr ""
 "\n"
-"Ich verstehe, dass dieses Signaturmuster zu Überprüfungszwecken aufbewahrt "
-"wird\n"
-"und zur Validierung der Echtheit digitaler Signaturen in Verbindung mit "
-"meinem Konto verwendet werden kann.\n"
+"Ich verstehe, dass dieses Signaturmuster zu Überprüfungszwecken aufbewahrt wird\n"
+"und zur Validierung der Echtheit digitaler Signaturen in Verbindung mit meinem Konto verwendet werden kann.\n"
 "            "
 
 #: .\templates\hankosign\specimen_pdf.html:68
@@ -5731,8 +5747,8 @@ msgstr "Das Hanko wird gespitzt..."
 
 #: .\templates\maintenance.html:260
 msgid ""
-"UniHanko is currently undergoing scheduled maintenance. We'll be back online "
-"shortly with improvements and updates."
+"UniHanko is currently undergoing scheduled maintenance. We'll be back online"
+" shortly with improvements and updates."
 msgstr ""
 "UniHanko wird derzeit planmäßig gewartet. Wir sind in Kürze mit "
 "Verbesserungen und Updates wieder online."
@@ -5973,7 +5989,8 @@ msgstr "Format: SSSS-LLLL-#### (z. B. WS24-MUEL-1234)"
 #: .\templates\portal\access_login.html:89
 msgid "Use this to check the status of an existing request."
 msgstr ""
-"Verwende diesen Code, um den Status deines bestehenden Antrags zu überprüfen."
+"Verwende diesen Code, um den Status deines bestehenden Antrags zu "
+"überprüfen."
 
 #: .\templates\portal\file_request.html:12
 msgid "File ECTS Request"
@@ -6020,8 +6037,8 @@ msgid ""
 "After submitting, you'll receive a reference code. Use it to download your "
 "form, get signatures, and upload the signed version."
 msgstr ""
-"Nach dem Einreichen erhältst du einen Referenzcode. Verwende diesen, um dein "
-"Formular herunterzuladen und um die unterschriebene Version hochzuladen."
+"Nach dem Einreichen erhältst du einen Referenzcode. Verwende diesen, um dein"
+" Formular herunterzuladen und um die unterschriebene Version hochzuladen."
 
 #: .\templates\portal\file_request.html:145 .\templates\portal\status.html:347
 msgid "Back to the ECTS Reimbursement Center"
@@ -6037,8 +6054,8 @@ msgid ""
 "substituting. Submit your information, download the form, and re-upload it "
 "after collecting the necessary signatures."
 msgstr ""
-"Reiche ECTS-Anrechnungssanträge für Kurse ein, die du ersetzen möchtest. Gib "
-"die Daten ein, lade das Formular herunter und lade es nach Einholung der "
+"Reiche ECTS-Anrechnungssanträge für Kurse ein, die du ersetzen möchtest. Gib"
+" die Daten ein, lade das Formular herunter und lade es nach Einholung der "
 "erforderlichen Unterschriften erneut hoch."
 
 #: .\templates\portal\home.html:24
@@ -6088,8 +6105,8 @@ msgstr "Gib deinen Personal Access Code ein"
 
 #: .\templates\portal\payments\access.html:25
 msgid ""
-"Your personal access code (PAC) was provided to you by the ÖH team. Enter it "
-"below to access your payment plans for this fiscal year."
+"Your personal access code (PAC) was provided to you by the ÖH team. Enter it"
+" below to access your payment plans for this fiscal year."
 msgstr ""
 "Dein Personal Access Code (PAC) wurde dir vom ÖH-Team zur Verfügung "
 "gestellt. Gib ihn unten ein, um Zugriff auf deine FuGeb-Dauerrechnungen für "
@@ -6198,8 +6215,8 @@ msgstr "Bedingungen zur FuGeb-Dauerrechnung"
 #: .\templates\portal\payments\plan_list.html:178
 msgid "Please confirm you agree to the payment plan terms and conditions."
 msgstr ""
-"Bitte bestätige, dass du mit den Bedingungen zur Dauerrechnung einverstanden "
-"bist."
+"Bitte bestätige, dass du mit den Bedingungen zur Dauerrechnung einverstanden"
+" bist."
 
 #: .\templates\portal\payments\plan_list.html:186
 msgid "I acknowledge and agree to the terms and conditions above"
@@ -6334,8 +6351,8 @@ msgstr "Deinen Antrag vervollständigen"
 
 #: .\templates\portal\status.html:65
 msgid ""
-"The role you selected to be reimbursed for; usually the one with the highest "
-"ECTS. Note: The final audit will correctly calculate all roles."
+"The role you selected to be reimbursed for; usually the one with the highest"
+" ECTS. Note: The final audit will correctly calculate all roles."
 msgstr ""
 "Die Funktion, die du zur Anrechnung wählst; in der Regel die Funktion mit "
 "den höchsten ECTS. Anmerkung: das abschließende Audit verrechnet alle deine "
@@ -6405,8 +6422,8 @@ msgstr ""
 
 #: .\templates\portal\status.html:154
 msgid ""
-"Return later with your reference code to upload the twice-signed form in the "
-"Upload Area"
+"Return later with your reference code to upload the twice-signed form in the"
+" Upload Area"
 msgstr ""
 "Komm später mit deinem Referenzcode zurück, um das doppelt unterschriebene "
 "Formular im Upload-Bereich hochzuladen."
@@ -6435,8 +6452,8 @@ msgid ""
 "Read and confirm the upload declaration by checking the 'I confirm...' "
 "checkbox"
 msgstr ""
-"Lese die Upload-Erklärung und bestätige diese, indem du das Kontrollkästchen "
-"„Ich bestätige ...“ aktivierst."
+"Lese die Upload-Erklärung und bestätige diese, indem du das Kontrollkästchen"
+" „Ich bestätige ...“ aktivierst."
 
 #: .\templates\portal\status.html:175
 msgid "Upload your twice signed form via the 'Choose file' dialogue"
@@ -6506,8 +6523,8 @@ msgstr "Kopieren"
 #: .\templates\portal\status.html:341
 msgid "Save this code to check your request status or upload documents later."
 msgstr ""
-"Speichere diesen Code um später deinen Antragsstatus einsehen oder Dokumente "
-"hochladen zu können."
+"Speichere diesen Code um später deinen Antragsstatus einsehen oder Dokumente"
+" hochladen zu können."
 
 #: .\templates\portal\status.html:364
 msgid "Copied!"

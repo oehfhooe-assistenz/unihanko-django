@@ -25,6 +25,10 @@
             position: relative;
         }
         
+        body.staging-env {
+            filter: hue-rotate(120deg);
+        }
+        
         /* Background gradients */
         body::before {
             content: '';
@@ -82,7 +86,7 @@
                 opacity: 0.4;
             }
             100% {
-                transform: translateY(110vh) rotate(360deg);
+                transform: translateY(99vh) rotate(360deg);
                 opacity: 0;
             }
         }
@@ -309,7 +313,7 @@
         }
     </style>
 </head>
-<body>
+<body class="{% if ENVIRONMENT == 'staging' %}staging-env{% endif %}">
     <div class="container">
         <!-- Small branding -->
         <div class="branding">

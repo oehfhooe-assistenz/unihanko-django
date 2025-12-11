@@ -18,7 +18,7 @@ Modified: 2025-11-27
     <link rel="stylesheet" href="{% static 'portal/portal.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="{% if ENVIRONMENT == 'staging' %}staging-env{% endif %}">
     <header class="portal-header">
         <div class="header-content">
             <span class="hanko-stamp"><img src="{% static 'img/unihanko-logo.svg' %}" alt="UniHanko Logo"></span>
@@ -89,7 +89,7 @@ Modified: 2025-11-27
         <div class="credits">
         {% trans "Built with" %} <span class="heart">♥</span> {% trans "by" %} 
         <a href="https://github.com/yourusername" target="_blank">Sven Várszegi</a>
-        {% trans "for" %} <a href="https://www.oeh.fh-ooe.at" target="_blank" rel="noopener" style="text-decoration: none; border-bottom: none !important; align-items: center;"><img src="{% static 'img/unihanko-mark.svg' %}" alt="UniHanko Logo" width="40px" height="40px" style="vertical-align:middle; margin: 0 4px;"></a></span>
+        {% trans "for the" %} <a href="https://www.oeh.fh-ooe.at" target="_blank" rel="noopener" style="text-decoration: none; border-bottom: none !important; align-items: center;"><img src="{% static 'img/unihanko-mark.svg' %}" alt="UniHanko Logo" width="40px" height="40px" style="vertical-align:middle; margin: 0 4px;"></a></span>
         <span><small style="margin-top: 0.1rem; display: block;">© 2025 {% trans "All rights reserved" %} UH:SSP {{ UNIHANKO_VERSION_FULL }}</small></span>
         </div>
     </footer>

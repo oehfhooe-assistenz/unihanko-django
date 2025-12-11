@@ -24,7 +24,7 @@ Modified: 2025-11-27
         }
     </style>
 </head>
-<body>
+<body class="{% if ENVIRONMENT == 'staging' %}staging-env{% endif %}">
     <!-- Language Switcher -->
     <div class="lang-switcher">
         {% with code=request.LANGUAGE_CODE|slice:":2" %}
@@ -150,7 +150,7 @@ Modified: 2025-11-27
             <div class="credits">
                 {% trans "Built with" %} <span class="heart">♥</span> {% trans "by" %} 
                 <a href="https://github.com/yourusername" target="_blank">Sven Várszegi</a>
-                {% trans "for" %} <a href="https://www.oeh.fh-ooe.at" target="_blank" rel="noopener" style="text-decoration: none; border-bottom: none !important; align-items: center;"><img src="{% static 'img/unihanko-mark.svg' %}" alt="UniHanko Logo" width="40px" height="40px" style="vertical-align:middle; margin: 0 4px;"></a></span>
+                {% trans "for the" %} <a href="https://www.oeh.fh-ooe.at" target="_blank" rel="noopener" style="text-decoration: none; border-bottom: none !important; align-items: center;"><img src="{% static 'img/unihanko-mark.svg' %}" alt="UniHanko Logo" width="40px" height="40px" style="vertical-align:middle; margin: 0 4px;"></a></span>
                 <br>
                 <small style="opacity: 0.6; margin-top: 0.5rem; display: block;">
                     © 2025 {% trans "All rights reserved" %} UH:HOME {{ UNIHANKO_VERSION_FULL }}

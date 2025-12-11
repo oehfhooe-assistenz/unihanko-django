@@ -46,6 +46,10 @@ body {
     font-weight: 400;
 }
 
+body.staging-env {
+    filter: hue-rotate(120deg);
+}
+
 /* Remove default AdminLTE gradients */
 .wrapper,
 .main-header,

@@ -4,9 +4,9 @@
 # Modified: 2025-11-28
 
 from django.apps import AppConfig
-
+from django.utils.translation import gettext_lazy as _
 
 class HankosignConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'hankosign'
-    verbose_name = 'HankoSign'
+    verbose_name = _('HankoSign')

@@ -221,7 +221,6 @@ INSTALLED_APPS = [
     'captcha',
     'django_admin_inline_paginator_plus',
     'axes',
-    'rosetta',
 
     'core',
     'annotations',
@@ -240,6 +239,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware',
     'django.middleware.locale.LocaleMiddleware',
@@ -377,7 +377,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-gb'
 X_FRAME_OPTIONS = "SAMEORIGIN"
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Vienna'
 USE_I18N = True
 USE_TZ = True
 LANGUAGES = [
@@ -386,6 +386,7 @@ LANGUAGES = [
 ]
 LOCALE_PATHS = [BASE_DIR / "locale"]
 if DEBUG:
+    INSTALLED_APPS += ['rosetta']
     from .settings_rosetta import DEEPL_AUTH_KEY, ROSETTA_ENABLE_TRANSLATION_SUGGESTIONS
 
 # markdown configuration
@@ -417,6 +418,9 @@ TINYMCE_DEFAULT_CONFIG = {
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / 'staticfiles'  # Where collectstatic puts files
+
+if not DEBUG:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

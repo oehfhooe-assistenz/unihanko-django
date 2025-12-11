@@ -1,0 +1,3 @@
+{% extends "admin/base.html" %}
+
+{% block bodyclass %}{{ block.super }}{% if ENVIRONMENT == 'staging' %} staging-env{% endif %}{% endblock %}
